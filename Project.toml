@@ -1,0 +1,10 @@
+name = "WaveProp"
+uuid = "59f5f407-a2f4-4990-bd94-b423da74d595"
+authors = ["Luiz Faria <maltezfaria@gmail.com>"]
+version = "0.1.0"
+
+[deps]
+DocStringExtensions = "ffbed154-4ef7-542d-bbb7-c09d3a79fcae"
+SafeTestsets = "1bc83da4-3b8d-516f-aca4-4fe02f6d838f"
+StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"

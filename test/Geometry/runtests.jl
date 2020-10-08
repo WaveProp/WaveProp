@@ -9,7 +9,7 @@ points = [p1, p2]
 l1 = ElementaryEntity(1, 1, ElementaryEntity[p1, p2])
 l2 = ElementaryEntity(1, 2, ElementaryEntity[p1, p2])
 l3 = ElementaryEntity(1, 3, ElementaryEntity[p1, p2])
-lines = [l1, l2]
+lines = [l1, l2, l3]
 # Two surfaces
 s1 = ElementaryEntity(2, 1, ElementaryEntity[l1, l2])
 s2 = ElementaryEntity(2, 2, ElementaryEntity[l2, l3])
@@ -46,10 +46,12 @@ end
         end
     end
     @test Ω1 == intersect(Ω1, Ω)
-    @show intersect(Ω1, Ω2) |> tags
     @test Domain(l2) == intersect(Ω1, Ω2)
     @test issubset(Ω1, Ω)
     @test Ω2 == remove(Ω1, Ω)
+    @test union(Domain.(lines)...) == skeleton(Ω)
+    @test Domain(l2) == internal_boundary(Ω)
+    @test union(Domain(l1), Domain(l3)) == exterior_boundary(Ω)
     @test tags(Ω, 1) == [(1,1), (1,2), (1,3)]
     @test tags(Ω) == [(2,1), (2,2)]
 end

@@ -8,9 +8,8 @@ $(EXPORTS)
 """
 module Geometry 
 
-import Base.==, Base.length, Base.in, Base.iterate
-import Base.getindex, Base.lastindex, Base.isempty
-import Base.union, Base.setdiff, Base.intersect, Base.issubset
+import Base: ==, length, in, iterate, getindex, lastindex, isempty
+import Base: union, setdiff, intersect, issubset
 
 using DocStringExtensions
 using StaticArrays
@@ -18,9 +17,7 @@ using StaticArrays
 include("point.jl")
 include("domain.jl")
 export ElementaryEntity, Domain,
-    ==, length, in, iterate,
-    isempty, union, setdiff, intersect, issubset, remove,
-    dim, entities, tag, tags,
-    assertequaldim, boundary
+    dim, entities, tag, tags, remove, assertequaldim,
+    boundary, skeleton, internal_boundary, exterior_boundary
 
 end

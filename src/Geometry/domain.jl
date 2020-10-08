@@ -8,7 +8,7 @@ struct ElementaryEntity
     function ElementaryEntity(d::Integer, t::Integer, boundary::Vector{ElementaryEntity})
         msg = "An elementaty entities in the boundary has a wrong dimension"
         for b in boundary
-            @assert dim(b) == d-1
+            @assert dim(b) == d-1 msg
         end
         new(d, t, boundary)
     end
@@ -60,8 +60,8 @@ The length of a domain corresponds to the number of elementary entities that mak
 Base.length(Ω::Domain) = length(entities(Ω))
 
 
-"""Return the boundary domain."""
-boundary(Ω::Domain) = union(Domain.(boundary.(entities(Ω)))...)
+"""Return all the boundaryies of the domain."""
+skeleton(Ω::Domain) = union(Domain.(boundary.(entities(Ω)))...)
 
 
 """Test equality between two sub-domains."""
@@ -83,8 +83,7 @@ Base.lastindex(Ω::Domain) = length(Ω)
 """
 Domain can be viewed as an iterable collection.
 """
-Base.iterate(Ω::Domain) = Base.iterate(Ω, 1)
-function Base.iterate(Ω::Domain, state)
+function Base.iterate(Ω::Domain, state=1)
     # Check if we are done iterating
     if state > length(Ω)
         return nothing
@@ -112,7 +111,7 @@ end
 Union of domains.
 """
 function Base.union(Ωs::Domain...)
-    Domain(Vector{ElementaryEntity}(vcat(entities.(Ωs)...)))
+    Domain(Vector{ElementaryEntity}(unique(vcat(entities.(Ωs)...))))
 end
 
 
@@ -139,7 +138,7 @@ function Base.intersect(Ω1::Domain, Ω2::Domain)
         if isempty(Ω1) || isempty(Ω2)
             return Domain()
         else
-            return intersect(boundary(Ω1), boundary(Ω2))
+            return intersect(skeleton(Ω1), skeleton(Ω2))
         end
     else
         return Ωinter
@@ -165,6 +164,27 @@ function remove(Ω1::Domain, Ω2::Domain)
 end
 
 
+"""Return the internal boundaries inside a domain."""
+function internal_boundary(Ω::Domain)
+    Ω1 = Domain(Ω[1])
+    γ = Domain()
+    for ω2 in Ω[2:end]
+        Ω2 = Domain(ω2)
+        γ1 = Domain(vcat(boundary.(entities(Ω1))...))
+        γ2 = Domain(vcat(boundary.(entities(Ω2))...))
+        γ = union(γ, intersect(γ1, γ2))
+        Ω1 = union(Ω1, Ω2)
+    end
+    return γ
+end
+
+
+"""Return the exterior boundaries inside a domain."""
+function exterior_boundary(Ω::Domain)
+    return remove(internal_boundary(Ω), skeleton(Ω))
+end
+
+
 """
 Return all tags of the elementary entities in the domain `Ω` corresponding to the dimension `d`.
 """
@@ -174,7 +194,7 @@ function tags(Ω::Domain, d::Integer)
     elseif d == dim(Ω)
         return Vector{Tuple{Int64,Int64}}(vcat(tag.(entities(Ω))))
     elseif d < dim(Ω)
-        return unique(tags(boundary(Ω),d))
+        return unique(tags(skeleton(Ω),d))
     else
         error("Asking for tags with dimension > dimension of domain")
     end

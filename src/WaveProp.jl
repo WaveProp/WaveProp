@@ -21,6 +21,8 @@ include("Integration/Integration.jl")
 
 include("FEM/FEM.jl")
 
+include("DDM/DDM.jl")
+
 include("BIE/BIE.jl")
 
 end # module

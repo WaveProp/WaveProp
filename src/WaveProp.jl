@@ -17,6 +17,8 @@ using DocStringExtensions
 
 include("Geometry/Geometry.jl")
 
+include("Mesh/Mesh.jl")
+
 include("Integration/Integration.jl")
 
 include("FEM/FEM.jl")

@@ -15,6 +15,8 @@ module WaveProp
 
 using DocStringExtensions
 
+include("Utils/Utils.jl")
+
 include("Geometry/Geometry.jl")
 
 include("Mesh/Mesh.jl")

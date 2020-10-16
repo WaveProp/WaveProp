@@ -8,7 +8,7 @@ $(EXPORTS)
 """
 module Geometry 
 
-import Base: ==, length, in, iterate, getindex, lastindex, isempty
+import Base: ==, length, in, iterate, getindex, lastindex, isempty, eltype
 import Base: union, setdiff, intersect, issubset
 
 using DocStringExtensions
@@ -23,6 +23,8 @@ include("mesh.jl")
 
 export ElementaryEntity, Domain,
     dim, entities, tag, tags, remove, assertequaldim,
-    boundary, skeleton, internal_boundary, exterior_boundary
+    boundary, skeleton, internal_boundary, external_boundary,
+    GenericMesh, LagrangeElement, Point, ReferenceLine, ReferenceTriangle, ReferenceTetrahedron, ReferenceSquare,
+    reference_element, jacobian, LagrangeLine, LagrangeTriangle, LagrangeTetrahedron, etypes, AbstractElement, ambient_dimension, geometric_dimension
 
-end
+end # module

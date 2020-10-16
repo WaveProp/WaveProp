@@ -1,4 +1,8 @@
 using Test
 using SafeTestsets
 
-@time @safetestset "Geometry" begin include("Geometry/runtests.jl") end
+@safetestset "Geometry" begin include("Geometry/runtests.jl") end
+
+@testset "IO" begin include("Integration/runtests.jl") end
+
+@testset "IO" begin include("IO/runtests.jl") end

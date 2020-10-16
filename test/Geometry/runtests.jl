@@ -51,7 +51,7 @@ end
     @test Ω2 == remove(Ω1, Ω)
     @test union(Domain.(lines)...) == skeleton(Ω)
     @test Domain(l2) == internal_boundary(Ω)
-    @test union(Domain(l1), Domain(l3)) == exterior_boundary(Ω)
+    @test union(Domain(l1), Domain(l3)) == external_boundary(Ω)
     @test tags(Ω, 1) == [(1,1), (1,2), (1,3)]
     @test tags(Ω) == [(2,1), (2,2)]
 end

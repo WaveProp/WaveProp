@@ -1,5 +1,13 @@
 """
-Indivisible geometric entity.
+    struct ElementaryEntity
+    
+The basic building block of geometrical objects. 
+
+# Fields:
+
+    - `dim::UInt8`: the geometrical dimension of the entity (e.g. line has `dim=1`, surface has `dim=2`, etc)
+    - `tag::Int64`: an integer tag associated to the entity
+    - `boundary::Vector{ElementaryEntity}`: the entities of dimension `dim-1` forming the entity's boundary  
 """
 struct ElementaryEntity
     dim::UInt8
@@ -14,10 +22,17 @@ struct ElementaryEntity
     end
 end
 
+"""
+    ElementarytEntity(dim,tag)
+
+Construct an [`ElementarytEntity`](@ref) with an empty boundary .
+"""
+function ElementaryEntity(dim,tag)
+    ElementaryEntity(dim,tag,ElementaryEntity[])
+end
 
 """Return the dimension of the elementary entity."""
 dim(ω::ElementaryEntity) = ω.dim
-
 
 """Return the unique tag (for a given dimension) of the elementary entity."""
 tag(ω::ElementaryEntity) = (dim(ω), ω.tag)
@@ -60,7 +75,7 @@ The length of a domain corresponds to the number of elementary entities that mak
 Base.length(Ω::Domain) = length(entities(Ω))
 
 
-"""Return all the boundaryies of the domain."""
+"""Return all the boundaries of the domain."""
 skeleton(Ω::Domain) = union(Domain.(boundary.(entities(Ω)))...)
 
 
@@ -145,6 +160,10 @@ function Base.intersect(Ω1::Domain, Ω2::Domain)
     end
 end
 
+function Base.push!(Ω::Domain,ent::ElementaryEntity)
+    push!(entities(Ω),ent)
+end    
+
 
 """
 Determine whether every element of domain Ω1 is also in domain Ω2.
@@ -179,8 +198,8 @@ function internal_boundary(Ω::Domain)
 end
 
 
-"""Return the exterior boundaries inside a domain."""
-function exterior_boundary(Ω::Domain)
+"""Return the external boundaries inside a domain."""
+function external_boundary(Ω::Domain)
     return remove(internal_boundary(Ω), skeleton(Ω))
 end
 

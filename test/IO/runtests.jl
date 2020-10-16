@@ -28,4 +28,8 @@ end
     fname = joinpath(@__DIR__,"sphere.msh")
     Ω, M = read_msh(fname)
     @test etypes(M) == [LagrangeLine{2},LagrangeTriangle{3},LagrangeTetrahedron{4},Point{3,Float64}] # mesh composed of gmsh simplices
+    # Test internal creation of sphere
+    Ω, M = WaveProp.IO.gmsh_sphere()    
+    @test etypes(M) == [LagrangeLine{2},LagrangeTriangle{3},LagrangeTetrahedron{4},Point{3,Float64}] # mesh composed of gmsh simplices
 end
+

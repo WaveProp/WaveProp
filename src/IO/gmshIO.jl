@@ -108,3 +108,16 @@ function _ent_to_mesh!(dict, ent)
     push!(dict, ent => etypes_to_etags)
 end    
 
+"""
+
+"""
+function gmsh_sphere(;radius=0.5,center=(0.,0.,0.))
+    gmsh.initialize()
+    gmsh.model.occ.addSphere(center...,radius)
+    gmsh.model.occ.synchronize()
+    gmsh.model.mesh.generate()
+    Ω = _initialize_domain(3)
+    M = _initialize_mesh(Ω)
+    gmsh.finalize()
+    return Ω,M
+end    

@@ -23,10 +23,12 @@ include("IO/IO.jl")
 
 include("Integration/Integration.jl")
 
+include("BIE/BIE.jl")
+
 include("FEM/FEM.jl")
 
 include("DDM/DDM.jl")
 
-include("BIE/BIE.jl")
+
 
 end # module

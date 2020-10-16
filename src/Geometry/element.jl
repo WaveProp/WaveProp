@@ -10,6 +10,8 @@ See e.g. [`ReferenceLine`](@ref) or [`ReferenceTriangle`](@ref) for
 """
 abstract type AbstractReferenceShape{N} end
 
+dim(::AbstractReferenceShape{N}) where {N} = N
+
 """
     struct ReferenceLine
     
@@ -17,7 +19,7 @@ Singleton type representing the `[0,1]` segment.
 """
 struct ReferenceLine <: AbstractReferenceShape{1} 
 end    
-Base.in(x,::ReferenceLine) = 0 ≤ x ≤ 1
+Base.in(x,::ReferenceLine) = 0 ≤ x[1] ≤ 1
 
 """
     struct ReferenceTriangle
@@ -51,13 +53,37 @@ Base.in(x,::ReferenceTetrahedron) = 0 ≤ x[1] ≤ 1 && 0 ≤ x[2] ≤ 1 - x[1] 
 """
     abstract type AbstractElement{R,N}
 
-Abstract shape given by the image of a parametrization with domain `R::AbstractReferenceShape`.
+Abstract shape given by the image of a parametrization with domain `R<:AbstractReferenceShape`.
 
 The type parameter `N` reprenset the dimension of the embedding space. 
 
 The dimension of the reference space can be obtained from `R`. 
 """
 abstract type AbstractElement{R,N} end
+
+"""
+    reference_element(el::AbstractElement)
+
+Return an instance of the singleton type `R`; i.e. the reference element.
+"""
+reference_element(::Type{<:AbstractElement{R}}) where {R} = R()
+reference_element(el::AbstractElement) = reference_element(typeof(el))
+
+"""
+    geometric_dimension(el::AbstractElement{R})
+
+Return the geometric dimension of `el`, i.e. the number of variables needed to locally
+parametrize the element.
+"""
+geometric_dimension(t::Type{<:AbstractElement}) = dim(reference_element(t))
+geometric_dimension(el::AbstractElement)        = geometric_dimension(typeof(el))
+
+"""
+    ambient_dimension(el::AbstractElement)
+
+Return the dimension of the ambient space where `el` lives.
+"""
+ambient_dimension(el::AbstractElement{R,N}) where {R,N} = N
 
 """
     abstract type PolynomialElement{R,M} <: AbstractElement{R,M}
@@ -68,6 +94,9 @@ abstract type PolynomialElement{R,N} <: AbstractElement{R,N} end
 
 """
     struct LagrangeElement{R,Np,N,T}        
+    
+Fields:
+    - `vtx`
 
 A lagrange elemement is reprensented as a polynomial mapping the `Np` reference lagrangian nodes of the reference element `R` into `vtx`.
 
@@ -77,7 +106,17 @@ struct LagrangeElement{R,Np,N,T} <: PolynomialElement{R,N}
     vtx::SVector{Np,Point{N,T}}
 end
 
+function LagrangeElement{R,Np,N,T}(vtx::Matrix{T}) where {R,Np,N,T}
+    @assert Np, Nel == size(vtx)
+end    
+
+get_vtx(el::LagrangeElement) = el.vtx
+
 get_order(el::LagrangeElement{ReferenceLine,Np}) where {Np} = Np + 1
+
+dim(el::LagrangeElement{R,Np,N}) where {R,Np,N} = N
+
+
 
 # For a lagrangian element of order P, there are Np = (P+1)(P+2)/2 elements
 function get_order(el::LagrangeElement{ReferenceTriangle,Np}) where {Np} 
@@ -116,8 +155,7 @@ function get_reference_nodes(el::LagrangeElement{ReferenceTriangle,Np}) where {N
                         Point(0.0, 1.0)
                 )        
     else    
-        # TODO: make a macro for this in Utils?    
-        error("method not (yet) implemented")
+        @notimplemented
     end
 end
 
@@ -130,21 +168,65 @@ function (el::LagrangeElement) end
 
 function (el::LagrangeElement{ReferenceLine,2})(u)
     @assert length(u) == 1
-    @assert u ∈ ReferenceLine    
-    vtx[1] + (vtx[2] - vtx[1]) * u    
+    @assert u ∈ ReferenceLine()    
+    vtx = get_vtx(el)
+    vtx[1] + (vtx[2] - vtx[1]) * u[1]    
 end    
 
 function (el::LagrangeElement{ReferenceTriangle,3})(u)
     @assert length(u) == 2    
-    @assert u ∈ ReferenceTriangle
+    @assert u ∈ ReferenceTriangle()
+    vtx = get_vtx(el)
     vtx[1] + (vtx[2] - vtx[1]) * u[1] + (vtx[3] - vtx[1]) * u[2]
 end 
 
 function (el::LagrangeElement{ReferenceTetrahedron,4})(u)
-    @assert length(u) == 2    
-    @assert u ∈ ReferenceTriangle
-    vtx[1] + (vtx[2] - vtx[1]) * u[1] + (vtx[3] - vtx[1]) * u[2]
+    @assert length(u) == 3    
+    @assert u ∈ ReferenceTetrahedron()
+    vtx = get_vtx(el)
+    vtx[1] + (vtx[2] - vtx[1]) * u[1] + (vtx[3] - vtx[1]) * u[2] + (vtx[4] - vtx[1]) * u[3]
 end 
+
+"""
+    gradient(el::LagrangeElement,x)
+
+Evaluate the gradient of the underlying parametrization of the element `el` at point `x`. 
+"""
+function jacobian(el::LagrangeElement{ReferenceLine,2}, u)
+    N = dim(el)    
+    @assert length(u) == 1
+    @assert u ∈ ReferenceLine()    
+    vtx = get_vtx(el)
+    return SMatrix{N,1}((vtx[2] - vtx[1])...)
+end    
+
+function jacobian(el::LagrangeElement{ReferenceTriangle,3}, u) 
+    N = dim(el)
+    @assert length(u) == 2    
+    @assert u ∈ ReferenceTriangle()
+    vtx = get_vtx(el)
+    SMatrix{N,2}(
+        (vtx[2] - vtx[1])..., 
+        (vtx[3] - vtx[1])...
+    )
+end 
+
+function jacobian(el::LagrangeElement{ReferenceTetrahedron,4}, u)
+    N = dim(el)    
+    @assert length(u) == 3   
+    @assert u ∈ ReferenceTriangle()
+    vtx = get_vtx(el)
+    SMatrix{N,3}( 
+        (vtx[2] - vtx[1])...,
+        (vtx[3] - vtx[1])...,
+        (vtx[4] - vtx[1])...
+    )
+end 
+
+# define some aliases for convenience
+const LagrangeLine{Np}        = LagrangeElement{ReferenceLine,Np,3,Float64}
+const LagrangeTriangle{Np}    = LagrangeElement{ReferenceTriangle,Np,3,Float64}
+const LagrangeTetrahedron{Np} = LagrangeElement{ReferenceTetrahedron,Np,3,Float64}
 
 """
     abstract type ParametricElement{R,N} <: AbstractElement{R,N}

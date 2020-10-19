@@ -18,6 +18,7 @@ using WaveProp.Geometry
 
 export quadgen, Gauss, GenericQuadrature
 
+include("quadratureRule.jl")
 include("quadrature.jl")
 include("quadgen.jl")
 

@@ -1,9 +1,3 @@
-abstract type AbstractQuadratureRule{N} end
-
-struct Gauss{N} <: AbstractQuadratureRule{N} end
-
-struct ClenshawCurtis{N} <: AbstractQuadratureRule{N} end
-
 """
     quadgen(el::AbstractReferenceShape,qrule::AbstractQuadratureRule) -> (x,w)
 

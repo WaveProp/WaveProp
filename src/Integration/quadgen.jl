@@ -1,72 +1,21 @@
 """
-    quadgen(el::AbstractReferenceShape,qrule::AbstractQuadratureRule) -> (x,w)
-
-Generate a quadrature for `el` using `qrule`. Return the quadrature nodes `x` and weights `w`.
-
-For performance reasons, it is best for the `(x,w)` to be computable from the
-types of `el` and `qrule` alone.
-"""
-function quadgen end    
-
-@generated function quadgen(el::ReferenceLine,qrule::Gauss{N}) where {N}
-    x,w = gausslegendre(N) # gives integral in [-1,1]. Converted to [0,1] below
-    x = svector(i->Point{1,Float64}(0.5*(x[i]+1)),N) 
-    w = svector(i->w[i]/2,N)
-    return :($x,$w)
-end
-
-@generated function quadgen(el::ReferenceTriangle,qrule::Gauss{N}) where {N}
-    if N == 1
-        x = svector(i->Point(1/3,1/3),1)
-        w = svector(i->1/2,1)
-    elseif N == 2
-        x = SVector(Point(1/6,1/6),
-                    Point(2/3,1/6),
-                    Point(1/6,2/3))
-        w = svector(i->1/6,3)
-    else
-        @notimplemented
-    end            
-    return :($x,$w)
-end
-
-@generated function quadgen(el::ReferenceTetrahedron,qrule::Gauss{N}) where {N}
-    if N == 1
-        x = SVector((Point(1/4,1/4,1/4),))
-        w = SVector(1/6)
-    elseif N == 2
-        a = (5-√5)/20
-        b = (5+3*√5)/20
-        x = SVector(Point(a,a,a),
-                    Point(a,a,b),
-                    Point(a,b,a),
-                    Point(b,a,a)
-                )
-        w = svector(i->1/24,4)
-    else
-        @notimplemented
-    end            
-    return :($x,$w)
-end
-
-"""
     quadgen(el::AbstractElement,qrule::AbstractQuadratureRule) -> (x,w)
 
 Generate a quadrature for `el` using `qrule`. Return the quadrature nodes `x` and weights `w`.
 
 The quadrature is computed by generating a quadrature on the reference
-element of `el`, followed by the push-forward map. This requires `typeof(el)` to
-implement: 
+element of `el`, followed by the push-forward map. This requires:
 
     - el(x)
     - jacobian(el,x)
 """
 function quadgen(el::AbstractElement,qrule)
     # generate a quadrature on the reference element    
-    F̂   = reference_element(el)
-    x̂,ŵ = quadgen(F̂,qrule)
+    msg = "the domain of `qrule` must coincide with the reference element of `el`"
+    @assert reference_element(el) == domain(qrule) msg
+    x̂,ŵ = qrule()
     # modify the quadrature using the push-forward map
-    x   = el.(x̂)
+    x   = map(el,x̂)
     μ   = map(x̂) do x̂
         jac = jacobian(el,x̂)
         g   = transpose(jac)*jac |> det

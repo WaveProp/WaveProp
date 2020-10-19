@@ -16,7 +16,7 @@ using LinearAlgebra
 using WaveProp.Utils
 using WaveProp.Geometry
 
-export quadgen, Gauss, GenericQuadrature
+export integrate, quadgen, Gauss, Trapezoidal, Fejer, GaussLegendre, GenericQuadrature
 
 include("quadratureRule.jl")
 include("quadrature.jl")

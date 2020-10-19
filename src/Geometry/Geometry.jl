@@ -19,12 +19,14 @@ using WaveProp.Utils
 include("point.jl")
 include("domain.jl")
 include("element.jl")
+include("transformations.jl")
 include("mesh.jl")
 
 export ElementaryEntity, Domain,
     dim, entities, tag, tags, remove, assertequaldim,
     boundary, skeleton, internal_boundary, external_boundary,
     GenericMesh, LagrangeElement, Point, ReferenceLine, ReferenceTriangle, ReferenceTetrahedron, ReferenceSquare,
-    reference_element, jacobian, LagrangeLine, LagrangeTriangle, LagrangeTetrahedron, etypes, AbstractElement, ambient_dimension, geometric_dimension
+    reference_element, jacobian, LagrangeLine, LagrangeTriangle, LagrangeTetrahedron, etypes, AbstractElement, ambient_dimension, geometric_dimension, 
+    IMT, Duffy
 
 end # module

@@ -16,7 +16,7 @@ struct ElementaryEntity
     function ElementaryEntity(d::Integer, t::Integer, boundary::Vector{ElementaryEntity})
         msg = "An elementaty entities in the boundary has a wrong dimension"
         for b in boundary
-            @assert dim(b) == d-1 msg
+            @assert geometric_dimension(b) == d-1 msg
         end
         new(d, t, boundary)
     end
@@ -31,11 +31,11 @@ function ElementaryEntity(dim,tag)
     ElementaryEntity(dim,tag,ElementaryEntity[])
 end
 
-"""Return the dimension of the elementary entity."""
-dim(ω::ElementaryEntity) = ω.dim
+"""Return geometric the dimension of the elementary entity."""
+geometric_dimension(ω::ElementaryEntity) = ω.dim
 
 """Return the unique tag (for a given dimension) of the elementary entity."""
-tag(ω::ElementaryEntity) = (dim(ω), ω.tag)
+tag(ω::ElementaryEntity) = (geometric_dimension(ω), ω.tag)
 
 
 """Return the vector of elementary entities making the boundary."""
@@ -66,7 +66,7 @@ entities(Ω::Domain) = Ω.entities
 
 
 """Return the dimension of the domain."""
-dim(Ω::Domain) = dim(entities(Ω)[1])
+geometric_dimension(Ω::Domain) = geometric_dimension(entities(Ω)[1])
 
 
 """
@@ -139,7 +139,7 @@ function assertequaldim(Ω1::Domain, Ω2::Domain)
     if isempty(Ω1) || isempty(Ω2) return nothing end
     msg = "The dimension of the first domain should be equal to the dimension
     of the second domain."
-    @assert dim(Ω1) == dim(Ω2) msg
+    @assert geometric_dimension(Ω1) == geometric_dimension(Ω2) msg
 end
 
 
@@ -210,16 +210,16 @@ Return all tags of the elementary entities in the domain `Ω` corresponding to t
 function tags(Ω::Domain, d::Integer)
     if isempty(Ω)
         return Tuple{Int64,Int64}[]
-    elseif d == dim(Ω)
+    elseif d == geometric_dimension(Ω)
         return Vector{Tuple{Int64,Int64}}(vcat(tag.(entities(Ω))))
-    elseif d < dim(Ω)
+    elseif d < geometric_dimension(Ω)
         return unique(tags(skeleton(Ω),d))
     else
         error("Asking for tags with dimension > dimension of domain")
     end
 end
 function tags(Ω::Domain)
-    isempty(Ω) ? Tuple{Int64, Int64}[] : tags(Ω, dim(Ω))
+    isempty(Ω) ? Tuple{Int64, Int64}[] : tags(Ω, geometric_dimension(Ω))
 end
 
 

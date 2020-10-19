@@ -109,11 +109,29 @@ function _ent_to_mesh!(dict, ent)
 end    
 
 """
+    gmsh_sphere(;radius=0.5,center=(0,0,0)) -> Ω, M
 
+Use `gmsh` API to generate a sphere and return `Ω::Domain` and `M::GenericMesh`.
 """
 function gmsh_sphere(;radius=0.5,center=(0.,0.,0.))
     gmsh.initialize()
     gmsh.model.occ.addSphere(center...,radius)
+    gmsh.model.occ.synchronize()
+    gmsh.model.mesh.generate()
+    Ω = _initialize_domain(3)
+    M = _initialize_mesh(Ω)
+    gmsh.finalize()
+    return Ω,M
+end    
+
+"""
+    gmsh_box(;origin=(0,0,0),widths=(0,0,0)) -> Ω, M
+
+Use `gmsh` API to generate an axis aligned box. Return `Ω::Domain` and `M::GenericMesh`.
+"""
+function gmsh_box(;origin=(0.,0.,0.),widths=(1.,1.,1.))
+    gmsh.initialize()
+    gmsh.model.occ.addBox(origin...,widths...)
     gmsh.model.occ.synchronize()
     gmsh.model.mesh.generate()
     Ω = _initialize_domain(3)

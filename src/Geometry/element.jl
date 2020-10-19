@@ -10,7 +10,8 @@ See e.g. [`ReferenceLine`](@ref) or [`ReferenceTriangle`](@ref) for
 """
 abstract type AbstractReferenceShape{N} end
 
-dim(::AbstractReferenceShape{N}) where {N} = N
+ambient_dimension(::AbstractReferenceShape{N}) where {N} = N
+geometric_dimension(::AbstractReferenceShape{N}) where {N} = N
 
 """
     struct ReferenceLine
@@ -55,7 +56,7 @@ Base.in(x,::ReferenceTetrahedron) = 0 ≤ x[1] ≤ 1 && 0 ≤ x[2] ≤ 1 - x[1] 
 
 Abstract shape given by the image of a parametrization with domain `R<:AbstractReferenceShape`.
 
-The type parameter `N` reprenset the dimension of the embedding space. 
+The type parameter `N` represnet the dimension of the embedding space. 
 
 The dimension of the reference space can be obtained from `R`. 
 """
@@ -75,8 +76,8 @@ reference_element(el::AbstractElement) = reference_element(typeof(el))
 Return the geometric dimension of `el`, i.e. the number of variables needed to locally
 parametrize the element.
 """
-geometric_dimension(t::Type{<:AbstractElement}) = dim(reference_element(t))
-geometric_dimension(el::AbstractElement)        = geometric_dimension(typeof(el))
+geometric_dimension(t::Type{<:AbstractElement}) = geometric_dimension(reference_element(t))
+geometric_dimension(el)                         = geometric_dimension(typeof(el))
 
 """
     ambient_dimension(el::AbstractElement)
@@ -116,9 +117,8 @@ get_order(el::LagrangeElement{ReferenceLine,Np}) where {Np} = Np + 1
 
 dim(el::LagrangeElement{R,Np,N}) where {R,Np,N} = N
 
-
-
-# For a lagrangian element of order P, there are Np = (P+1)(P+2)/2 elements
+# For a lagrangian element of order P on a triangle, there are Np = (P+1)(P+2)/2
+# elements
 function get_order(el::LagrangeElement{ReferenceTriangle,Np}) where {Np} 
     # TODO: make this generic by solving quadratic equation and assert integer solution
     if Np == 3

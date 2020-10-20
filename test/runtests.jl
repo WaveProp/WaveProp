@@ -5,4 +5,7 @@ using SafeTestsets
 
 @safetestset "Integration" begin include("Integration/runtests.jl") end
 
+@safetestset "BIE" begin include("BIE/runtests.jl") end
+
 @safetestset "IO" begin include("IO/runtests.jl") end
+

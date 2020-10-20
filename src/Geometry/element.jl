@@ -67,8 +67,40 @@ abstract type AbstractElement{R,N} end
 
 Return an instance of the singleton type `R`; i.e. the reference element.
 """
-reference_element(::Type{<:AbstractElement{R}}) where {R} = R()
-reference_element(el::AbstractElement) = reference_element(typeof(el))
+domain(::Type{<:AbstractElement{R}}) where {R} = R()
+domain(el::AbstractElement) = domain(typeof(el))
+
+function normal(el::AbstractElement,u)
+    N = ambient_dimension(el)
+    M = geometric_dimension(el)
+    msg = "computing the normal vector requires the element to be of co-dimension one."
+    @assert N-M == 1 msg
+    if M == 1 # a line in 2d
+        t⃗ = jacobian(el,u)
+        n⃗ = SVector(-t⃗[2],t⃗[1])
+        return n⃗/norm(n⃗)
+    elseif M == 2 # a surface in 3d
+        j  = jacobian(el,u)    
+        t⃗₁ = j[:,1]
+        t⃗₂ = j[:,2]
+        n⃗  = cross(t⃗₁,t⃗₂)
+        return n⃗/norm(n⃗)
+    else
+        @notimplemented    
+    end            
+end    
+
+push_forward_map(el,x̂) = map(el,x̂)
+
+function push_forward_map(el,x̂,ŵ)
+    x   = push_forward_map(el,x̂)
+    w   = map(zip(x̂,ŵ)) do (x̂,ŵ)
+        jac = jacobian(el,x̂)
+        g   = transpose(jac)*jac |> det
+        sqrt(g)*prod(ŵ)
+    end 
+    return x,w
+end   
 
 """
     geometric_dimension(el::AbstractElement{R})
@@ -76,7 +108,7 @@ reference_element(el::AbstractElement) = reference_element(typeof(el))
 Return the geometric dimension of `el`, i.e. the number of variables needed to locally
 parametrize the element.
 """
-geometric_dimension(t::Type{<:AbstractElement}) = geometric_dimension(reference_element(t))
+geometric_dimension(t::Type{<:AbstractElement}) = geometric_dimension(domain(t))
 geometric_dimension(el)                         = geometric_dimension(typeof(el))
 
 """
@@ -107,9 +139,10 @@ struct LagrangeElement{R,Np,N,T} <: PolynomialElement{R,N}
     vtx::SVector{Np,Point{N,T}}
 end
 
-function LagrangeElement{R,Np,N,T}(vtx::Matrix{T}) where {R,Np,N,T}
-    @assert Np, Nel == size(vtx)
-end    
+# a contructor which infers the extra information from vtx
+function LagrangeElement{R}(vtx::SVector{Np,Point{N,T}}) where {R,Np,N,T} 
+    LagrangeElement{R,Np,N,T}(vtx)
+end
 
 get_vtx(el::LagrangeElement) = el.vtx
 
@@ -224,9 +257,9 @@ function jacobian(el::LagrangeElement{ReferenceTetrahedron,4}, u)
 end 
 
 # define some aliases for convenience
-const LagrangeLine{Np}        = LagrangeElement{ReferenceLine,Np,3,Float64}
-const LagrangeTriangle{Np}    = LagrangeElement{ReferenceTriangle,Np,3,Float64}
-const LagrangeTetrahedron{Np} = LagrangeElement{ReferenceTetrahedron,Np,3,Float64}
+const LagrangeLine        = LagrangeElement{ReferenceLine}
+const LagrangeTriangle    = LagrangeElement{ReferenceTriangle}
+const LagrangeTetrahedron = LagrangeElement{ReferenceTetrahedron}
 
 """
     abstract type ParametricElement{R,N} <: AbstractElement{R,N}
@@ -245,3 +278,19 @@ struct ParametricElement{R,N,F} <: AbstractParametricElement{R,N}
 end
 
 (el::ParametricElement)(u) = el.parametrization(u)
+
+"""
+    const type_tag_to_etype
+
+Dictionary mapping `gmsh` element types, given as `Int32`, to the internal
+equivalent of those. 
+
+Such a mapping is useful for generating function barriers in order to dispatch on
+methods which work on a concrete subtype. 
+"""
+const type_tag_to_etype = Dict(
+    15 => Point{3,Float64},
+    1  => LagrangeLine{2,3,Float64},
+    2  => LagrangeTriangle{3,3,Float64},
+    4  => LagrangeTetrahedron{4,3,Float64}
+)

@@ -1,7 +1,7 @@
 abstract type AbstractKernel{T} end
 
 return_type(K::AbstractKernel{T}) where {T} = T
-ambient_dimension(K::AbstractKernel)              = ambient_dimension(K.op)
+ambient_dimension(K::AbstractKernel) = ambient_dimension(K.op)
 
 struct SingleLayerKernel{T,Op} <: AbstractKernel{T}
     op::Op
@@ -27,7 +27,19 @@ end
 HyperSingularKernel{T}(op) where {T} = HyperSingularKernel{T,typeof(op)}(op)
 HyperSingularKernel(op)              = HyperSingularKernel{default_kernel_eltype(op)}(op)
 
+# kernel trait do distinguish various integral operators and potentials. This helps in dispatch.
+struct SingleLayer end
+struct DoubleLayer end
+struct AdjointDoubleLayer end
+struct HyperSingular end
+
 kernel_type(::SingleLayerKernel)        = SingleLayer()
 kernel_type(::DoubleLayerKernel)        = DoubleLayer()
 kernel_type(::AdjointDoubleLayerKernel) = AdjointDoubleLayer()
 kernel_type(::HyperSingularKernel)      = HyperSingular()
+
+combined_field_coefficients(::SingleLayerKernel)        = (0,-1)
+combined_field_coefficients(::DoubleLayerKernel)        = (1,0)
+combined_field_coefficients(::AdjointDoubleLayerKernel) = (0,-1)
+combined_field_coefficients(::HyperSingularKernel)      = (1,0)
+

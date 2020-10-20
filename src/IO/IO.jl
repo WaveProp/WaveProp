@@ -3,6 +3,7 @@ module IO
     using DocStringExtensions
     using GmshSDK
     using StaticArrays
+    using Printf
     
     using WaveProp.Geometry    
     using WaveProp.Utils

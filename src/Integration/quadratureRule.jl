@@ -182,15 +182,15 @@ function (q::TensorProduct)()
     return x,w
 end    
 
-function transform(q::AbstractQuadratureRule,cov::GeometricTransformation)
-    @assert domain(q) == Geometry.domain(cov)
-    x̂,ŵ = q()
-    # modify the quadrature using the change of variables
-    x   = map(cov,x̂)
-    w   = map(zip(x̂,ŵ)) do (x̂,ŵ)
-        jac = jacobian(cov,x̂)
-        g   = transpose(jac)*jac |> det
-        sqrt(g)*prod(ŵ)
-    end 
-    return x,w
-end    
+# function transform(q::AbstractQuadratureRule,cov::GeometricTransformation)
+#     @assert domain(q) == Geometry.domain(cov)
+#     x̂,ŵ = q()
+#     # modify the quadrature using the change of variables
+#     x   = map(cov,x̂)
+#     w   = map(zip(x̂,ŵ)) do (x̂,ŵ)
+#         jac = jacobian(cov,x̂)
+#         g   = transpose(jac)*jac |> det
+#         sqrt(g)*prod(ŵ)
+#     end 
+#     return x,w
+# end    

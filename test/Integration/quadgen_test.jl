@@ -60,7 +60,7 @@ end
         (lx,ly,lz) = widths = (1.,1.,2.)
         Ω, M  = WaveProp.IO.gmsh_box(;widths=widths)
         qrule = Gauss{ReferenceTriangle,1}()
-        Q = quadgen(M,qrule;dim=2)
+        Q = quadgen(M,qrule;dim=2,need_normal=true)
         A = 2*(lx*ly + lx*lz + ly*lz)
         @test A ≈ sum(Q.weights)
         qrule = Gauss{ReferenceTetrahedron,1}()

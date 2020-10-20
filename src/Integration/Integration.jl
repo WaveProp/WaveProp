@@ -16,6 +16,8 @@ using LinearAlgebra
 using WaveProp.Utils
 using WaveProp.Geometry
 
+import WaveProp.Geometry: domain, range, ambient_dimension, geometric_dimension
+
 export integrate, quadgen, Gauss, Trapezoidal, Fejer, GaussLegendre, GenericQuadrature, TensorProduct
 
 include("quadratureRule.jl")

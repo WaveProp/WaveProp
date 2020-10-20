@@ -1,21 +1,28 @@
 abstract type AbstractPDE{N} end
 
-ambient_dimension(op::AbstractPDE{N}) where {N}       = N
 ambient_dimension(::Type{<:AbstractPDE{N}}) where {N} = N
+ambient_dimension(op) = ambient_dimension(typeof(op))
 
 """
     struct Laplace{N}
     
 Laplace equation in `N` dimension: Δu = 0.
 """
-struct Laplace{N} end    
+struct Laplace{N} <: AbstractPDE{N} end    
+
+Laplace(;dim=3) = Laplace{dim}()
+
+getname(::Laplace) = "Laplace"
+
+default_kernel_eltype(::Laplace)  = Float64
+default_density_eltype(::Laplace) = Float64
 
 """
     struct Helmholtz{N,T}
     
 Helmholtz equation in `N` dimensions: Δu + k²u = 0.
 """
-struct Helmholtz{N,K}
+struct Helmholtz{N,K} <: AbstractPDE{N}
     k::K
 end    
 

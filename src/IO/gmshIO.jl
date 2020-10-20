@@ -113,12 +113,13 @@ end
 
 Use `gmsh` API to generate a sphere and return `Ω::Domain` and `M::GenericMesh`.
 """
-function gmsh_sphere(;radius=0.5,center=(0.,0.,0.))
+function gmsh_sphere(;radius=0.5,center=(0.,0.,0.),dim=3,h=radius/10)
     gmsh.initialize()
+    _gmsh_set_meshsize(h)
     gmsh.model.occ.addSphere(center...,radius)
     gmsh.model.occ.synchronize()
-    gmsh.model.mesh.generate()
-    Ω = _initialize_domain(3)
+    gmsh.model.mesh.generate(dim)
+    Ω = _initialize_domain(dim)
     M = _initialize_mesh(Ω)
     gmsh.finalize()
     return Ω,M
@@ -139,3 +140,47 @@ function gmsh_box(;origin=(0.,0.,0.),widths=(1.,1.,1.))
     gmsh.finalize()
     return Ω,M
 end    
+
+"""
+    macro gmsh(ex)
+
+Initialize `gmsh` through `gmsh.initilize(), execute `ex`, the close `gmsh`
+through `gmsh.finalize()`.
+"""
+macro gmsh(ex)
+    return quote
+        gmsh.initialize()
+        $(esc(ex))
+        gmsh.finalize()    
+    end
+end
+
+function _gmsh_set_meshsize(hmax,hmin=hmax)
+    gmsh.option.setNumber("Mesh.CharacteristicLengthMin", hmin)
+    gmsh.option.setNumber("Mesh.CharacteristicLengthMax", hmax)
+end
+
+function _gmsh_set_meshorder(order)
+    gmsh.option.setNumber("Mesh.ElementOrder", order)
+end
+
+function _gmsh_summary(model)
+    gmsh.model.setCurrent(model)
+    @printf("List of entities in model `%s`: \n", model)
+    @printf("|%10s|%10s|%10s|\n","name","dimension","tag")
+    ents = gmsh.model.getEntities()
+    # pgroups = gmsh.model.getPhysicalGroups()
+    for ent in ents
+        name = gmsh.model.getEntityName(ent...)
+        dim,tag = ent
+        @printf("|%10s|%10d|%10d|\n", name, dim, tag)
+    end
+    println()
+end
+
+function _gmsh_summary()
+    models = gmsh.model.list()
+    for model in models
+        _gmsh_summary(model)
+    end
+end

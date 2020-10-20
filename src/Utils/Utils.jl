@@ -11,6 +11,8 @@ module Utils
 using DocStringExtensions
 using StaticArrays
 
+using WaveProp
+
 export svector, @notimplemented, assert_extension
 
 svector(f,n) = ntuple(f,n) |> SVector
@@ -26,14 +28,8 @@ function assert_extension(fname::String,ext::String,msg="file extension must be 
     @assert occursin(r,fname) msg
 end
 
-function debug(flag)
-    if flag
-        @eval ENV["JULIA_DEBUG"] = "WaveProp"
-    else
-        @eval ENV["JULIA_DEBUG"] = ""    
-    end
+function debug(mod)
+    @eval ENV["JULIA_DEBUG"] = $(mod)
 end
-
-debug(true)
 
 end # module

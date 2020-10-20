@@ -68,11 +68,12 @@ end
 end
 
 @testset "IMT on line" begin
-    N  = 20
-    q̂  = GaussLegendre{N}()
-    e1 = integrate(log,q) + 1 |> abs
+    N      = 20
+    qrule  = GaussLegendre{N}()
+    x̂,ŵ    = qrule()
+    e1 = integrate(log,x̂,ŵ) + 1 |> abs
     cov = IMT()
-    x,w = Integration.transform(q̂,cov)
+    x,w = push_forward_map(cov,x̂,ŵ)
     e2  = integrate(log,x,w) + 1 |> abs
     @test e2 < e1
 end
@@ -82,18 +83,20 @@ end
     N   = 10
     cov = Duffy{2}()
     qx  = GaussLegendre{N}()
-    qy  = qx
-    q̂   = TensorProduct(qx,qy)
-    e1  = integrate(q̂) do x
+    qy     = qx
+    qrule  = TensorProduct(qx,qy)
+    x̂,ŵ = qrule()
+    e1  = integrate(x̂,ŵ) do x
         d = sqrt((x[1]-1)^2 + x[2]^2)
         log(d)
     end       
-    x,w   = Integration.transform(q̂,cov)
+    x,w   = push_forward_map(cov,x̂,ŵ)
     e2 = integrate(x,w) do x
         d = sqrt((x[1]-1)^2 + x[2]^2)
         log(d)
     end        
-    # TODO: compare e1 and e2 to a reference value from e.g. quadgk
+    # TODO: compare e1 and e2 to a reference value from e.g. quadgk. The value
+    # of e2 should be much closer if the  change of variables was correct. 
 end
 
 

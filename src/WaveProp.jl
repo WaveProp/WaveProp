@@ -19,8 +19,6 @@ include("Utils/Utils.jl")
 
 include("Geometry/Geometry.jl")
 
-include("IO/IO.jl")
-
 include("Integration/Integration.jl")
 
 include("BIE/BIE.jl")
@@ -29,6 +27,6 @@ include("FEM/FEM.jl")
 
 include("DDM/DDM.jl")
 
-
+include("IO/IO.jl")
 
 end # module

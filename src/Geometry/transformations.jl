@@ -35,6 +35,28 @@ end
 @fastmath derivative(f::IMT{A,P},x) where {A,P} = @. f(x) * A*P*1 / x^(P+1)
 jacobian(f::IMT,x) = derivative(f,x) |> SMatrix{1,1}
 
+struct Window{A,B,S} end
+
+function (f::Window{A,B,S})(x) where {A,B,S}
+    # TODO: Can the window function be used as a efficient change of variables?
+    # The value of the function will probably have to be computed numerically
+    # through a quadrature rule, but that should not be a problem. Test this?
+end    
+
+function derivative(f::Window{A,B,S},x) where {A,B,S}
+    if  A ≤ x ≤ B
+        return 1
+    elseif 0 ≤ x < A
+        u = (A - x) / (A)
+        return exp(S*exp(-1/u)/(u-1))
+    elseif B < x ≤ 1
+        u = (x - B) / (1 - B)
+        return exp(S*exp(-1/u)/(u-1))
+    else
+        return 0
+    end
+end    
+
 """
     struct Duffy{N} <: ChangeOfVariables
     

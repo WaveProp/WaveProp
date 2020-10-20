@@ -44,14 +44,14 @@ function (HS::HyperSingularKernel{T,S})(x,y,nx,ny)::T where {T,S<:Helmholtz}
     r = x - y
     d = norm(r)
     if N==2
-        # ID = SMatrix{2,2,Float64}(1,0,0,1)
+        ID = Mat{2,2,Float64,4}(1,0,0,1)
         RRT = r*transpose(r) # r ⊗ rᵗ
         # TODO: rewrite the operation below in a more clear/efficient way
-        return transpose(nx)*((-im*k^2/4/d^2*hankelh1(2,k*d).*RRT + im*k/4/d*hankelh1(1,k*d)*I)*ny)
+        return transpose(nx)*((-im*k^2/4/d^2*hankelh1(2,k*d).*RRT + im*k/4/d*hankelh1(1,k*d).*ID)*ny)
     elseif N==3
-        # ID = SMatrix{3,3,Float64}(1,0,0,0,1,0,0,0,1)
+        ID = Mat{3,3,Float64,9}(1,0,0,0,1,0,0,0,1)
         RRT = r*transpose(r) # r ⊗ rᵗ
-        term1 = 1/(4π)/d^2 * exp(im*k*d) * ( -im*k + 1/d ) * I
+        term1 = 1/(4π)/d^2 * exp(im*k*d) * ( -im*k + 1/d ) * ID
         term2 = RRT/d * exp(im*k*d)/(4*π*d^4) * (3*(d*im*k-1) + d^2*k^2)
         return  transpose(nx)*(term1 + term2) * ny
     end

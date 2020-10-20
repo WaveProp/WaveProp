@@ -13,6 +13,7 @@ import Base: union, setdiff, intersect, issubset
 
 using DocStringExtensions
 using StaticArrays
+using LinearAlgebra
 
 using WaveProp.Utils
 
@@ -26,7 +27,7 @@ export ElementaryEntity, Domain,
     dim, entities, tag, tags, remove, assertequaldim,
     boundary, skeleton, internal_boundary, external_boundary,
     GenericMesh, LagrangeElement, Point, ReferenceLine, ReferenceTriangle, ReferenceTetrahedron, ReferenceSquare,
-    reference_element, jacobian, LagrangeLine, LagrangeTriangle, LagrangeTetrahedron, etypes, AbstractElement, ambient_dimension, geometric_dimension, 
+    domain, jacobian, normal, LagrangeLine, LagrangeTriangle, LagrangeTetrahedron, etypes, AbstractElement, ambient_dimension, geometric_dimension, push_forward_map,
     IMT, Duffy, GeometricTransformation
 
 end # module

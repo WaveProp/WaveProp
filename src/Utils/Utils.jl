@@ -26,4 +26,14 @@ function assert_extension(fname::String,ext::String,msg="file extension must be 
     @assert occursin(r,fname) msg
 end
 
+function debug(flag)
+    if flag
+        @eval ENV["JULIA_DEBUG"] = "WaveProp"
+    else
+        @eval ENV["JULIA_DEBUG"] = ""    
+    end
+end
+
+debug(true)
+
 end # module

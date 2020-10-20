@@ -27,6 +27,6 @@ export ElementaryEntity, Domain,
     boundary, skeleton, internal_boundary, external_boundary,
     GenericMesh, LagrangeElement, Point, ReferenceLine, ReferenceTriangle, ReferenceTetrahedron, ReferenceSquare,
     reference_element, jacobian, LagrangeLine, LagrangeTriangle, LagrangeTetrahedron, etypes, AbstractElement, ambient_dimension, geometric_dimension, 
-    IMT, Duffy
+    IMT, Duffy, GeometricTransformation
 
 end # module

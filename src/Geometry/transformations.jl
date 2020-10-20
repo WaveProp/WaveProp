@@ -46,10 +46,10 @@ struct Duffy{N} <: GeometricTransformation end
 domain(::Duffy{2}) = ReferenceSquare()
 range(::Duffy{2})  = ReferenceTriangle()
 
-function (::Duffy{2})(u::Point{2})
+function (::Duffy{2})(u)
     SVector(u[1],(1-u[1])*u[2])
 end    
 
-function jacobian(::Duffy{2},u::Point{2})
+function jacobian(::Duffy{2},u)
     SMatrix{2,2,Float64}(1,0,-u[2],(1-u[1]))
 end    

@@ -55,3 +55,50 @@ end
     end
     # FIXME: check that we integrate all monomoial up to `order`
 end
+
+@testset "Tensor product quad on square" begin
+    D   = ReferenceSquare
+    N,M = 10,12
+    qx  = GaussLegendre{N}()
+    qy  = Fejer{M}()
+    q   = TensorProduct(qx,qy)
+    a,b = 2*N-1,M-1 # maximum integration order of monomials
+    @test integrate(x->1,q) ≈ 1
+    @test integrate(x->x[1]^a*x[2]^b,q) ≈ 1/(a+1)*1/(b+1)
+end
+
+@testset "IMT on line" begin
+    N  = 20
+    q̂  = GaussLegendre{N}()
+    e1 = integrate(log,q) + 1 |> abs
+    cov = IMT()
+    x,w = Integration.transform(q̂,cov)
+    e2  = integrate(log,x,w) + 1 |> abs
+    @test e2 < e1
+end
+
+@testset "Duffy on triangle" begin
+    D   = ReferenceTriangle
+    N   = 10
+    cov = Duffy{2}()
+    qx  = GaussLegendre{N}()
+    qy  = qx
+    q̂   = TensorProduct(qx,qy)
+    e1  = integrate(q̂) do x
+        d = sqrt((x[1]-1)^2 + x[2]^2)
+        log(d)
+    end       
+    x,w   = Integration.transform(q̂,cov)
+    e2 = integrate(x,w) do x
+        d = sqrt((x[1]-1)^2 + x[2]^2)
+        log(d)
+    end        
+    # TODO: compare e1 and e2 to a reference value from e.g. quadgk
+end
+
+
+
+
+
+
+

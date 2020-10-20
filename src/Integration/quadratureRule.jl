@@ -9,6 +9,10 @@ domain(q::AbstractQuadratureRule{D}) where {D} = D()
 
 function integrate(f,q::AbstractQuadratureRule)
     x,w = q()
+    integrate(f,x,w)
+end    
+
+function integrate(f,x,w)
     mapreduce(+,zip(x,w)) do (x,w)
         f(x)*prod(w)
     end
@@ -32,7 +36,7 @@ function (q::Trapezoidal{N})() where {N}
     w[1]   = h/2
     w[end] = h/2
     # convert to static arrays
-    xs = svector(i->Point{1,Float64}(0.5*(x[i]+1)),N) 
+    xs = svector(i->(0.5*(x[i]+1)),N) 
     ws = svector(i->w[i]/2,N)
     return xs,ws
 end    
@@ -56,7 +60,7 @@ function (q::Fejer{N})() where {N}
         end
         w[j] = 2/N * (1 - 2*tmp)
     end
-    xs = svector(i->Point{1,Float64}(0.5*(x[i]+1)),N) 
+    xs = svector(i->(0.5*(x[i]+1)),N) 
     ws = svector(i->w[i]/2,N)
     return xs,ws
 end
@@ -71,7 +75,7 @@ struct GaussLegendre{N} <: AbstractQuadratureRule{ReferenceLine} end
 
 function (q::GaussLegendre{N})() where {N}
     x,w = gausslegendre(N) # gives integral in [-1,1]. Converted to [0,1] below
-    xs   = svector(i->Point{1,Float64}(0.5*(x[i]+1)),N) 
+    xs   = svector(i->(0.5*(x[i]+1)),N) 
     ws   = svector(i->w[i]/2,N)
     return xs,ws
 end
@@ -161,3 +165,32 @@ function (q::Gauss{ReferenceTetrahedron,N})() where {N}
     end            
     return x,w
 end
+
+struct TensorProduct{Q} <: AbstractQuadratureRule{ReferenceSquare} 
+    quad::Q
+end
+
+function TensorProduct(q...)
+    TensorProduct(q)
+end    
+
+function (q::TensorProduct)()
+    nodes   = map(q->q()[1],q.quad)    
+    weights = map(q->q()[2],q.quad)    
+    x = Iterators.product(nodes...)
+    w = Iterators.product(weights...)
+    return x,w
+end    
+
+function transform(q::AbstractQuadratureRule,cov::GeometricTransformation)
+    @assert domain(q) == Geometry.domain(cov)
+    x̂,ŵ = q()
+    # modify the quadrature using the change of variables
+    x   = map(cov,x̂)
+    w   = map(zip(x̂,ŵ)) do (x̂,ŵ)
+        jac = jacobian(cov,x̂)
+        g   = transpose(jac)*jac |> det
+        sqrt(g)*prod(ŵ)
+    end 
+    return x,w
+end    

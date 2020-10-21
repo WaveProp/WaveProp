@@ -23,5 +23,6 @@ import WaveProp.Integration: quadgen
 export GenericMesh, NystromMesh, etypes, ElementIterator, nodes, weights, normals, elements, nearest_element_list
 
 include("mesh.jl")
+include("queries.jl")
 
 end

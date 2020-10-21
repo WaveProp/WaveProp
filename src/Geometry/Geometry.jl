@@ -18,6 +18,7 @@ using LinearAlgebra
 using WaveProp.Utils
 
 include("point.jl")
+include("hyperrectangle.jl")
 include("domain.jl")
 include("element.jl")
 include("transformations.jl")
@@ -27,6 +28,6 @@ export ElementaryEntity, Domain,
     boundary, skeleton, internal_boundary, external_boundary,
     GenericMesh, LagrangeElement, Point, ReferenceLine, ReferenceTriangle, ReferenceTetrahedron, ReferenceSquare,
     domain, jacobian, normal, LagrangeLine, LagrangeTriangle, LagrangeTetrahedron, AbstractElement, ambient_dimension, geometric_dimension, push_forward_map,
-    IMT, Duffy, GeometricTransformation, type_tag_to_etype
+    IMT, Duffy, GeometricTransformation, type_tag_to_etype, bounding_box, HyperRectangle, center, diameter, radius
 
 end # module

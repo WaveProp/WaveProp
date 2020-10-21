@@ -44,3 +44,13 @@ end
         @test isapprox(V,sum(Q.weights);atol=0.1)
     end
 end
+
+@testset "Nystrom mesh" begin
+    @testset "Cube" begin
+        (lx,ly,lz) = widths = (1.,1.,2.)
+        Ω, M  = WaveProp.IO.gmsh_box(;widths=widths)
+        qrule = Gauss{ReferenceTriangle,3}()
+        mesh  = NystromMesh(M,qrule)
+        @test length(mesh) == 3 * length(elements(mesh))
+    end
+end

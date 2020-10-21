@@ -16,6 +16,8 @@ ambient_dimension(M::AbstractMesh{N}) where {N} = N
 
 Base.eltype(M::AbstractMesh{N,T}) where {N,T} = T
 
+Base.length(mesh::AbstractMesh) = length(nodes(mesh))
+
 """
     struct GenericMesh{N,T} <: AbstractMesh{N,T}
 
@@ -37,6 +39,10 @@ end
 Return the element types contained in the mesh.
 """
 etypes(M::GenericMesh) = [type_tag_to_etype[i] for i in M.etypes]
+
+function elements(mesh::GenericMesh,E::Type{<:AbstractElement})
+    return ElementIterator{E}(mesh)
+end    
 
 struct ElementIterator{E,M}
     mesh::M
@@ -80,13 +86,12 @@ Generate a quadrature using `qrule` for all elements of `M` having dimension
 `dim`. The flag `need_normal` controls whether the normal at each quadrature
 node is computed and stored.
 """
-function quadgen(M::GenericMesh,qrule;dim=ambient_dimension(M),need_normal=false)
-    N,T = ambient_dimension(M), eltype(M)
+function quadgen(mesh::GenericMesh,qrule;dim=ambient_dimension(mesh),need_normal=false)
+    N,T = ambient_dimension(mesh), eltype(mesh)
     Q = GenericQuadrature{N,T}()
-    for (i,E) in enumerate(etypes(M))
+    for (i,E) in enumerate(etypes(mesh))
         geometric_dimension(E) == dim || continue 
-        iter     = ElementIterator{E}(M)
-        for el in iter
+        for el in elements(mesh,E)
             @assert domain(el) == domain(qrule)
             x̂,ŵ = qrule()
             x,w = push_forward_map(el,x̂,ŵ)
@@ -101,34 +106,83 @@ function quadgen(M::GenericMesh,qrule;dim=ambient_dimension(M),need_normal=false
     return Q   
 end    
 
-struct NystromMesh{N,T} 
+struct NystromMesh{N,T} <: AbstractMesh{N,T}
     elements::Vector{AbstractElement}
     quadrature::GenericQuadrature{N,T}
+    el2quad::Vector{Vector{Int}} # map from element to idx of quadrature nodes for that element
 end    
 
-function NystromMesh(M::GenericMesh,qrule;dim=ambient_dimension(M)-1)
-    N,T = ambient_dimension(M), eltype(M)
+function NystromMesh(mesh::GenericMesh,qrule;dim=ambient_dimension(mesh)-1)
+    N,T = ambient_dimension(mesh), eltype(mesh)
     Q = GenericQuadrature{N,T}()
     els = Vector{AbstractElement}()
-    for (i,etype) in enumerate(etypes(M))
+    el2quad = Vector{Vector{Int}}()
+    for (i,etype) in enumerate(etypes(mesh))
         geometric_dimension(etype) == dim || continue 
-        tags     = M.el2vtx[i]  # Np × Nel matrix
+        tags     = mesh.el2vtx[i]  # Np × Nel matrix
         Np, Nel  = size(tags)   # num of pts per element, num. of elements
         for n in 1:Nel
-            el_vtx = M.vtx[tags[:,n]] # get the coordinates of nodes in this element
+            el_vtx = mesh.vtx[tags[:,n]] # get the coordinates of nodes in this element
             el  = etype(el_vtx)       # construct the element
             push!(els,el)
             @assert domain(el) == domain(qrule)
             x̂,ŵ = qrule()
             x,w = push_forward_map(el,x̂,ŵ)
+            nquad = length(x)
+            idxs  = length(Q.nodes) .+ (collect(1:nquad))
+            push!(el2quad,idxs)
             append!(Q.nodes,x)
             append!(Q.weights,w)
             n⃗ = map(u->normal(el,u),x̂) 
             append!(Q.normals,n⃗)
         end    
     end 
-    return NystromMesh{N,T}(els,Q)
+    return NystromMesh{N,T}(els,Q,el2quad)
 end    
+
+
+"""
+    nearest_element_list(X,Y;[tol])
+
+Return a vector of integers, where the `i` entry of the vector gives the index of the nearest element in `Y` to the *ith*-node.
+
+An optional keywork argument `tol` can be passed so that only elements which are closer than `tol` are considered. If a node `x ∈ X` with index `i` has no element in `Y` closer than `tol`, the value -1 is stored indicating such a case.
+"""
+function nearest_element_list(X::NystromMesh,Y::NystromMesh; tol=0)
+    n,m  = length(X),length(Y)
+    list = fill(-1,n) # idxel of nearest element for each x ∈ X. -1 means there is not element in `Y` closer than `tol`
+    xnodes = nodes(X)
+    ynodes = nodes(Y)
+    in2e   = _idx_nodes_to_elements(Y)
+    if X == Y
+        # special case (which arises often for integral operators) where X==Y.
+        # No distance computation is needed then
+        for i=1:n
+            @assert length(in2e[i]) == 1
+            list[i] = in2e[i] |>  first
+        end
+    else
+        @notimplemented
+    end
+    return list
+end
+
+"""
+    _idx_nodes_to_elements(q::NystromMesh)
+
+For each node in `q`, return the indices of the elements to which it belongs.
+
+Depending on the quadrature type, more efficient methods can be defined and overloaded if needed.
+"""
+function _idx_nodes_to_elements(mesh::NystromMesh)
+    list = [Int[] for _ in 1:length(mesh)]
+    for n in 1:length(mesh.el2quad)
+        for i in mesh.el2quad[n]
+            push!(list[i],n)
+        end
+    end
+    return list
+end
 
 nodes(m::NystromMesh)    = m.quadrature.nodes
 normals(m::NystromMesh)  = m.quadrature.normals

@@ -2,6 +2,7 @@
 function (SL::SingleLayerKernel{T,Laplace{N}})(x,y)::T  where {N,T}
     r = x - y
     d = norm(r)
+    d == 0 && (return zero(T))
     if N==2
         return -1/(2π)*log(d)
     elseif N==3
@@ -13,6 +14,7 @@ end
 function (DL::DoubleLayerKernel{T,Laplace{N}})(x,y,ny)::T where {N,T}
     r = x - y
     d = norm(r)
+    d == 0 && (return zero(T))
     if N==2
         return 1/(2π)/(d^2) .* dot(r,ny)
     elseif N==3
@@ -24,6 +26,7 @@ end
 function (ADL::AdjointDoubleLayerKernel{T,Laplace{N}})(x,y,nx)::T where {N,T}
     r = x - y
     d = norm(r)
+    d == 0 && (return zero(T))
     if N==2
         return -1/(2π)/(d^2) .* dot(r,nx)
     elseif N==3
@@ -35,6 +38,7 @@ end
 function (HS::HyperSingularKernel{T,Laplace{N}})(x,y,nx,ny)::T where {N,T}
     r = x - y
     d = norm(r)
+    d == 0 && (return zero(T))
     if N==2
         ID = Mat{2,2,Float64,4}(1,0,0,1)
         RRT = r*transpose(r) # r ⊗ rᵗ

@@ -21,9 +21,4 @@ include("density.jl")
 include("potential.jl")
 include("integraloperators.jl")
 
-# include("traits.jl")
-# include("kernels.jl")
-# include("helmholtz.jl")
-# include("integraloperator.jl")
-
 end # module

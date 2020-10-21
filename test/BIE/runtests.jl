@@ -10,3 +10,5 @@ using SafeTestsets
 
 @safetestset "Operator tests" begin include("integraloperator_test.jl") end
 
+@safetestset "Density interpolation tests" begin include("densityinterpolation_test.jl") end
+

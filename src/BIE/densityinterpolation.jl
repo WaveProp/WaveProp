@@ -200,5 +200,3 @@ function SparseArrays.sparse(c::GreensCorrection)
     end
     return sparse(I,J,V,m,n)
 end
-
-

@@ -1,6 +1,7 @@
 using WaveProp
 using WaveProp.Geometry
 using WaveProp.IO
+using WaveProp.Mesh
 
 @testset "Sphere geo" begin
     # Test the simple sphere geometry

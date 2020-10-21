@@ -21,6 +21,8 @@ include("Geometry/Geometry.jl")
 
 include("Integration/Integration.jl")
 
+include("Mesh/Mesh.jl")
+
 include("BIE/BIE.jl")
 
 include("FEM/FEM.jl")

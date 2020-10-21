@@ -6,6 +6,7 @@ module IO
     using Printf
     
     using WaveProp.Geometry    
+    using WaveProp.Mesh
     using WaveProp.Utils
 
     export read_geo

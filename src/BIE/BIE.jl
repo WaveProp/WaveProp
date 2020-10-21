@@ -7,6 +7,7 @@ using IterativeSolvers
 
 using WaveProp.Geometry
 using WaveProp.Integration 
+using WaveProp.Mesh
 
 import WaveProp.Geometry: geometric_dimension, ambient_dimension, domain, range
 
@@ -16,7 +17,6 @@ include("pde.jl")
 include("kernels.jl")
 include("laplace.jl")
 include("helmholtz.jl")
-include("mesh.jl")
 include("density.jl")
 include("potential.jl")
 include("integraloperators.jl")

@@ -5,7 +5,6 @@ Read a `.geo` file and generate a domain [`Ω::Domain`](@ref) of dimension `d`.
 """
 function read_geo(fname, dim=3)
     assert_extension(fname, ".geo")    
-    occursin(r".geo$", fname) || error(msg)
     gmsh.initialize()
     gmsh.open(fname)    
     Ω = _initialize_domain(dim)

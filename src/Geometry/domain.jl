@@ -23,9 +23,9 @@ struct ElementaryEntity
 end
 
 """
-    ElementarytEntity(dim,tag)
+    ElementaryEntity(dim,tag)
 
-Construct an [`ElementarytEntity`](@ref) with an empty boundary .
+Construct an [`ElementaryEntity`](@ref) with an empty boundary .
 """
 function ElementaryEntity(dim,tag)
     ElementaryEntity(dim,tag,ElementaryEntity[])

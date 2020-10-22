@@ -53,7 +53,7 @@ end
         x,w = q()
         @test sum(w) ≈ 1/6
     end
-    # FIXME: check that we integrate all monomoial up to `order`
+    # FIXME: check that we integrate all monomials up to `order`
 end
 
 @testset "Tensor product quad on square" begin

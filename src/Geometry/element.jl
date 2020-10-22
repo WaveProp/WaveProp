@@ -3,10 +3,10 @@
     
 A reference polygon of dimension `N`.
 
-Reference shapes are used mostly for dispatch purposes when defining instances of an 
-[`AbstractElement`](@ref). 
+Reference shapes are used mostly for dispatch purposes when defining
+instances of an [`AbstractElement`](@ref).
 
-See e.g. [`ReferenceLine`](@ref) or [`ReferenceTriangle`](@ref) for 
+See e.g. [`ReferenceLine`](@ref) or [`ReferenceTriangle`](@ref) for
 """
 abstract type AbstractReferenceShape{N} end
 
@@ -18,8 +18,8 @@ geometric_dimension(::AbstractReferenceShape{N}) where {N} = N
     
 Singleton type representing the `[0,1]` segment.
 """
-struct ReferenceLine <: AbstractReferenceShape{1} 
-end    
+struct ReferenceLine <: AbstractReferenceShape{1}
+end
 Base.in(x,::ReferenceLine) = 0 ≤ x[1] ≤ 1
 
 """
@@ -49,14 +49,15 @@ struct ReferenceTetrahedron <: AbstractReferenceShape{3}
 end    
 Base.in(x,::ReferenceTetrahedron) = 0 ≤ x[1] ≤ 1 && 0 ≤ x[2] ≤ 1 - x[1] && 0 ≤ x[3] ≤ 1 - x[1] - x[2]
 
-# TODO: generalize structs above to `RefereceSimplex{N}` and `RefereceCuboid{N}`
+# TODO: generalize structs above to `ReferenceSimplex{N}` and `ReferenceCuboid{N}`
 
 """
     abstract type AbstractElement{R,N}
 
-Abstract shape given by the image of a parametrization with domain `R<:AbstractReferenceShape`.
+Abstract shape given by the image of a parametrization with domain
+`R<:AbstractReferenceShape`.
 
-The type parameter `N` represnet the dimension of the embedding space. 
+The type parameter `N` represents the dimension of the embedding space.
 
 The dimension of the reference space can be obtained from `R`. 
 """
@@ -101,6 +102,11 @@ function push_forward_map(el,x̂,ŵ)
     end 
     return x,w
 end   
+# FIXME: the function above is somewhat inefficient when the ambient and
+# geometric dimensions of the element are the same. In that case `μ` simplifies
+# to the usual `|det(jac)|`. This should be easy to fix by checking e.g. whether
+# `jac` is a square matrix. Since these are static arrays there should be no
+# runtime overhead compared to the hand-written version
 
 """
     geometric_dimension(el::AbstractElement{R})

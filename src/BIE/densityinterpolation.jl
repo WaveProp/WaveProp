@@ -57,15 +57,15 @@ function GreensCorrection(iop::IntegralOperator,Op1,Op2,basis,γ₁_basis,σ)
     kernel,X,Y  = iop.kernel, iop.X, iop.Y
     op          = kernel.op
     m,n         = length(X),length(Y)
-    L           = Vector{Matrix{T}}(undef,length(Y.el2quad))
+    L           = Vector{Matrix{T}}(undef,length(Y.el2qnodes))
 
     nbasis      = length(basis)
 
     # compute matrix of basis evaluated on Y
     γ₀B     = Matrix{T}(undef,length(Y),nbasis)
     γ₁B     = Matrix{T}(undef,length(Y),nbasis)
-    ynodes   = nodes(Y)
-    ynormals = normals(Y)
+    ynodes   = qnodes(Y)
+    ynormals = qnormals(Y)
     @threads for k in 1:nbasis
         for i in 1:length(ynodes)
             γ₀B[i,k] = basis[k](ynodes[i])
@@ -73,8 +73,8 @@ function GreensCorrection(iop::IntegralOperator,Op1,Op2,basis,γ₁_basis,σ)
         end
     end
 
-    xnodes   = nodes(X)
-    xnormals = normals(X)
+    xnodes   = qnodes(X)
+    xnormals = qnormals(X)
     # integrate the basis over Y
     R  = Op1*γ₁B - Op2*γ₀B   
     if kernel_type(iop) isa Union{SingleLayer,DoubleLayer}
@@ -99,7 +99,7 @@ function GreensCorrection(iop::IntegralOperator,Op1,Op2,basis,γ₁_basis,σ)
     for i in 1:m # loop over rows
         idx_el = idxel_near[i]
         idx_el < 0 && continue
-        idx_nodes  = Y.el2quad[idx_el]
+        idx_nodes  = Y.el2qnodes[idx_el]
         ninterp    = length(idx_nodes)
         M          = Matrix{T}(undef,2*ninterp,nbasis)
         M[1:ninterp,:]     = γ₀B[idx_nodes,:]
@@ -111,7 +111,7 @@ end
 
 function _source_gen(iop::IntegralOperator,kfactor=5)
     Y      =  iop.Y
-    nquad  = mapreduce(x->length(x),max,Y.el2quad) # maximum number of quadrature nodes per element
+    nquad  = mapreduce(x->length(x),max,Y.el2qnodes) # maximum number of quadrature nodes per element
     nbasis = 3*nquad
     # construct source basis
     return _source_gen(iop,nbasis,kfactor=kfactor)
@@ -120,7 +120,7 @@ end
 function _source_gen(iop,nsources;kfactor)
     N      = ambient_dimension(iop)
     Y      = iop.Y
-    pts    = nodes(Y)
+    pts    = qnodes(Y)
     # create a bounding box
     bbox   = bounding_box(pts)
     xc     = center(bbox)
@@ -156,7 +156,7 @@ function precompute_weights_qr(c::GreensCorrection)
     for i in 1:size(c,1)
         idx_el    = c.idxel_near[i]
         idx_el < 0 && continue
-        idx_nodes = iop.Y.el2quad[idx_el]
+        idx_nodes = iop.Y.el2qnodes[idx_el]
         ninterp = length(idx_nodes)
         if !isassigned(F,idx_el)
             F[idx_el]  = qr(c.L[idx_el])
@@ -175,7 +175,7 @@ function Base.Matrix(c::GreensCorrection)
     for i in 1:size(c,1)
         idx_el    = c.idxel_near[i]
         idx_el < 0 && continue
-        idx_nodes = iop.Y.el2quad[idx_el]
+        idx_nodes = iop.Y.el2qnodes[idx_el]
         M[i,idx_nodes] = w[i]
     end
     return M

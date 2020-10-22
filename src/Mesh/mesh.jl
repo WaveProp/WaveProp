@@ -24,14 +24,33 @@ Base.length(mesh::AbstractMesh) = length(nodes(mesh))
 A simple data structure representing a generic mesh in an ambient space of dimension `N`, with data of type `T`. 
 """
 struct GenericMesh{N,T} <: AbstractMesh{N,T}
-    vtx::Vector{Point{N,T}}
+    nodes::Vector{Point{N,T}}
     # element types
     etypes::Vector{Int32}
-    # mapping from element type to indices of vtx in each element
-    el2vtx::Vector{Matrix{Int}}
+    # for each element type, the indices of nodes in each element
+    el2nodes::Vector{Matrix{Int}}
     # mapping from elementary entity to (etype,tags)
     ent2tags::Dict{ElementaryEntity,Dict{Int32,Vector{Int}}}
+    # quadrature info
+    qnodes::Vector{Point{N,T}}
+    qweights::Vector{T}
+    qnormals::Vector{Point{N,T}}
+    # for each element type, the indices of quadrature in each element
+    el2qnodes::Vector{Matrix{Int}}
 end
+
+function GenericMesh(nodes, etypes, el2nodes, ent2tag)
+    P = eltype(nodes)
+    N,T = length(P), eltype(P)
+    el2qnodes = Vector{Matrix{Int}}(undef,length(etypes))
+    GenericMesh{N,T}(nodes,etypes,el2nodes,ent2tag,P[],T[],P[],el2qnodes)
+end    
+
+nodes(m::GenericMesh)    = m.nodes
+qnodes(m::GenericMesh)   = m.qnodes
+qweights(m::GenericMesh) = m.qweights
+qnormals(m::GenericMesh) = m.qnormals
+
 
 """
     etypes(M::GenericMesh)
@@ -47,15 +66,14 @@ end
 struct ElementIterator{E,M}
     mesh::M
 end    
-ElementIterator{E}(mesh::M) where {E,M} = ElementIterator{E,M}(mesh)
+ElementIterator{E}(mesh::M) where {E,M<:AbstractMesh} = ElementIterator{E,M}(mesh)
 
-# Base.eltype(iter::ElementIterator{E}) where {E} = E
 Base.eltype(::Type{ElementIterator{E,M}}) where {E,M} = E
 
 function Base.length(iter::ElementIterator{<:Any,<:GenericMesh})
     i       = _compute_etype_index(iter)
-    tags    = iter.mesh.el2vtx[i]
-    Np, Nel = size(tags)            # num of pts per element, num. of elements
+    tags    = iter.mesh.el2nodes[i]
+    Np, Nel = size(tags)
     return Nel
 end    
 
@@ -69,78 +87,110 @@ function Base.iterate(iter::ElementIterator{<:Any,<:GenericMesh},state=1)
     E      = eltype(iter)    
     mesh   = iter.mesh    
     i      = _compute_etype_index(iter)
-    tags   = mesh.el2vtx[i]
+    tags   = mesh.el2nodes[i]
     if state > length(iter)
         return nothing
     else    
-        el_vtx = mesh.vtx[tags[:,state]] # get the coordinates of nodes in this element
-        el  = E(el_vtx)                  # construct the element
+        el_nodes = mesh.nodes[tags[:,state]] # get the coordinates of nodes in this element
+        el  = E(el_nodes)                    # construct the element
         return el, state+1
     end
 end    
 
 """
-    quadgen(M::GenericMesh,qrule;dim=ambient_dimension(M),need_normal=false)
+    _compute_quadrature!(msh::GenericMesh,E,qrule;need_normal=false)
 
-Generate a quadrature using `qrule` for all elements of `M` having dimension
-`dim`. The flag `need_normal` controls whether the normal at each quadrature
-node is computed and stored.
+For all elements of `msh` of type `E::Type{<:AbstractElement}`, use `qrule::AbstractQuadratureRule`
+to compute an element quadrature and push that information into `msh`. Set
+`need_normal=true` if the normal vector at the quadrature nodes should be computed.
 """
-function quadgen(mesh::GenericMesh,qrule;dim=ambient_dimension(mesh),need_normal=false)
+function _compute_quadrature!(mesh::GenericMesh,E,qrule;need_normal=false)
+    @assert domain(qrule) == domain(E) "quadrature rule must be defined on domain of element"    
     N,T = ambient_dimension(mesh), eltype(mesh)
-    Q = GenericQuadrature{N,T}()
-    for (i,E) in enumerate(etypes(mesh))
-        geometric_dimension(E) == dim || continue 
-        for el in elements(mesh,E)
-            @assert domain(el) == domain(qrule)
-            x̂,ŵ = qrule()
-            x,w = push_forward_map(el,x̂,ŵ)
-            append!(Q.nodes,x)
-            append!(Q.weights,w)
-            if need_normal==true
-                n⃗ = map(u->normal(el,u),x̂) 
-                append!(Q.normals,n⃗)
-            end
-        end    
-    end     
-    return Q   
-end    
-
-struct NystromMesh{N,T} <: AbstractMesh{N,T}
-    elements::Vector{AbstractElement}
-    quadrature::GenericQuadrature{N,T}
-    el2quad::Vector{Vector{Int}} # map from element to idx of quadrature nodes for that element
-end    
-
-function NystromMesh(mesh::GenericMesh,qrule;dim=ambient_dimension(mesh)-1)
-    N,T = ambient_dimension(mesh), eltype(mesh)
-    Q = GenericQuadrature{N,T}()
-    els = Vector{AbstractElement}()
-    el2quad = Vector{Vector{Int}}()
-    for (i,etype) in enumerate(etypes(mesh))
-        geometric_dimension(etype) == dim || continue 
-        tags     = mesh.el2vtx[i]  # Np × Nel matrix
-        Np, Nel  = size(tags)   # num of pts per element, num. of elements
-        for n in 1:Nel
-            el_vtx = mesh.vtx[tags[:,n]] # get the coordinates of nodes in this element
-            el  = etype(el_vtx)       # construct the element
-            push!(els,el)
-            @assert domain(el) == domain(qrule)
-            x̂,ŵ = qrule()
-            x,w = push_forward_map(el,x̂,ŵ)
-            nquad = length(x)
-            idxs  = length(Q.nodes) .+ (collect(1:nquad))
-            push!(el2quad,idxs)
-            append!(Q.nodes,x)
-            append!(Q.weights,w)
+    i   = findfirst(x -> x==E, etypes(mesh))
+    i == nothing && (return mesh)
+    x̂,ŵ = qrule() # quadrature on reference element
+    nq  = length(x̂) # number of qnodes per element
+    el2qnodes = Int[]
+    for el in elements(mesh,E)
+        x,w = push_forward_map(el,x̂,ŵ)
+        # compute indices of quadrature nodes in this element
+        qidxs  = length(mesh.qnodes) .+ (1:nq) |> collect
+        append!(el2qnodes,qidxs)
+        append!(mesh.qnodes,x)
+        append!(mesh.qweights,w)
+        if need_normal==true
             n⃗ = map(u->normal(el,u),x̂) 
-            append!(Q.normals,n⃗)
-        end    
-    end 
-    return NystromMesh{N,T}(els,Q,el2quad)
+            append!(mesh.qnormals,n⃗)
+        end
+    end
+    el2qnodes = reshape(el2qnodes, nq, :)
+    mesh.el2qnodes[i] = el2qnodes
+    return mesh   
 end    
 
-nodes(m::NystromMesh)    = m.quadrature.nodes
-normals(m::NystromMesh)  = m.quadrature.normals
-weights(m::NystromMesh)  = m.quadrature.weights
-elements(m::NystromMesh) = m.elements
+function _compute_quadrature!(mesh::GenericMesh,e2qrule::Dict;need_normal=false)
+    for (E,qrule) in e2qrule
+        _compute_quadrature!(mesh,E,qrule;need_normal)    
+    end
+    return mesh
+end    
+
+"""
+    compute_quadrature!(mesh;order,dim,need_normal=false)
+
+Compute a quadrature of a desired `order` for all elements of dimension `dim`.
+Set `need_normal=true` if the normal at the quadrature nodes is to be computed.
+"""
+function compute_quadrature!(mesh::GenericMesh;order,dim,need_normal=false)
+    dict = Dict()
+    @assert allunique(etypes(mesh))
+    for E in etypes(mesh)
+        geometric_dimension(E) == dim || continue
+        ref = domain(E)
+        qrule = _qrule_for_reference_element(ref,order)
+        push!(dict,E=>qrule)
+    end
+    _compute_quadrature!(mesh,dict;need_normal)
+    return mesh
+end 
+
+"""
+    _qrule_for_reference_element(ref,order)
+
+Given a `ref`erence element and a desired quadrature `order`, return 
+an appropiate quadrature rule.
+"""
+function _qrule_for_reference_element(ref,order)
+    if ref isa ReferenceLine
+        n = (order + 1)/2 |> ceil
+        qrule = GaussLegendre{n}()
+    elseif ref isa ReferenceSquare
+        n  = (order + 1)/2 |> ceil
+        qx = GaussLegendre{n}()
+        qy = qx
+        qrule = TensorProduct(qx,qy)
+    elseif ref isa ReferenceTriangle
+        if order <= 1
+            return Gauss(ref,n=1) 
+        elseif order <=2
+            return Gauss(ref,n=3)     
+        else
+            @notimplemented    
+        end
+    elseif ref isa ReferenceTetrahedron
+        if order <= 1
+            return Gauss(ref;n=1) 
+        elseif order <=2
+            return Gauss(ref;n=4)
+        else
+            @notimplemented    
+        end
+    end    
+end    
+
+
+
+
+
+

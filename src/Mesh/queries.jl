@@ -5,11 +5,11 @@ Return a vector of integers, where the `i` entry of the vector gives the index o
 
 An optional keywork argument `tol` can be passed so that only elements which are closer than `tol` are considered. If a node `x ∈ X` with index `i` has no element in `Y` closer than `tol`, the value -1 is stored indicating such a case.
 """
-function nearest_element_list(X::NystromMesh,Y::NystromMesh; tol=0)
+function nearest_element_list(X,Y; tol=0)
     n,m  = length(X),length(Y)
     list = fill(-1,n) # idxel of nearest element for each x ∈ X. -1 means there is not element in `Y` closer than `tol`
-    xnodes = nodes(X)
-    ynodes = nodes(Y)
+    xnodes = qnodes(X)
+    ynodes = qnodes(Y)
     in2e   = _idx_nodes_to_elements(Y)
     if X == Y
         # special case (which arises often for integral operators) where X==Y.
@@ -25,14 +25,14 @@ function nearest_element_list(X::NystromMesh,Y::NystromMesh; tol=0)
 end
 
 """
-    _idx_nodes_to_elements(q::NystromMesh)
+    _idx_nodes_to_elements(mesh)
 
 For each node in `q`, return the indices of the elements to which it belongs.
 
 Depending on the quadrature type, more efficient methods can be defined and overloaded if needed.
 """
-function _idx_nodes_to_elements(mesh::NystromMesh)
-    list = [Int[] for _ in 1:length(mesh)]
+function _idx_nodes_to_elements(mesh)
+    list = [Int[] for _ in 1:length(qnodes(mesh))]
     for n in 1:length(mesh.el2quad)
         for i in mesh.el2quad[n]
             push!(list[i],n)

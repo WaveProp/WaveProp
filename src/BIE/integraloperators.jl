@@ -9,32 +9,34 @@ struct IntegralOperator{T,K,S,V} <: AbstractMatrix{T}
     X::S
     Y::V
 end
+
 IntegralOperator{T}(k,X,Y) where {T} = IntegralOperator{T,typeof(k),typeof(X),typeof(Y)}(k,X,Y)
+
 function IntegralOperator(k,X,Y=X)
     T = return_type(k)
     IntegralOperator{T}(k,X,Y)
 end
 
-Base.size(iop::IntegralOperator)      = (length(nodes(iop.X)), length(nodes(iop.Y)))
+Base.size(iop::IntegralOperator)      = (length(qnodes(iop.X)), length(qnodes(iop.Y)))
 
 kernel_type(iop::IntegralOperator) = kernel_type(iop.kernel)
 
 Base.getindex(iop::IntegralOperator,i::Integer,j::Integer)  = getindex(kernel_type(iop),iop,i,j)
 
 function Base.getindex(::SingleLayer,iop::IntegralOperator,i::Integer,j::Integer)
-    x,y,w = nodes(iop.X)[i], nodes(iop.Y)[j], weights(iop.Y)[j]
+    x,y,w = qnodes(iop.X)[i], qnodes(iop.Y)[j], qweights(iop.Y)[j]
     return iop.kernel(x,y)*w
 end
 function Base.getindex(::DoubleLayer,iop::IntegralOperator,i::Integer,j::Integer)
-    x,y,ny,w = nodes(iop.X)[i], nodes(iop.Y)[j], normals(iop.Y)[j], weights(iop.Y)[j]
+    x,y,ny,w = qnodes(iop.X)[i], qnodes(iop.Y)[j], qnormals(iop.Y)[j], qweights(iop.Y)[j]
     return iop.kernel(x,y,ny)*w
 end
 function Base.getindex(::AdjointDoubleLayer,iop::IntegralOperator,i::Integer,j::Integer)
-    x,y,nx,w = nodes(iop.X)[i], nodes(iop.Y)[j], normals(iop.X)[i], weights(iop.Y)[j]
+    x,y,nx,w = qnodes(iop.X)[i], qnodes(iop.Y)[j], qnormals(iop.X)[i], qweights(iop.Y)[j]
     return iop.kernel(x,y,nx)*w
 end
 function Base.getindex(::HyperSingular,iop::IntegralOperator,i::Integer,j::Integer)
-    x,y,nx,ny,w = nodes(iop.X)[i], nodes(iop.Y)[j], normals(iop.X)[i], normals(iop.Y)[j], weights(iop.Y)[j]
+    x,y,nx,ny,w = qnodes(iop.X)[i], qnodes(iop.Y)[j], qnormals(iop.X)[i], qnormals(iop.Y)[j], qweights(iop.Y)[j]
     return iop.kernel(x,y,nx,ny)*w
 end
 

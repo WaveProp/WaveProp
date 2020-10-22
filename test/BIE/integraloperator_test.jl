@@ -7,9 +7,8 @@ using WaveProp.Mesh
 
 @testset "Basic tests" begin
     pde   = Helmholtz(;dim=3,k=1)
-    Ω,M   = WaveProp.IO.gmsh_sphere(dim=2)
-    qrule = Gauss{ReferenceTriangle,3}()
-    mesh  = NystromMesh(M,qrule)
+    Ω,mesh   = WaveProp.IO.gmsh_sphere(dim=2)
+    compute_quadrature!(mesh;order=1,dim=2,need_normal=true)
     𝐒     = SingleLayerOperator(pde,mesh)
     𝐃     = DoubleLayerOperator(pde,mesh)
     @test BIE.kernel_type(𝐒) == BIE.SingleLayer()
@@ -27,9 +26,8 @@ end
     xout = Point(3,3,3)
     u    = (x)   -> SingleLayerKernel(pde)(xout,x)
     dudn = (x,n) -> DoubleLayerKernel(pde)(xout,x,n)
-    Ω,M   = WaveProp.IO.gmsh_sphere(dim=2,h=0.1)
-    qrule = Gauss{ReferenceTriangle,1}()
-    mesh  = NystromMesh(M,qrule)
+    Ω,mesh   = WaveProp.IO.gmsh_sphere(dim=2,h=0.1)
+    compute_quadrature!(mesh,order=1,dim=2,need_normal=true)
     γ₀u   = γ₀(u,mesh)
     γ₁u   = γ₁(dudn,mesh)
     𝐒     = SingleLayerOperator(pde,mesh) |> Matrix

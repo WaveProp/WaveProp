@@ -68,16 +68,16 @@ function _initialize_mesh(Ω::Domain)
     tags, coord, _ = gmsh.model.mesh.getNodes()
     pts    = reinterpret(SVector{3,Float64}, coord) |> collect
     etypes = gmsh.model.mesh.getElementTypes()
-    el2vtx = Vector{Matrix{Int}}(undef, length(etypes))
+    el2nodes = Vector{Matrix{Int}}(undef, length(etypes))
     for (i, etype) in enumerate(etypes)
         etags, ntags = gmsh.model.mesh.getElementsByType(etype)
         _, _, _, Np, rest = gmsh.model.mesh.getElementProperties(etype)
         ntags     = reshape(ntags, Int(Np), :)
-        el2vtx[i] = ntags
+        el2nodes[i] = ntags
     end    
     dict    = Dict{ElementaryEntity,Dict{Int32,Vector{Int}}}()
     ent2tag = _domain_to_mesh!(dict, Ω)
-    return GenericMesh(pts, etypes, el2vtx, ent2tag)
+    return GenericMesh(pts, etypes, el2nodes, ent2tag)
 end    
 
 """

@@ -129,22 +129,22 @@ abstract type PolynomialElement{R,N} <: AbstractElement{R,N} end
     struct LagrangeElement{R,Np,N,T}        
     
 Fields:
-    - `vtx`
+    - `nodes`
 
-A lagrange elemement is reprensented as a polynomial mapping the `Np` reference lagrangian nodes of the reference element `R` into `vtx`.
+A lagrange elemement is reprensented as a polynomial mapping the `Np` reference lagrangian nodes of the reference element `R` into `nodes`.
 
-The element's parametrization is fully determined by the image of the `Np` reference points, which are stored in `vtx`. 
+The element's parametrization is fully determined by the image of the `Np` reference points, which are stored in `nodes`. 
 """
 struct LagrangeElement{R,Np,N,T} <: PolynomialElement{R,N}
-    vtx::SVector{Np,Point{N,T}}
+    nodes::SVector{Np,Point{N,T}}
 end
 
-# a contructor which infers the extra information from vtx
-function LagrangeElement{R}(vtx::SVector{Np,Point{N,T}}) where {R,Np,N,T} 
-    LagrangeElement{R,Np,N,T}(vtx)
+# a contructor which infers the extra information from nodes
+function LagrangeElement{R}(nodes::SVector{Np,Point{N,T}}) where {R,Np,N,T} 
+    LagrangeElement{R,Np,N,T}(nodes)
 end
 
-get_vtx(el::LagrangeElement) = el.vtx
+get_nodes(el::LagrangeElement) = el.nodes
 
 get_order(el::LagrangeElement{ReferenceLine,Np}) where {Np} = Np + 1
 
@@ -202,22 +202,22 @@ function (el::LagrangeElement) end
 function (el::LagrangeElement{ReferenceLine,2})(u)
     @assert length(u) == 1
     @assert u ∈ ReferenceLine()    
-    vtx = get_vtx(el)
-    vtx[1] + (vtx[2] - vtx[1]) * u[1]    
+    nodes = get_nodes(el)
+    nodes[1] + (nodes[2] - nodes[1]) * u[1]    
 end    
 
 function (el::LagrangeElement{ReferenceTriangle,3})(u)
     @assert length(u) == 2    
     @assert u ∈ ReferenceTriangle()
-    vtx = get_vtx(el)
-    vtx[1] + (vtx[2] - vtx[1]) * u[1] + (vtx[3] - vtx[1]) * u[2]
+    nodes = get_nodes(el)
+    nodes[1] + (nodes[2] - nodes[1]) * u[1] + (nodes[3] - nodes[1]) * u[2]
 end 
 
 function (el::LagrangeElement{ReferenceTetrahedron,4})(u)
     @assert length(u) == 3    
     @assert u ∈ ReferenceTetrahedron()
-    vtx = get_vtx(el)
-    vtx[1] + (vtx[2] - vtx[1]) * u[1] + (vtx[3] - vtx[1]) * u[2] + (vtx[4] - vtx[1]) * u[3]
+    nodes = get_nodes(el)
+    nodes[1] + (nodes[2] - nodes[1]) * u[1] + (nodes[3] - nodes[1]) * u[2] + (nodes[4] - nodes[1]) * u[3]
 end 
 
 """
@@ -229,18 +229,18 @@ function jacobian(el::LagrangeElement{ReferenceLine,2}, u)
     N = dim(el)    
     @assert length(u) == 1
     @assert u ∈ ReferenceLine()    
-    vtx = get_vtx(el)
-    return SMatrix{N,1}((vtx[2] - vtx[1])...)
+    nodes = get_nodes(el)
+    return SMatrix{N,1}((nodes[2] - nodes[1])...)
 end    
 
 function jacobian(el::LagrangeElement{ReferenceTriangle,3}, u) 
     N = dim(el)
     @assert length(u) == 2    
     @assert u ∈ ReferenceTriangle()
-    vtx = get_vtx(el)
+    nodes = get_nodes(el)
     SMatrix{N,2}(
-        (vtx[2] - vtx[1])..., 
-        (vtx[3] - vtx[1])...
+        (nodes[2] - nodes[1])..., 
+        (nodes[3] - nodes[1])...
     )
 end 
 
@@ -248,11 +248,11 @@ function jacobian(el::LagrangeElement{ReferenceTetrahedron,4}, u)
     N = dim(el)    
     @assert length(u) == 3   
     @assert u ∈ ReferenceTriangle()
-    vtx = get_vtx(el)
+    nodes = get_nodes(el)
     SMatrix{N,3}( 
-        (vtx[2] - vtx[1])...,
-        (vtx[3] - vtx[1])...,
-        (vtx[4] - vtx[1])...
+        (nodes[2] - nodes[1])...,
+        (nodes[3] - nodes[1])...,
+        (nodes[4] - nodes[1])...
     )
 end 
 

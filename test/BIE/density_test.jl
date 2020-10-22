@@ -3,12 +3,12 @@ using WaveProp
 using WaveProp.BIE
 using WaveProp.Geometry
 using WaveProp.Integration
+using WaveProp.Mesh
 
 @testset "Density test" begin
     pde  = Helmholtz(;dim=3,k=1)
-    Ω,M  = WaveProp.IO.gmsh_sphere(dim=2)
-    qrule = Gauss{ReferenceTriangle,1}()
-    mesh  = NystromMesh(M,qrule)
+    Ω,mesh  = WaveProp.IO.gmsh_sphere(dim=2)
+    compute_quadrature!(mesh,order=1,dim=2)
     σ     = γ₀(x->x[1],mesh)
     @test eltype(σ) == Float64
     σ     = γ₀(x->exp(im*x[3]),mesh)

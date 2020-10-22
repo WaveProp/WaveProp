@@ -122,6 +122,8 @@ This is currently implemented for low values of `N` on triangles and tetrahedron
 """
 struct Gauss{D,N} <: AbstractQuadratureRule{D} end
 
+Gauss(ref;n) = Gauss{typeof(ref),n}()
+
 function (q::Gauss{ReferenceTriangle,N})() where {N}
     if N == 1
         x = svector(i->Point(1/3,1/3),1)

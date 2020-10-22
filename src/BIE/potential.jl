@@ -20,7 +20,7 @@ kernel_type(pot::IntegralPotential) = kernel_type(pot.kernel)
 function (pot::IntegralPotential)(::SingleLayer,σ::AbstractVector,x)
     f = pot.kernel
     Γ = pot.surface
-    iter = zip(nodes(Γ),weights(Γ),σ)
+    iter = zip(qnodes(Γ),qweights(Γ),σ)
     out = mapreduce(+,iter) do (y,w,σ)
         f(x,y)*σ*w
     end
@@ -29,7 +29,7 @@ end
 function (pot::IntegralPotential)(::DoubleLayer,σ::AbstractVector,x)
     f = pot.kernel
     Y = pot.surface
-    iter = zip(nodes(Y),weights(Y),normals(Y),σ)
+    iter = zip(qnodes(Y),qweights(Y),qnormals(Y),σ)
     out  = mapreduce(+,iter) do (y,w,ny,σ)
         f(x,y,ny)*σ*w
     end

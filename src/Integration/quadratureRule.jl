@@ -74,7 +74,7 @@ Exactly integrates all polynomials up to degree `2N-1`.
 struct GaussLegendre{N} <: AbstractQuadratureRule{ReferenceLine} end
 
 function (q::GaussLegendre{N})() where {N}
-    x,w = gausslegendre(N) # gives integral in [-1,1]. Converted to [0,1] below
+    x,w  = gauss(N) # gives integral in [-1,1]. Converted to [0,1] below
     xs   = svector(i->(0.5*(x[i]+1)),N) 
     ws   = svector(i->w[i]/2,N)
     return xs,ws

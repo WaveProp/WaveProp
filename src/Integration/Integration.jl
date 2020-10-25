@@ -10,7 +10,7 @@ module Integration
     
 using DocStringExtensions
 using StaticArrays
-using FastGaussQuadrature: gausslegendre
+using QuadGK
 using LinearAlgebra
 
 using WaveProp.Utils

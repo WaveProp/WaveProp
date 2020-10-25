@@ -150,6 +150,17 @@ function LagrangeElement{R}(nodes::SVector{Np,Point{N,T}}) where {R,Np,N,T}
     LagrangeElement{R,Np,N,T}(nodes)
 end
 
+LagrangeElement{R}(nodes...) where {R} = LagrangeElement{R}(SVector(nodes))
+
+# define some aliases for convenience
+const LagrangeLine        = LagrangeElement{ReferenceLine}
+const LagrangeTriangle    = LagrangeElement{ReferenceTriangle}
+const LagrangeTetrahedron = LagrangeElement{ReferenceTetrahedron}
+
+line(a,b) = LagrangeLine(a,b)
+triangle(a,b,c) = LagrangeTriangle(a,b,c)
+tetrahedron(a,b,c,d) = LagrangeTetrahedron(a,b,c,d)
+
 get_nodes(el::LagrangeElement) = el.nodes
 
 get_order(el::LagrangeElement{ReferenceLine,Np}) where {Np} = Np + 1
@@ -261,11 +272,6 @@ function jacobian(el::LagrangeElement{ReferenceTetrahedron,4}, u)
         (nodes[4] - nodes[1])...
     )
 end 
-
-# define some aliases for convenience
-const LagrangeLine        = LagrangeElement{ReferenceLine}
-const LagrangeTriangle    = LagrangeElement{ReferenceTriangle}
-const LagrangeTetrahedron = LagrangeElement{ReferenceTetrahedron}
 
 """
     abstract type ParametricElement{R,N} <: AbstractElement{R,N}

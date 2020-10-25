@@ -4,6 +4,7 @@ module IO
     using GmshSDK
     using StaticArrays
     using Printf
+    using RecipesBase
     
     using WaveProp.Geometry    
     using WaveProp.Mesh
@@ -13,5 +14,6 @@ module IO
     export read_msh
     
     include("gmshIO.jl")    
+    include("plotsIO.jl")    
     
 end

@@ -17,8 +17,16 @@ function (el::ExtrudedElement)(u)
     return base(el)(u[1:end-1]) + u[end]*d⃗
 end    
 
+function jacobian(el::ExtrudedElement,u)
+    @assert length(u) == geometric_dimension(el)
+    j = jacobian(base(el),u)
+    d⃗ = path(el)
+    return hcat(j,d⃗)    
+end    
+
 function boundary(el::ExtrudedElement)
     a,b = el |> base |> boundary
     d⃗   = path(el)
-    return el,line(b,b+d⃗),reverse(translate(el,d⃗)),line(a+d⃗,a)
+    τ   = base(el)
+    return τ,line(b,b+d⃗),reverse(translate(τ,d⃗)),line(a+d⃗,a)
 end    

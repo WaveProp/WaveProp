@@ -8,14 +8,16 @@ using LinearAlgebra
     d⃗ = normal(l,0.5)
     translate(l,d⃗)
     Ω = extrude(l,d⃗)
-    ∂Ω = boundary(Ω)
+    @test geometric_dimension(l) == 1
+    @test geometric_dimension(Ω) == 2
+    ∂Ω    = boundary(Ω)
     qrule = GaussLegendre{10}()
-    x,w = quadgen(bnd[1],qrule)
+    x,w = quadgen(∂Ω[1],qrule)
     @test sum(w) ≈  √2
-    x,w = quadgen(bnd[2],qrule)
+    x,w = quadgen(∂Ω[2],qrule)
     @test sum(w) ≈  norm(d⃗)
-    x,w = quadgen(bnd[3],qrule)
+    x,w = quadgen(∂Ω[3],qrule)
     @test sum(w) ≈  √2
-    x,w = quadgen(bnd[4],qrule)
+    x,w = quadgen(∂Ω[4],qrule)
     @test sum(w) ≈ norm(d⃗)
 end

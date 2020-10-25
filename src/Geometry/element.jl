@@ -63,6 +63,9 @@ The dimension of the reference space can be obtained from `R`.
 """
 abstract type AbstractElement{R,N} end
 
+const AbstractLine{N} = AbstractElement{ReferenceLine,N}
+const AbstractTriangle{N} = AbstractElement{ReferenceTriangle,N}
+
 """
     reference_element(el::AbstractElement)
 
@@ -124,9 +127,11 @@ Return the dimension of the ambient space where `el` lives.
 """
 ambient_dimension(el::AbstractElement{R,N}) where {R,N} = N
 
-const AbstractLine{N} = AbstractElement{ReferenceLine,N}
-
 boundary(el::AbstractLine) = el(0),el(1)
+
+function jacobian(el::AbstractLine,x;h=sqrt(eps()))
+    (el(u+h)-el(u))/h
+end    
 
 """
     abstract type PolynomialElement{R,M} <: AbstractElement{R,M}

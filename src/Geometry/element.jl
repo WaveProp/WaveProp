@@ -22,6 +22,8 @@ struct ReferenceLine <: AbstractReferenceShape{1}
 end
 Base.in(x,::ReferenceLine) = 0 ≤ x[1] ≤ 1
 
+center(::Type{ReferenceLine}) = 0.5
+
 """
     struct ReferenceTriangle
     
@@ -298,7 +300,22 @@ struct ParametricElement{R,N,F} <: AbstractParametricElement{R,N}
     parametrization::F    
 end
 
+function ParametricElement{R}(f) where {R}
+    F = typeof(f)
+    N = f(center(R)) |> length
+    return ParametricElement{R,N,F}(f)
+end  
+
 (el::ParametricElement)(u) = el.parametrization(u)
+
+# define some aliases for convenience
+const ParametricLine  = ParametricElement{ReferenceLine}
+
+# some useful shapes
+function circle(;center=Point(0,0),radius=1)
+    f = (u) -> center + Point(radius*cos(2π*u),radius*sin(2π*u))
+    ParametricLine(f)
+end    
 
 """
     const type_tag_to_etype

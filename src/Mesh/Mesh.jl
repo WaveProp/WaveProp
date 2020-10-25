@@ -22,7 +22,7 @@ import WaveProp.Integration: quadgen
 
 export GenericMesh, etypes, ElementIterator, nodes, qnodes, qweights, qnormals, elements, nearest_element_list, compute_quadrature!
 
-include("mesh.jl")
+include("meshes.jl")
 include("queries.jl")
 
 end

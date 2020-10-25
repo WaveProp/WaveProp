@@ -1,5 +1,5 @@
 # plot a vector of points
-@recipe function f(pts::Vector{Point{N}}) where {N}
+@recipe function f(pts::AbstractVector{<:Point{N}}) where {N}
     if N == 2
         xx = [pt[1] for pt in pts]    
         yy = [pt[2] for pt in pts]    

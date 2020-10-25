@@ -124,6 +124,10 @@ Return the dimension of the ambient space where `el` lives.
 """
 ambient_dimension(el::AbstractElement{R,N}) where {R,N} = N
 
+const AbstractLine{N} = AbstractElement{ReferenceLine,N}
+
+boundary(el::AbstractLine) = el(0),el(1)
+
 """
     abstract type PolynomialElement{R,M} <: AbstractElement{R,M}
     
@@ -161,7 +165,7 @@ line(a,b) = LagrangeLine(a,b)
 triangle(a,b,c) = LagrangeTriangle(a,b,c)
 tetrahedron(a,b,c,d) = LagrangeTetrahedron(a,b,c,d)
 
-get_nodes(el::LagrangeElement) = el.nodes
+nodes(el::LagrangeElement) = el.nodes
 
 get_order(el::LagrangeElement{ReferenceLine,Np}) where {Np} = Np + 1
 
@@ -219,22 +223,22 @@ function (el::LagrangeElement) end
 function (el::LagrangeElement{ReferenceLine,2})(u)
     @assert length(u) == 1
     @assert u ∈ ReferenceLine()    
-    nodes = get_nodes(el)
-    nodes[1] + (nodes[2] - nodes[1]) * u[1]    
+    x = nodes(el)
+    x[1] + (x[2] - x[1]) * u[1]    
 end    
 
 function (el::LagrangeElement{ReferenceTriangle,3})(u)
     @assert length(u) == 2    
     @assert u ∈ ReferenceTriangle()
-    nodes = get_nodes(el)
-    nodes[1] + (nodes[2] - nodes[1]) * u[1] + (nodes[3] - nodes[1]) * u[2]
+    x = nodes(el)
+    x[1] + (x[2] - x[1]) * u[1] + (x[3] - x[1]) * u[2]
 end 
 
 function (el::LagrangeElement{ReferenceTetrahedron,4})(u)
     @assert length(u) == 3    
     @assert u ∈ ReferenceTetrahedron()
-    nodes = get_nodes(el)
-    nodes[1] + (nodes[2] - nodes[1]) * u[1] + (nodes[3] - nodes[1]) * u[2] + (nodes[4] - nodes[1]) * u[3]
+    x = nodes(el)
+    x[1] + (x[2] - x[1]) * u[1] + (x[3] - x[1]) * u[2] + (x[4] - x[1]) * u[3]
 end 
 
 """
@@ -246,18 +250,18 @@ function jacobian(el::LagrangeElement{ReferenceLine,2}, u)
     N = dim(el)    
     @assert length(u) == 1
     @assert u ∈ ReferenceLine()    
-    nodes = get_nodes(el)
-    return SMatrix{N,1}((nodes[2] - nodes[1])...)
+    x = nodes(el)
+    return SMatrix{N,1}((x[2] - x[1])...)
 end    
 
 function jacobian(el::LagrangeElement{ReferenceTriangle,3}, u) 
     N = dim(el)
     @assert length(u) == 2    
     @assert u ∈ ReferenceTriangle()
-    nodes = get_nodes(el)
+    x = nodes(el)
     SMatrix{N,2}(
-        (nodes[2] - nodes[1])..., 
-        (nodes[3] - nodes[1])...
+        (x[2] - x[1])..., 
+        (x[3] - x[1])...
     )
 end 
 
@@ -265,11 +269,11 @@ function jacobian(el::LagrangeElement{ReferenceTetrahedron,4}, u)
     N = dim(el)    
     @assert length(u) == 3   
     @assert u ∈ ReferenceTriangle()
-    nodes = get_nodes(el)
+    x = nodes(el)
     SMatrix{N,3}( 
-        (nodes[2] - nodes[1])...,
-        (nodes[3] - nodes[1])...,
-        (nodes[4] - nodes[1])...
+        (x[2] - x[1])...,
+        (x[3] - x[1])...,
+        (x[4] - x[1])...
     )
 end 
 

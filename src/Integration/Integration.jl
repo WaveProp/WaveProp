@@ -18,7 +18,7 @@ using WaveProp.Geometry
 
 import WaveProp.Geometry: domain, range, ambient_dimension, geometric_dimension
 
-export integrate, quadgen, Gauss, Trapezoidal, Fejer, GaussLegendre, GenericQuadrature, TensorProduct, lebedev_points
+export integrate, quadgen, Gauss, Trapezoidal, Fejer, GaussLegendre, GenericQuadrature, TensorProduct, lebedev_points, qnodes, qweights, qnormals
 
 include("quadratureRule.jl")
 include("lebedev.jl")

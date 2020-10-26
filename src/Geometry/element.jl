@@ -131,7 +131,7 @@ ambient_dimension(el::AbstractElement{R,N}) where {R,N} = N
 
 boundary(el::AbstractLine) = el(0),el(1)
 
-function jacobian(el::AbstractLine,x;h=sqrt(eps()))
+function jacobian(el::AbstractLine,u;h=sqrt(eps()))
     (el(u+h)-el(u))/h
 end    
 
@@ -313,7 +313,7 @@ const ParametricLine  = ParametricElement{ReferenceLine}
 
 # some useful shapes
 function circle(;center=Point(0,0),radius=1)
-    f = (u) -> center + Point(radius*cos(2π*u),radius*sin(2π*u))
+    f = (u) -> center + Point(radius*sin(2π*u),radius*cos(2π*u))
     ParametricLine(f)
 end    
 

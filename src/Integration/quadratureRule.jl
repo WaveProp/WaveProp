@@ -196,3 +196,36 @@ end
 #     end 
 #     return x,w
 # end    
+
+function push_forward_quad(cov,qrule)
+    @assert domain(cov) == domain(qrule)
+    x̂,ŵ = qrule()
+    _push_forward_quad(cov,x̂,ŵ)
+end
+
+function _push_forward_quad(cov,x̂,ŵ)
+    x   = map(x->cov(x),x̂)
+    w   = map(zip(x̂,ŵ)) do (x̂,ŵ)
+        jac = jacobian(cov,x̂)
+        g   = transpose(jac)*jac |> det
+        sqrt(g)*prod(ŵ)
+    end 
+    return x,w
+end
+# FIXME: the function above is somewhat inefficient when the ambient and
+# geometric dimensions of the element are the same. In that case `μ` simplifies
+# to the usual `|det(jac)|`. This should be easy to fix by checking e.g. whether
+# `jac` is a square matrix. Since these are static arrays there should be no
+# runtime overhead compared to the hand-written version
+
+function push_forward_quad_with_normal(el,qrule)
+    @assert domain(el) == domain(qrule)    
+    x̂,ŵ = qrule()
+    _push_forward_quad_with_normal(el,x̂,ŵ)
+end
+
+function _push_forward_quad_with_normal(el,x̂,ŵ)
+    x,w = _push_forward_quad(el,x̂,ŵ)
+    ν   = map(x->normal(el,x),x̂)
+    return x,w,ν
+end

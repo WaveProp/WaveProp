@@ -13,8 +13,7 @@ function quadgen(el::AbstractElement,qrule)
     # generate a quadrature on the reference element    
     msg = "the domain of `qrule` must coincide with the domain `el`"
     @assert domain(el) == domain(qrule) msg
-    x̂,ŵ = qrule()
     # modify the quadrature using the push-forward map
-    x,w = push_forward_map(el,x̂,ŵ)
+    x,w = push_forward_quad(el,qrule)
     return x,w
 end    

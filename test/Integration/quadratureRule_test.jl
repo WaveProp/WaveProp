@@ -73,7 +73,7 @@ end
     x̂,ŵ    = qrule()
     e1 = integrate(log,x̂,ŵ) + 1 |> abs
     cov = IMT()
-    x,w = push_forward_map(cov,x̂,ŵ)
+    x,w = push_forward_quad(cov,qrule)
     e2  = integrate(log,x,w) + 1 |> abs
     @test e2 < e1
 end
@@ -90,7 +90,7 @@ end
         d = sqrt((x[1]-1)^2 + x[2]^2)
         log(d)
     end       
-    x,w   = push_forward_map(cov,x̂,ŵ)
+    x,w   = push_forward_quad(cov,qrule)
     e2 = integrate(x,w) do x
         d = sqrt((x[1]-1)^2 + x[2]^2)
         log(d)

@@ -16,28 +16,17 @@ qnormals(q::GenericQuadrature) = q.normals
 
 function GenericQuadrature{N,T}(els::Tuple,qrule) where {N,T}
     q = GenericQuadrature{N,T}()
-    x̂,ŵ = qrule()
     for el in els
-        x,w,n = _push_forward_quad_with_normal(el,x̂,ŵ)
+        x,w,ν = push_forward_quad_with_normal(el,qrule)
         append!(q.nodes,x)
         append!(q.weights,w)
-        append!(q.normals,n)
+        append!(q.normals,ν)
     end    
     return q
 end    
 
-function _push_forward_quad(el,x̂,ŵ)
-    x   = map(x->el(x),x̂)
-    w   = map(zip(x̂,ŵ)) do (x̂,ŵ)
-        jac = jacobian(el,x̂)
-        g   = transpose(jac)*jac |> det
-        sqrt(g)*prod(ŵ)
-    end 
-    return x,w
-end    
-
-function _push_forward_quad_with_normal(el,x̂,ŵ)
-    x,w = _push_forward_quad(el,x̂,ŵ)
-    n   = map(x->normal(el,x),x̂)
-    return x,w,n
+struct SQuadrature{M,N,T}
+    nodes::SVector{M,Point{N,T}}
+    weights::SVector{M,T}
+    normals::SVector{M,Point{N,T}}
 end    

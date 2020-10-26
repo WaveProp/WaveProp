@@ -96,22 +96,7 @@ function normal(el::AbstractElement,u)
     end            
 end    
 
-push_forward_map(el,x̂) = map(el,x̂)
-
-function push_forward_map(el,x̂,ŵ)
-    x   = push_forward_map(el,x̂)
-    w   = map(zip(x̂,ŵ)) do (x̂,ŵ)
-        jac = jacobian(el,x̂)
-        g   = transpose(jac)*jac |> det
-        sqrt(g)*prod(ŵ)
-    end 
-    return x,w
-end   
-# FIXME: the function above is somewhat inefficient when the ambient and
-# geometric dimensions of the element are the same. In that case `μ` simplifies
-# to the usual `|det(jac)|`. This should be easy to fix by checking e.g. whether
-# `jac` is a square matrix. Since these are static arrays there should be no
-# runtime overhead compared to the hand-written version
+push_forward(el,x̂) = map(el,x̂)
 
 """
     geometric_dimension(el::AbstractElement{R})

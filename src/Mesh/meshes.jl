@@ -108,12 +108,12 @@ function _compute_quadrature!(mesh::GenericMesh,E,qrule;need_normal=false)
     @assert domain(qrule) == domain(E) "quadrature rule must be defined on domain of element"    
     N,T = ambient_dimension(mesh), eltype(mesh)
     i   = findfirst(x -> x==E, etypes(mesh))
-    i == nothing && (return mesh)
+    i === nothing && (return mesh)
     x̂,ŵ = qrule() # quadrature on reference element
     nq  = length(x̂) # number of qnodes per element
     el2qnodes = Int[]
     for el in elements(mesh,E)
-        x,w = push_forward_map(el,x̂,ŵ)
+        x,w = push_forward_quad(el,qrule)
         # compute indices of quadrature nodes in this element
         qidxs  = length(mesh.qnodes) .+ (1:nq) |> collect
         append!(el2qnodes,qidxs)

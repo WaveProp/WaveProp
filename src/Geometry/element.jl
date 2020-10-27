@@ -146,16 +146,21 @@ function LagrangeElement{R}(nodes::SVector{Np,Point{N,T}}) where {R,Np,N,T}
     LagrangeElement{R,Np,N,T}(nodes)
 end
 
-LagrangeElement{R}(nodes...) where {R} = LagrangeElement{R}(SVector(nodes))
+function LagrangeElement{R}(nodes...) where {R} 
+    nodes = SVector.(nodes)
+    LagrangeElement{R}(SVector(nodes))
+end
 
 # define some aliases for convenience
 const LagrangeLine        = LagrangeElement{ReferenceLine}
 const LagrangeTriangle    = LagrangeElement{ReferenceTriangle}
 const LagrangeTetrahedron = LagrangeElement{ReferenceTetrahedron}
+const LagrangeRectangle   = LagrangeElement{ReferenceSquare}
 
 line(a,b) = LagrangeLine(a,b)
 triangle(a,b,c) = LagrangeTriangle(a,b,c)
 tetrahedron(a,b,c,d) = LagrangeTetrahedron(a,b,c,d)
+rectangle(a,b,c,d) = LagrangeRectangle(a,b,c,d)
 
 nodes(el::LagrangeElement) = el.nodes
 
@@ -212,6 +217,16 @@ Evaluate the underlying parametrization of the element `el` at point `x`. This i
 """
 function (el::LagrangeElement) end
 
+# FIXME: for a line in 1d, it seems more convenient to return a Number instead
+# of a SVector of length(1). How should we handle this in general?
+function (el::LagrangeElement{ReferenceLine,2,1})(u)
+    @assert length(u) == 1
+    @assert u ∈ ReferenceLine()    
+    x = nodes(el)
+    out = x[1] + (x[2] - x[1]) * u[1]    
+    return out[1]
+end    
+
 function (el::LagrangeElement{ReferenceLine,2})(u)
     @assert length(u) == 1
     @assert u ∈ ReferenceLine()    
@@ -224,6 +239,13 @@ function (el::LagrangeElement{ReferenceTriangle,3})(u)
     @assert u ∈ ReferenceTriangle()
     x = nodes(el)
     x[1] + (x[2] - x[1]) * u[1] + (x[3] - x[1]) * u[2]
+end 
+
+function (el::LagrangeElement{ReferenceSquare,4})(u)
+    @assert length(u) == 2    
+    @assert u ∈ ReferenceSquare()
+    x = nodes(el)
+    x[1] + (x[2] - x[1]) * u[1] + (x[4] - x[1]) * u[2] + (x[3]+x[1]-x[2]-x[4]) * u[1]*u[2]
 end 
 
 function (el::LagrangeElement{ReferenceTetrahedron,4})(u)
@@ -254,6 +276,17 @@ function jacobian(el::LagrangeElement{ReferenceTriangle,3}, u)
     SMatrix{N,2}(
         (x[2] - x[1])..., 
         (x[3] - x[1])...
+    )
+end 
+
+function jacobian(el::LagrangeElement{ReferenceSquare,4},u)
+    N = ambient_dimension(el)
+    @assert length(u) == 2    
+    @assert u ∈ ReferenceSquare()
+    x = nodes(el)
+    hcat(
+        ((x[2] - x[1]) + (x[3]+x[1]-x[2]-x[4])*u[2]),
+        ((x[4] - x[1]) + (x[3]+x[1]-x[2]-x[4])*u[1])
     )
 end 
 

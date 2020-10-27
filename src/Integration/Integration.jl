@@ -13,6 +13,8 @@ using StaticArrays
 using QuadGK
 using LinearAlgebra
 
+import QuadGK: quadgk
+
 using WaveProp.Utils
 using WaveProp.Geometry
 
@@ -24,5 +26,6 @@ include("quadratureRule.jl")
 include("lebedev.jl")
 include("quadrature.jl")
 include("quadgen.jl")
+include("quadgk.jl")
 
 end

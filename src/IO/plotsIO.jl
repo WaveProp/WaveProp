@@ -14,6 +14,10 @@
     end        
 end    
 
+@recipe function f(pts::AbstractMatrix{<:Point}) 
+    vec(pts)
+end
+
 # plot a hyperrectangle
 @recipe function f(rec::HyperRectangle{N}) where {N}
     seriestype := :path

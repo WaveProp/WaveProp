@@ -176,12 +176,14 @@ function TensorProduct(q...)
     TensorProduct(q)
 end    
 
+# FIXME: instead of returning an iterator, the tensor product rule is currently
+# returning the actual matrices. 
 function (q::TensorProduct)()
     nodes   = map(q->q()[1],q.quad)    
     weights = map(q->q()[2],q.quad)    
-    x = Iterators.product(nodes...)
-    w = Iterators.product(weights...)
-    return x,w
+    x = Iterators.product(nodes...) 
+    w = Iterators.product(weights...) 
+    return Point.(x), prod.(collect(w))
 end    
 
 # function transform(q::AbstractQuadratureRule,cov::GeometricTransformation)

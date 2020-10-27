@@ -3,6 +3,7 @@ using WaveProp.Utils
 using WaveProp.BIE
 using WaveProp.Geometry
 using WaveProp.Integration
+using WaveProp.SingularIntegration
 using QuadGK
 using LinearAlgebra
 using Plots

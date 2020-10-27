@@ -10,9 +10,11 @@ using Base.Threads
 using WaveProp.Utils
 using WaveProp.Geometry
 using WaveProp.Integration 
+using WaveProp.SingularIntegration 
 using WaveProp.Mesh
 
 import WaveProp.Geometry: geometric_dimension, ambient_dimension, domain, range
+import WaveProp.SingularIntegration: singular_weights
 
 export Laplace, Helmholtz, SingleLayerKernel, DoubleLayerKernel, IntegralOperator, NystromMesh, Density, γ₀, γ₁, SingleLayerPotential, DoubleLayerPotential, SingleLayerOperator, DoubleLayerOperator, GreensCorrection, singular_weights
 

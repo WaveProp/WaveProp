@@ -27,7 +27,7 @@ function singular_weights(k::AbstractKernel,τ,x,qrule,qinner=qrule)
     return w
 end 
 
-function _auxiliary_quadrature(τ,qrule,cov=IMT{2,2}())
+function _auxiliary_quadrature(τ,qrule,cov=Kress(order=5))
     x̂, ŵ  = qrule()   
     x̃, w̃  = Integration._push_forward_quad(cov,x̂,ŵ)
     # build the opposite face quadrature

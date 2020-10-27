@@ -14,17 +14,18 @@ _auxiliary_integration_matrix, _auxiliary_interpolation_matrix, combined_field_c
 ## test 
 pde   = Laplace(;dim=2)
 h     = 0.1
-# τ     = line(Point(0,0),Point(h,0))
-τ     = ParametricLine() do u
-    return Point(h*u,(h*u)^2)
-end    
+τ     = line(Point(0,0),Point(h,0))
+# τ     = ParametricLine() do u
+#     return Point(h*u,(h*u)^2)
+# end    
 k     = SingleLayerKernel(pde)
 n     = 10
 qrule  = GaussLegendre{n}()
 qinner = GaussLegendre{n}()
-x     = τ(1/3)
+s     = 0.53
+x     = τ(s)
 
-# # interpolation surface
+# interpolation surface
 # xi,wi,νi = push_forward_quad_with_normal(τ,qrule)
 # # auxiliary integration surface
 # xq,wq,νq = _auxiliary_quadrature(τ,qinner)
@@ -53,16 +54,6 @@ I1 = integrate(y->k(x,y)*g(y),xq,wq)
 w̃ = singular_weights(k,τ,x,qrule,qinner)
 I2 = integrate(y->g(y),xq,w̃)
 @show (I - I2)/I |> abs
-
-
-
-
-
-
-
-
-
-
 
 # cov = IMT{10,1}()
 # x,w,ν = BIE._auxiliary_quadrature(τ,qrule,cov)

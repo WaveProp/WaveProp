@@ -1,7 +1,7 @@
 abstract type AbstractPDE{N} end
 
 ambient_dimension(::Type{<:AbstractPDE{N}}) where {N} = N
-ambient_dimension(op) = ambient_dimension(typeof(op))
+ambient_dimension(op::AbstractPDE) = ambient_dimension(typeof(op))
 
 """
     struct Laplace{N}

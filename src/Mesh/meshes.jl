@@ -46,6 +46,24 @@ function GenericMesh(nodes, etypes, el2nodes, ent2tag)
     GenericMesh{N,T}(nodes,etypes,el2nodes,ent2tag,P[],T[],P[],el2qnodes)
 end    
 
+function GenericMesh{2}(mesh::GenericMesh{3})
+    @assert all(x->geometric_dimension(x)<3,etypes(mesh)) 
+    T = eltype(mesh)
+    GenericMesh{2,T}(
+        [x[1:2] for x in nodes(mesh)],
+        convert_to_2d.(etypes(mesh)),
+        mesh.el2nodes,
+        mesh.ent2tags,
+        [x[1:2] for x in qnodes(mesh)],
+        qweights(mesh),
+        [x[1:2] for x in qnormals(mesh)],
+        mesh.el2qnodes
+    )
+end
+
+convert_to_2d(::Type{LagrangeElement{R,N,3,T}}) where {R,N,T} = LagrangeElement{R,N,2,T}
+convert_to_2d(::Type{Point{3,T}}) where {T} = Point{2,T}
+
 nodes(m::GenericMesh)    = m.nodes
 qnodes(m::GenericMesh)   = m.qnodes
 qweights(m::GenericMesh) = m.qweights

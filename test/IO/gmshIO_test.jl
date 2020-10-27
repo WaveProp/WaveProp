@@ -39,4 +39,8 @@ end
     # Test internal creation of disk
     Ω, M = WaveProp.IO.gmsh_disk()    
     @test etypes(M) == [LagrangeLine{2,3,Float64},LagrangeTriangle{3,3,Float64},Point{3,Float64}] # mesh composed of gmsh simplices
+    Ω, M = WaveProp.IO.gmsh_disk(dim=1)    
+    M = GenericMesh{2}(M)
+    compute_quadrature!(M;dim=1,order=10)
+    @test isapprox(sum(M.qweights),π,rtol=1e-2)
 end

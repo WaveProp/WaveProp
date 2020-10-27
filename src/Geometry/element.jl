@@ -83,7 +83,7 @@ function normal(el::AbstractElement,u)
     @assert N-M == 1 msg
     if M == 1 # a line in 2d
         t⃗ = jacobian(el,u)
-        n⃗ = SVector(-t⃗[2],t⃗[1])
+        n⃗ = SVector(t⃗[2],-t⃗[1])
         return n⃗/norm(n⃗)
     elseif M == 2 # a surface in 3d
         j  = jacobian(el,u)    
@@ -112,7 +112,8 @@ geometric_dimension(el::AbstractElement)        = geometric_dimension(typeof(el)
 
 Return the dimension of the ambient space where `el` lives.
 """
-ambient_dimension(el::AbstractElement{R,N}) where {R,N} = N
+ambient_dimension(el::AbstractElement{R,N})   where {R,N} = N
+ambient_dimension(t::Type{<:AbstractElement{R,N}}) where {R,N} = N
 
 boundary(el::AbstractLine) = el(0),el(1)
 

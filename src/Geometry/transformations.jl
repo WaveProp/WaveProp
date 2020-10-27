@@ -1,13 +1,7 @@
 """
     abstract type GeometricTransformation
     
-Abstract type representing a change of variable mapping `domain` to `range`
-
-In order to aid with various methods, instances `transf::GeometricTransformation` are expected to implement
-- `domain`
-- `range`
-- `(::GeometricTransformation)(u)`
-- `jacobian(::GeometricTransformation,u)`
+Abstract type representing a geometric transformation.
 """
 abstract type GeometricTransformation end
 

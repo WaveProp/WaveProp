@@ -1,3 +1,4 @@
+using Test
 using WaveProp
 using WaveProp.Geometry
 using WaveProp.IO
@@ -32,4 +33,10 @@ end
     # Test internal creation of sphere
     Ω, M = WaveProp.IO.gmsh_sphere()    
     @test etypes(M) == [LagrangeLine{2,3,Float64},LagrangeTriangle{3,3,Float64},LagrangeTetrahedron{4,3,Float64},Point{3,Float64}] # mesh composed of gmsh simplices
+end
+
+@testset "Disk" begin
+    # Test internal creation of disk
+    Ω, M = WaveProp.IO.gmsh_disk()    
+    @test etypes(M) == [LagrangeLine{2,3,Float64},LagrangeTriangle{3,3,Float64},Point{3,Float64}] # mesh composed of gmsh simplices
 end

@@ -26,7 +26,7 @@ A simple data structure representing a generic mesh in an ambient space of dimen
 struct GenericMesh{N,T} <: AbstractMesh{N,T}
     nodes::Vector{Point{N,T}}
     # element types
-    etypes::Vector{Int32}
+    etypes::Vector{DataType}
     # for each element type, the indices of nodes in each element
     el2nodes::Vector{Matrix{Int}}
     # mapping from elementary entity to (etype,tags)
@@ -51,13 +51,12 @@ qnodes(m::GenericMesh)   = m.qnodes
 qweights(m::GenericMesh) = m.qweights
 qnormals(m::GenericMesh) = m.qnormals
 
-
 """
     etypes(M::GenericMesh)
 
 Return the element types contained in the mesh.
 """
-etypes(M::GenericMesh) = [type_tag_to_etype[i] for i in M.etypes]
+etypes(M::GenericMesh) = M.etypes 
 
 function elements(mesh::GenericMesh,E::Type{<:AbstractElement})
     return ElementIterator{E}(mesh)
@@ -163,7 +162,7 @@ an appropiate quadrature rule.
 """
 function _qrule_for_reference_element(ref,order)
     if ref isa ReferenceLine
-        n = (order + 1)/2 |> ceil
+        n = ((order + 1) ÷  2) + 1
         qrule = GaussLegendre{n}()
     elseif ref isa ReferenceSquare
         n  = (order + 1)/2 |> ceil

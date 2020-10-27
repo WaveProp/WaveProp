@@ -65,4 +65,18 @@ end
         V = (4/3)*π*r^3
         @test isapprox(V,sum(qweights(M));atol=0.1)
     end
+    @testset "Disk" begin
+        r = rx = ry = 0.5
+        Ω, M = WaveProp.IO.gmsh_disk(;rx,ry)
+        A = π*r^2
+        compute_quadrature!(M;dim=2,order=1)
+        # the coarse tolerance below is because we use flat elements to
+        # approximate the surface area and volume of a sphere
+        @test isapprox(A,sum(qweights(M));atol=0.1)        
+        # test perimeter
+        Ω, M = WaveProp.IO.gmsh_disk(;rx,ry)
+        P = 2π*r
+        compute_quadrature!(M;dim=1,order=1)
+        @test isapprox(P,sum(qweights(M));atol=0.1)
+    end
 end

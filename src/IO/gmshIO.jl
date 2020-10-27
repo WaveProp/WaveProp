@@ -76,7 +76,8 @@ function _initialize_mesh(Ω::Domain)
     end    
     dict    = Dict{ElementaryEntity,Dict{Int32,Vector{Int}}}()
     ent2tag = _domain_to_mesh!(dict, Ω)
-    return GenericMesh(pts, etypes, el2nodes, ent2tag)
+    ETYPES = [type_tag_to_etype[i] for i in etypes]
+    return GenericMesh(pts, ETYPES, el2nodes, ent2tag)
 end    
 
 """
@@ -105,6 +106,23 @@ function _ent_to_mesh!(dict, ent)
     etypes, etags, ntags = gmsh.model.mesh.getElements(ent.dim, ent.tag)
     etypes_to_etags = Dict(etypes[i] => etags[i] for i in 1:length(etypes))
     push!(dict, ent => etypes_to_etags)
+end    
+
+"""
+    gmsh_disk(;rx=0.5,ry=0.5,center=(0,0,0)) -> Ω, M
+
+Use `gmsh` API to generate a sphere and return `Ω::Domain` and `M::GenericMesh`.
+"""
+function gmsh_disk(;rx=0.5,ry=0.5,center=(0.,0.,0.),dim=2,h=min(rx,ry)/10)
+    gmsh.initialize()
+    _gmsh_set_meshsize(h)
+    gmsh.model.occ.addDisk(center...,rx,ry)
+    gmsh.model.occ.synchronize()
+    gmsh.model.mesh.generate(dim)
+    Ω = _initialize_domain(dim)
+    M = _initialize_mesh(Ω)
+    gmsh.finalize()
+    return Ω,M
 end    
 
 """
@@ -183,3 +201,19 @@ function _gmsh_summary()
         _gmsh_summary(model)
     end
 end
+
+"""
+    const type_tag_to_etype
+
+Dictionary mapping `gmsh` element types, given as `Int32`, to the internal
+equivalent of those. 
+
+Such a mapping is useful for generating function barriers in order to dispatch on
+methods which work on a concrete subtype. 
+"""
+const type_tag_to_etype = Dict(
+    15 => Point{3,Float64},
+    1  => LagrangeLine{2,3,Float64},
+    2  => LagrangeTriangle{3,3,Float64},
+    4  => LagrangeTetrahedron{4,3,Float64}
+)

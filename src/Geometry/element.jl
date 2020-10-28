@@ -285,18 +285,3 @@ end
 
 (el::ParametricElement)(u) = el.parametrization(u)
 
-"""
-    const type_tag_to_etype
-
-Dictionary mapping `gmsh` element types, given as `Int32`, to the internal
-equivalent of those. 
-
-Such a mapping is useful for generating function barriers in order to dispatch on
-methods which work on a concrete subtype. 
-"""
-const type_tag_to_etype = Dict(
-    15 => Point{3,Float64},
-    1  => LagrangeLine{2,3,Float64},
-    2  => LagrangeTriangle{3,3,Float64},
-    4  => LagrangeTetrahedron{4,3,Float64}
-)

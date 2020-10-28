@@ -76,6 +76,22 @@ Return an instance of the singleton type `R`; i.e. the reference element.
 domain(::Type{<:AbstractElement{R}}) where {R} = R()
 domain(el::AbstractElement) = domain(typeof(el))
 
+"""
+    measure(τ,u)
+
+The integration measure `μ` of the transformation `τ` so that 
+```math
+\\int_\\tau f(y) ds_y = \\int_{\\hat{\\tau}} f(\\tau(\\hat{y})) \\mu(\\hat{y}) d\\hat{y}
+```
+where `` \\hat{\\tau} `` is the reference element.
+"""
+function measure(el,u)
+    jac = jacobian(el,u)
+    g   = transpose(jac)*jac |> det
+    μ   = sqrt(g)
+    return μ
+end    
+
 function normal(el::AbstractElement,u)
     N = ambient_dimension(el)
     M = geometric_dimension(el)

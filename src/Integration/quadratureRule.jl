@@ -186,19 +186,6 @@ function (q::TensorProduct)()
     return Point.(x), prod.(collect(w))
 end    
 
-# function transform(q::AbstractQuadratureRule,cov::GeometricTransformation)
-#     @assert domain(q) == Geometry.domain(cov)
-#     x̂,ŵ = q()
-#     # modify the quadrature using the change of variables
-#     x   = map(cov,x̂)
-#     w   = map(zip(x̂,ŵ)) do (x̂,ŵ)
-#         jac = jacobian(cov,x̂)
-#         g   = transpose(jac)*jac |> det
-#         sqrt(g)*prod(ŵ)
-#     end 
-#     return x,w
-# end    
-
 function push_forward_quad(cov,qrule)
     @assert domain(cov) == domain(qrule)
     x̂,ŵ = qrule()
@@ -208,9 +195,8 @@ end
 function _push_forward_quad(cov,x̂,ŵ)
     x   = map(x->cov(x),x̂)
     w   = map(zip(x̂,ŵ)) do (x̂,ŵ)
-        jac = jacobian(cov,x̂)
-        g   = transpose(jac)*jac |> det
-        sqrt(g)*prod(ŵ)
+        μ = measure(cov,x̂)
+        μ*prod(ŵ)
     end 
     return x,w
 end

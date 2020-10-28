@@ -68,10 +68,16 @@ end
 convert_to_2d(::Type{LagrangeElement{R,N,3,T}}) where {R,N,T} = LagrangeElement{R,N,2,T}
 convert_to_2d(::Type{Point{3,T}}) where {T} = Point{2,T}
 
-nodes(m::GenericMesh)    = m.nodes
-qnodes(m::GenericMesh)   = m.qnodes
-qweights(m::GenericMesh) = m.qweights
-qnormals(m::GenericMesh) = m.qnormals
+nodes(m::GenericMesh)     = m.nodes
+qnodes(m::GenericMesh)    = m.qnodes
+qweights(m::GenericMesh)  = m.qweights
+qnormals(m::GenericMesh)  = m.qnormals
+el2qnodes(m::GenericMesh) = m.el2qnodes
+el2qnodes(m::GenericMesh,i::Int) = m.el2qnodes[i]
+function el2qnodes(m::GenericMesh,E::DataType) 
+    i = findfirst(x->x==E,etypes(m))
+    el2qnodes(m,i)
+end
 
 """
     etypes(M::GenericMesh)

@@ -66,17 +66,19 @@ end
 function _initialize_mesh(Ω::Domain)
     tags, coord, _ = gmsh.model.mesh.getNodes()
     pts    = reinterpret(SVector{3,Float64}, coord) |> collect
-    etypes = gmsh.model.mesh.getElementTypes()
-    el2nodes = Vector{Matrix{Int}}(undef, length(etypes))
+    etypes  = gmsh.model.mesh.getElementTypes()
+    # map gmsh type tags to actual internal types
+    ETYPES  = [type_tag_to_etype[e] for e in etypes] 
+    el2nodes = Dict{DataType,Matrix{Int}}()
     for (i, etype) in enumerate(etypes)
         etags, ntags = gmsh.model.mesh.getElementsByType(etype)
         _, _, _, Np, rest = gmsh.model.mesh.getElementProperties(etype)
         ntags     = reshape(ntags, Int(Np), :)
-        el2nodes[i] = ntags
+        push!(el2nodes,ETYPES[i]=>ntags)
     end    
     dict    = Dict{ElementaryEntity,Dict{Int32,Vector{Int}}}()
     ent2tag = _domain_to_mesh!(dict, Ω)
-    return GenericMesh(pts, etypes, el2nodes, ent2tag)
+    return GenericMesh(pts, ETYPES, el2nodes, ent2tag)
 end    
 
 """
@@ -183,3 +185,19 @@ function _gmsh_summary()
         _gmsh_summary(model)
     end
 end
+
+"""
+    const type_tag_to_etype
+
+Dictionary mapping `gmsh` element types, given as `Int32`, to the internal
+equivalent of those. 
+
+Such a mapping is useful for generating function barriers in order to dispatch on
+methods which work on a concrete subtype. 
+"""
+const type_tag_to_etype = Dict(
+    15 => Point{3,Float64},
+    1  => LagrangeLine{2,3,Float64},
+    2  => LagrangeTriangle{3,3,Float64},
+    4  => LagrangeTetrahedron{4,3,Float64}
+)

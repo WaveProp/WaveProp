@@ -49,8 +49,9 @@ end
     compute_quadrature!(mesh,order=1,dim=1,need_normal=true)
     γ₀u   = γ₀(u,mesh)
     γ₁u   = γ₁(dudn,mesh)
-    𝐒     = SingleLayerOperator(pde,mesh) |> Matrix
-    𝐃     = DoubleLayerOperator(pde,mesh) |> Matrix
+    𝐒     = SingleLayerOperator(pde,mesh) 
+    𝐃     = DoubleLayerOperator(pde,mesh) 
     ee = WaveProp.Utils.error_interior_green_identity(𝐒,𝐃,γ₀u,γ₁u) / norm(γ₀u,Inf)  
     @test norm(ee,Inf) < 5e-2
+    δS = singular_weights(𝐒)
 end

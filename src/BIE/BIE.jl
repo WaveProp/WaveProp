@@ -27,5 +27,6 @@ include("potential.jl")
 include("integraloperators.jl")
 include("densityinterpolation.jl")
 include("localDIM.jl")
+include("singularweights.jl")
 
 end # module

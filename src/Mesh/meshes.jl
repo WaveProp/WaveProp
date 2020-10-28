@@ -14,6 +14,10 @@ abstract type AbstractMesh{N,T} end
 
 ambient_dimension(M::AbstractMesh{N}) where {N} = N
 
+# we define the geometric dimension of the mesh to be the largest of the geometric
+# dimension of its entities. 
+geometric_dimension(M::AbstractMesh) = maximum(x->geometric_dimension(x),etypes(M))
+
 Base.eltype(M::AbstractMesh{N,T}) where {N,T} = T
 
 Base.length(mesh::AbstractMesh) = length(nodes(mesh))

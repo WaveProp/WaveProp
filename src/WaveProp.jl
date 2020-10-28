@@ -15,14 +15,20 @@ module WaveProp
 
 using DocStringExtensions
 
+include("Utils/Utils.jl")
+
 include("Geometry/Geometry.jl")
 
 include("Integration/Integration.jl")
+
+include("Mesh/Mesh.jl")
+
+include("BIE/BIE.jl")
 
 include("FEM/FEM.jl")
 
 include("DDM/DDM.jl")
 
-include("BIE/BIE.jl")
+include("IO/IO.jl")
 
 end # module

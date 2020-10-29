@@ -30,7 +30,7 @@ struct GenericMesh{N,T} <: AbstractMesh{N,T}
     # for each element type, the indices of nodes in each element
     el2nodes::Dict{DataType,Matrix{Int}}
     # mapping from elementary entity to (etype,tags)
-    ent2tags::Dict{ElementaryEntity,Dict{Int32,Vector{Int}}}
+    ent2tags::Dict{ElementaryEntity,Dict{DataType,Vector{Int}}}
     # quadrature info
     qnodes::Vector{Point{N,T}}
     qweights::Vector{T}

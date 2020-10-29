@@ -76,7 +76,7 @@ function _initialize_mesh(Ω::Domain)
         ntags     = reshape(ntags, Int(Np), :)
         push!(el2nodes,ETYPES[i]=>ntags)
     end    
-    dict    = Dict{ElementaryEntity,Dict{Int32,Vector{Int}}}()
+    dict    = Dict{ElementaryEntity,Dict{DataType,Vector{Int}}}()
     ent2tag = _domain_to_mesh!(dict, Ω)
     return GenericMesh(pts, ETYPES, el2nodes, ent2tag)
 end    
@@ -105,7 +105,7 @@ where `etype::Int32` determines the type of the element (see [`type_tag_to_etype
 """
 function _ent_to_mesh!(dict, ent)
     etypes, etags, ntags = gmsh.model.mesh.getElements(ent.dim, ent.tag)
-    etypes_to_etags = Dict(etypes[i] => etags[i] for i in 1:length(etypes))
+    etypes_to_etags = Dict(type_tag_to_etype[etypes[i]] => etags[i] for i in 1:length(etypes))
     push!(dict, ent => etypes_to_etags)
 end    
 

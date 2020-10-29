@@ -123,6 +123,7 @@ geometric_dimension(el)                         = geometric_dimension(typeof(el)
 Return the dimension of the ambient space where `el` lives.
 """
 ambient_dimension(el::AbstractElement{R,N}) where {R,N} = N
+ambient_dimension(::Type{<:AbstractElement{R,N}}) where {R,N} = N
 
 """
     abstract type PolynomialElement{R,M} <: AbstractElement{R,M}
@@ -137,9 +138,11 @@ abstract type PolynomialElement{R,N} <: AbstractElement{R,N} end
 Fields:
     - `nodes`
 
-A lagrange elemement is reprensented as a polynomial mapping the `Np` reference lagrangian nodes of the reference element `R` into `nodes`.
+A lagrange element is represented as a polynomial mapping the `Np` reference
+lagrangian nodes of the reference element `R` into `nodes`.
 
-The element's parametrization is fully determined by the image of the `Np` reference points, which are stored in `nodes`. 
+The element's parametrization is fully determined by the image of the `Np`
+reference points, which are stored in `nodes`.
 """
 struct LagrangeElement{R,Np,N,T} <: PolynomialElement{R,N}
     nodes::SVector{Np,Point{N,T}}

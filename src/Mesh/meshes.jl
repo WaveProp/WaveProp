@@ -50,18 +50,31 @@ function GenericMesh(nodes, etypes, el2nodes, ent2tag)
     GenericMesh{N,T}(nodes,etypes,el2nodes,ent2tag,P[],T[],P[],el2qnodes)
 end    
 
+# convert a mesh to 2d by ignoring third component
 function GenericMesh{2}(mesh::GenericMesh{3})
     @assert all(x->geometric_dimension(x)<3,etypes(mesh)) 
     T = eltype(mesh)
+    # create new dictionaries for el2nodes and el2qnodes with 2d elements as keys
+    el2nodes  = empty(mesh.el2nodes)
+    for (E,tags) in mesh.el2nodes
+        E2d = convert_to_2d(E)    
+        el2nodes[E2d] = tags
+    end
+    el2qnodes = empty(mesh.el2qnodes)
+    for (E,tags) in mesh.el2qnodes
+        E2d = convert_to_2d(E)    
+        el2qnodes[E2d] = tags
+    end
+    # construct new 2d mesh
     GenericMesh{2,T}(
         [x[1:2] for x in nodes(mesh)],
         convert_to_2d.(etypes(mesh)),
-        mesh.el2nodes,
+        el2nodes,
         mesh.ent2tags,
         [x[1:2] for x in qnodes(mesh)],
         qweights(mesh),
         [x[1:2] for x in qnormals(mesh)],
-        mesh.el2qnodes
+        el2qnodes
     )
 end
 

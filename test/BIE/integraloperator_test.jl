@@ -53,6 +53,6 @@ end
     𝐃     = DoubleLayerOperator(pde,mesh) 
     ee = WaveProp.Utils.error_interior_green_identity(𝐒,𝐃,γ₀u,γ₁u) / norm(γ₀u,Inf)  
     @test norm(ee,Inf) < 5e-2
-    singular_weights(𝐒)
+    # singular_weights(𝐒)
     # δS = singular_weights(𝐒)
 end

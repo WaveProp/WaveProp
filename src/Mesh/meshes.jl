@@ -47,6 +47,8 @@ function GenericMesh(nodes, etypes, el2nodes, ent2tag)
 end    
 
 nodes(m::GenericMesh)    = m.nodes
+el2nodes(m::GenericMesh) = m.el2nodes
+ent2tags(m::GenericMesh) = m.ent2tags
 qnodes(m::GenericMesh)   = m.qnodes
 qweights(m::GenericMesh) = m.qweights
 qnormals(m::GenericMesh) = m.qnormals

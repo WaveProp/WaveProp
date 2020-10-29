@@ -20,7 +20,9 @@ using WaveProp.Integration
 import WaveProp.Geometry: ambient_dimension, geometric_dimension, domain, range
 import WaveProp.Integration: quadgen
 
-export GenericMesh, etypes, ElementIterator, nodes, qnodes, qweights, qnormals, elements, nearest_element_list, compute_quadrature!
+export GenericMesh, ElementIterator, nodes, etypes, el2nodes, ent2tags,
+qnodes, qweights, qnormals, elements, nearest_element_list,
+compute_quadrature!
 
 include("meshes.jl")
 include("queries.jl")

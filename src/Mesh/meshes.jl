@@ -32,7 +32,7 @@ struct GenericMesh{N,T} <: AbstractMesh{N,T}
     # element types
     etypes::Vector{DataType}
     # for each element type, the indices of nodes in each element
-    el2nodes::Vector{Matrix{Int}}
+    el2nodes::Dict{DataType,Matrix{Int}}
     # mapping from elementary entity to (etype,tags)
     ent2tags::Dict{ElementaryEntity,Dict{Int32,Vector{Int}}}
     # quadrature info
@@ -40,13 +40,13 @@ struct GenericMesh{N,T} <: AbstractMesh{N,T}
     qweights::Vector{T}
     qnormals::Vector{Point{N,T}}
     # for each element type, the indices of quadrature in each element
-    el2qnodes::Vector{Matrix{Int}}
+    el2qnodes::Dict{DataType,Matrix{Int}}
 end
 
 function GenericMesh(nodes, etypes, el2nodes, ent2tag)
     P = eltype(nodes)
     N,T = length(P), eltype(P)
-    el2qnodes = Vector{Matrix{Int}}(undef,length(etypes))
+    el2qnodes = Dict{DataType,Matrix{Int}}()
     GenericMesh{N,T}(nodes,etypes,el2nodes,ent2tag,P[],T[],P[],el2qnodes)
 end    
 
@@ -84,7 +84,7 @@ end
 
 Return the element types contained in the mesh.
 """
-etypes(M::GenericMesh) = M.etypes 
+etypes(mesh::GenericMesh) = mesh.etypes
 
 function elements(mesh::GenericMesh,E::Type{<:AbstractElement})
     return ElementIterator{E}(mesh)
@@ -98,23 +98,16 @@ ElementIterator{E}(mesh::M) where {E,M<:AbstractMesh} = ElementIterator{E,M}(mes
 Base.eltype(::Type{ElementIterator{E,M}}) where {E,M} = E
 
 function Base.length(iter::ElementIterator{<:Any,<:GenericMesh})
-    i       = _compute_etype_index(iter)
-    tags    = iter.mesh.el2nodes[i]
+    E       = eltype(iter)    
+    tags    = iter.mesh.el2nodes[E]
     Np, Nel = size(tags)
     return Nel
 end    
 
-function _compute_etype_index(iter::ElementIterator{<:Any,<:Any})
-    E = eltype(iter)
-    i = findfirst(x -> x==E, etypes(iter.mesh))
-    return i
-end
-
 function Base.iterate(iter::ElementIterator{<:Any,<:GenericMesh},state=1)
     E      = eltype(iter)    
     mesh   = iter.mesh    
-    i      = _compute_etype_index(iter)
-    tags   = mesh.el2nodes[i]
+    tags   = mesh.el2nodes[E]
     if state > length(iter)
         return nothing
     else    
@@ -132,10 +125,10 @@ to compute an element quadrature and push that information into `msh`. Set
 `need_normal=true` if the normal vector at the quadrature nodes should be computed.
 """
 function _compute_quadrature!(mesh::GenericMesh,E,qrule;need_normal=false)
-    @assert domain(qrule) == domain(E) "quadrature rule must be defined on domain of element"    
+    @assert domain(qrule) == domain(E) "quadrature rule must be defined on domain of 
+    element"    
+    E ∈ etypes(mesh) || (return mesh)
     N,T = ambient_dimension(mesh), eltype(mesh)
-    i   = findfirst(x -> x==E, etypes(mesh))
-    i === nothing && (return mesh)
     x̂,ŵ = qrule() # quadrature on reference element
     nq  = length(x̂) # number of qnodes per element
     el2qnodes = Int[]
@@ -152,7 +145,7 @@ function _compute_quadrature!(mesh::GenericMesh,E,qrule;need_normal=false)
         end
     end
     el2qnodes = reshape(el2qnodes, nq, :)
-    mesh.el2qnodes[i] = el2qnodes
+    push!(mesh.el2qnodes,E=>el2qnodes)
     return mesh   
 end    
 

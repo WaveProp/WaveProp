@@ -11,9 +11,7 @@ using WaveProp.Mesh
     E    = etypes(M)[idx]
     iter = ElementIterator{E}(M)
     @test eltype(iter) == E
-    i = WaveProp.Mesh._compute_etype_index(iter)
-    @test i == idx
-    @test length(iter) == size(M.el2nodes[idx],2)
+    @test length(iter) == size(M.el2nodes[E],2)
 end
 
 @testset "Mesh quadrature" begin
@@ -33,7 +31,7 @@ end
         M     = Mesh._compute_quadrature!(M,E,qrule)
         V     = prod(widths)
         # sum only weights corresponding to tetras
-        qtags = M.el2qnodes[3]
+        qtags = M.el2qnodes[E]
         @test V ≈ sum(M.qweights[qtags])
         # sum all weigths (tetras and triangles)
         @test V+A ≈ sum(M.qweights)

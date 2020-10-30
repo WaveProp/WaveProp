@@ -150,9 +150,11 @@ abstract type PolynomialElement{R,N} <: AbstractElement{R,N} end
 Fields:
     - `nodes`
 
-A lagrange elemement is reprensented as a polynomial mapping the `Np` reference lagrangian nodes of the reference element `R` into `nodes`.
+A lagrange element is represented as a polynomial mapping the `Np` reference
+lagrangian nodes of the reference element `R` into `nodes`.
 
-The element's parametrization is fully determined by the image of the `Np` reference points, which are stored in `nodes`. 
+The element's parametrization is fully determined by the image of the `Np`
+reference points, which are stored in `nodes`.
 """
 struct LagrangeElement{R,Np,N,T} <: PolynomialElement{R,N}
     nodes::SVector{Np,Point{N,T}}

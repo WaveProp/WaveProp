@@ -13,6 +13,21 @@ function read_geo(fname, dim=3)
 end
 
 """
+    read_msh(fname::String)
+
+Read a `.msh` file and return a domain [`Ω::Domain`](@ref) together with a mesh [`M::GenericMesh`](@ref).
+"""
+function read_msh(fname;dim=3)
+    assert_extension(fname, ".msh")    
+    gmsh.initialize()    
+    gmsh.open(fname)
+    Ω = _initialize_domain(dim)
+    M = _initialize_mesh(Ω)
+    gmsh.finalize()    
+    return Ω, M
+end    
+
+"""
     _initialize_domain(d)
 
 Construct a `Domain` from the current `gmsh` model, starting from entities of dimension `d`. 
@@ -49,64 +64,70 @@ function _fill_entity_boundary!(ent)
 end    
 
 """
-    read_msh(fname::String)
+    _initialize_mesh(Ω::Domain)
 
-Read a `.msh` file and return a domain [`Ω::Domain`](@ref) together with a mesh [`M::GenericMesh`](@ref).
+Performs all the GMSH API calls to extract the information necessary to
+construct the mesh.
 """
-function read_msh(fname;dim=3)
-    assert_extension(fname, ".msh")    
-    gmsh.initialize()    
-    gmsh.open(fname)
-    Ω = _initialize_domain(dim)
-    M = _initialize_mesh(Ω)
-    gmsh.finalize()    
-    return Ω, M
-end    
-
 function _initialize_mesh(Ω::Domain)
     tags, coord, _ = gmsh.model.mesh.getNodes()
-    pts    = reinterpret(SVector{3,Float64}, coord) |> collect
-    etypes  = gmsh.model.mesh.getElementTypes()
+    pts = reinterpret(SVector{3,Float64}, coord) |> collect
     # map gmsh type tags to actual internal types
-    ETYPES  = [type_tag_to_etype[e] for e in etypes] 
+    etypes = [type_tag_to_etype[e] for e in gmsh.model.mesh.getElementTypes()]
+    # Recursively populating the dictionaries
     el2nodes = Dict{DataType,Matrix{Int}}()
-    for (i, etype) in enumerate(etypes)
-        etags, ntags = gmsh.model.mesh.getElementsByType(etype)
-        _, _, _, Np, rest = gmsh.model.mesh.getElementProperties(etype)
-        ntags     = reshape(ntags, Int(Np), :)
-        push!(el2nodes,ETYPES[i]=>ntags)
-    end    
-    dict    = Dict{ElementaryEntity,Dict{Int32,Vector{Int}}}()
-    ent2tag = _domain_to_mesh!(dict, Ω)
-    return GenericMesh(pts, ETYPES, el2nodes, ent2tag)
-end    
-
-"""
-    _domain_to_mesh!(dict,Ω)
-
-For each entity in Ω, push into `Dict` that entity as a key and a `Dict{Int,Vector{Int}}` as value. The value gives an element type, as well as the tags associated to that entity and element type.
-"""
-function _domain_to_mesh!(dict, Ω)
-    isempty(Ω) && (return dict)
-    for ent in entities(Ω)
-        _ent_to_mesh!(dict, ent)
-    end    
-    Γ = skeleton(Ω)
-    _domain_to_mesh!(dict, Γ)
-    return dict
+    ent2tag = Dict{ElementaryEntity,Dict{DataType,Vector{Int}}}()
+    el2nodes, ent2tag = _domain_to_mesh!(el2nodes, ent2tag, Ω)
+    return GenericMesh(pts, etypes, el2nodes, ent2tag)
 end
 
 """
-    _ent_to_mesh!(dict,ent)
+    _domain_to_mesh!(el2nodes, ent2tag, Ω::Domain)
 
-For each element type used to mesh `ent`, push into `dict::Dictionary` the pair `etype=>tags`, 
-where `etype::Int32` determines the type of the element (see [`type_tag_to_etype`](@ref)), and
-`tags::Vector{Int}` gives the tags of those elements.
+Recursively populating the dictionaries `el2nodes` and `ent2tag`.
 """
-function _ent_to_mesh!(dict, ent)
-    etypes, etags, ntags = gmsh.model.mesh.getElements(ent.dim, ent.tag)
-    etypes_to_etags = Dict(etypes[i] => etags[i] for i in 1:length(etypes))
-    push!(dict, ent => etypes_to_etags)
+function _domain_to_mesh!(el2nodes, ent2tag, Ω::Domain)
+    isempty(Ω) && (return el2nodes, ent2tag)
+    for ω in Ω
+        el2nodes, ent2tag = _ent_to_mesh!(el2nodes, ent2tag, ω)
+    end    
+    Γ = skeleton(Ω)
+    _domain_to_mesh!(el2nodes, ent2tag, Γ)
+end
+
+"""
+    _ent_to_mesh!(el2nodes, ent2tag, ω::ElementaryEntity)
+
+For each element type used to mesh `ω`:
+    - push into `el2nodes::Dict` the pair `etype=>ntags`;
+    - push into `ent2tag::Dict` the pair `etype=>etags`;
+where:
+    - `etype::DataType` determines the type of the element (see
+    [`type_tag_to_etype`](@ref));
+    - `ntags::Matrix{Int}` gives the indices of the nodes defining those
+    elements;
+    - `etags::Vector{Int}` gives the indices of those elements in `el2nodes`.
+"""
+function _ent_to_mesh!(el2nodes, ent2tag, ω::ElementaryEntity)
+    ω in keys(ent2tag) && (return el2nodes, ent2tag)
+    etypes_to_etags = Dict{DataType,Vector{Int}}()
+    # Loop on GMSH element types (integer)
+    type_tags, _, ntagss = gmsh.model.mesh.getElements(tag(ω)...)
+    for (type_tag, ntags) in zip(type_tags, ntagss)
+        _, _, _, Np, _ = gmsh.model.mesh.getElementProperties(type_tag)
+        ntags = reshape(ntags, Int(Np), :)
+        etype = type_tag_to_etype[type_tag]
+        if etype in keys(el2nodes)
+            etag = size(el2nodes[etype], 2) .+ collect(1:size(ntags,2))
+            ntags = hcat(el2nodes[etype], ntags)
+        else
+            etag = collect(1:size(ntags, 2))
+        end
+        push!(el2nodes, etype => ntags)
+        push!(etypes_to_etags, etype => etag)
+    end    
+    push!(ent2tag, ω => etypes_to_etags)
+    return el2nodes, ent2tag
 end    
 
 """
@@ -114,16 +135,16 @@ end
 
 Use `gmsh` API to generate a sphere and return `Ω::Domain` and `M::GenericMesh`.
 """
-function gmsh_sphere(;radius=0.5,center=(0.,0.,0.),dim=3,h=radius/10)
+function gmsh_sphere(;radius=0.5,center=(0., 0., 0.),dim=3,h=radius / 10)
     gmsh.initialize()
     _gmsh_set_meshsize(h)
-    gmsh.model.occ.addSphere(center...,radius)
+    gmsh.model.occ.addSphere(center..., radius)
     gmsh.model.occ.synchronize()
     gmsh.model.mesh.generate(dim)
     Ω = _initialize_domain(dim)
     M = _initialize_mesh(Ω)
     gmsh.finalize()
-    return Ω,M
+    return Ω, M
 end    
 
 """
@@ -131,15 +152,15 @@ end
 
 Use `gmsh` API to generate an axis aligned box. Return `Ω::Domain` and `M::GenericMesh`.
 """
-function gmsh_box(;origin=(0.,0.,0.),widths=(1.,1.,1.))
+function gmsh_box(;origin=(0., 0., 0.),widths=(1., 1., 1.))
     gmsh.initialize()
-    gmsh.model.occ.addBox(origin...,widths...)
+    gmsh.model.occ.addBox(origin..., widths...)
     gmsh.model.occ.synchronize()
     gmsh.model.mesh.generate()
     Ω = _initialize_domain(3)
     M = _initialize_mesh(Ω)
     gmsh.finalize()
-    return Ω,M
+    return Ω, M
 end    
 
 """
@@ -156,7 +177,7 @@ macro gmsh(ex)
     end
 end
 
-function _gmsh_set_meshsize(hmax,hmin=hmax)
+function _gmsh_set_meshsize(hmax, hmin=hmax)
     gmsh.option.setNumber("Mesh.CharacteristicLengthMin", hmin)
     gmsh.option.setNumber("Mesh.CharacteristicLengthMax", hmax)
 end
@@ -173,7 +194,7 @@ function _gmsh_summary(model)
     # pgroups = gmsh.model.getPhysicalGroups()
     for ent in ents
         name = gmsh.model.getEntityName(ent...)
-        dim,tag = ent
+        dim, tag = ent
         @printf("|%10s|%10d|%10d|\n", name, dim, tag)
     end
     println()

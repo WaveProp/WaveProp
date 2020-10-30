@@ -30,7 +30,7 @@ struct GenericMesh{N,T} <: AbstractMesh{N,T}
     # for each element type, the indices of nodes in each element
     el2nodes::Dict{DataType,Matrix{Int}}
     # mapping from elementary entity to (etype,tags)
-    ent2tags::Dict{ElementaryEntity,Dict{Int32,Vector{Int}}}
+    ent2tags::Dict{ElementaryEntity,Dict{DataType,Vector{Int}}}
     # quadrature info
     qnodes::Vector{Point{N,T}}
     qweights::Vector{T}
@@ -47,6 +47,8 @@ function GenericMesh(nodes, etypes, el2nodes, ent2tag)
 end    
 
 nodes(m::GenericMesh)    = m.nodes
+el2nodes(m::GenericMesh) = m.el2nodes
+ent2tags(m::GenericMesh) = m.ent2tags
 qnodes(m::GenericMesh)   = m.qnodes
 qweights(m::GenericMesh) = m.qweights
 qnormals(m::GenericMesh) = m.qnormals

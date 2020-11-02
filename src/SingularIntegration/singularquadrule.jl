@@ -1,10 +1,10 @@
 struct SingularQuadratureRule{Q,S}
     qrule::Q
-    singulary_handler::S
+    singularity_handler::S
 end 
 
 qrule(q::SingularQuadratureRule) = q.qrule
-singularity_handler(q::SingularQuadratureRule) = q.singulary_handler
+singularity_handler(q::SingularQuadratureRule) = q.singularity_handler
 
 domain(q::SingularQuadratureRule) = q |> qrule |> domain
 range(q::SingularQuadratureRule)  = q |> singularity_handler |> range
@@ -12,7 +12,7 @@ range(q::SingularQuadratureRule)  = q |> singularity_handler |> range
 function (qs::SingularQuadratureRule)()
     qstd = qs |> qrule
     cov  = qs |> singularity_handler    
-    x,w  = push_forward_quad(cov,qstd)
+    x,w  = qstd(cov)
     return x,w
 end
 

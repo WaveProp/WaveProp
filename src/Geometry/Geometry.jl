@@ -21,8 +21,6 @@ include("point.jl")
 include("hyperrectangle.jl")
 include("domain.jl")
 include("element.jl")
-include("transformations.jl")
-include("extrudedElement.jl")
 
 export ElementaryEntity, Domain,
     dim, entities, tag, tags, remove, assertequaldim,

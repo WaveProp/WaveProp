@@ -18,7 +18,7 @@ using WaveProp.Geometry
 using WaveProp.Integration
 
 import WaveProp.Geometry: ambient_dimension, geometric_dimension, domain, range
-import WaveProp.Integration: quadgen, qnodes, qweights, qnormals
+import WaveProp.Integration: qnodes, qweights, qnormals
 
 export GenericMesh, ElementIterator, nodes, etypes, el2nodes, ent2tags,
 qnodes, qweights, qnormals, elements, nearest_element_list,

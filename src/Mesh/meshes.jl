@@ -148,7 +148,7 @@ function _compute_quadrature!(mesh::GenericMesh,E,qrule;need_normal=false)
     nq  = length(x̂) # number of qnodes per element
     el2qnodes = Int[]
     for el in elements(mesh,E)
-        x,w = push_forward_quad(el,qrule)
+        x,w = qrule(el)
         # compute indices of quadrature nodes in this element
         qidxs  = length(mesh.qnodes) .+ (1:nq) |> collect
         append!(el2qnodes,qidxs)

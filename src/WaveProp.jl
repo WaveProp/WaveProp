@@ -27,11 +27,11 @@ include("SingularIntegration/SingularIntegration.jl")
 
 include("Mesh/Mesh.jl")
 
-include("BIE/BIE.jl")
+# # include("BIE/BIE.jl")
 
-include("FEM/FEM.jl")
+# # include("FEM/FEM.jl")
 
-include("DDM/DDM.jl")
+# # include("DDM/DDM.jl")
 
 include("IO/IO.jl")
 

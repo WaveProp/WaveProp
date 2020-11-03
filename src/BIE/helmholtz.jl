@@ -4,6 +4,7 @@ function (SL::SingleLayerKernel{T,S})(x,y)::T  where {T,S<:Helmholtz}
     k = SL.op.k
     r = x - y
     d = norm(r)
+    d == 0 && return zero(T)
     if N==2
         return im/4 * hankelh1(0,k*d)
     elseif N==3
@@ -17,6 +18,7 @@ function (DL::DoubleLayerKernel{T,S})(x,y,ny)::T where {T,S<:Helmholtz}
     k = DL.op.k
     r = x - y
     d = norm(r)
+    d == 0 && return zero(T)
     if N==2
         return im*k/4/d * hankelh1(1,k*d) .* dot(r,ny)
     elseif N==3
@@ -30,6 +32,7 @@ function (ADL::AdjointDoubleLayerKernel{T,S})(x,y,nx)::T where {T,S<:Helmholtz}
     k = ADL.op.k
     r = x - y
     d = norm(r)
+    d == 0 && return zero(T)
     if N==2
         return -im*k/4/d * hankelh1(1,k*d) .* dot(r,nx)
     elseif N==3
@@ -43,6 +46,7 @@ function (HS::HyperSingularKernel{T,S})(x,y,nx,ny)::T where {T,S<:Helmholtz}
     k = HS.op.k
     r = x - y
     d = norm(r)
+    d == 0 && return zero(T)
     if N==2
         ID = Mat{2,2,Float64,4}(1,0,0,1)
         RRT = r*transpose(r) # r ⊗ rᵗ

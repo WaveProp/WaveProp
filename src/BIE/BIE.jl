@@ -19,6 +19,7 @@ import WaveProp.SingularIntegration: singular_weights
 export Laplace, Helmholtz, SingleLayerKernel, DoubleLayerKernel, IntegralOperator, NystromMesh, Density, γ₀, γ₁, SingleLayerPotential, DoubleLayerPotential, SingleLayerOperator, DoubleLayerOperator, GreensCorrection, singular_weights
 
 include("pde.jl")
+include("lebedev.jl")
 include("kernels.jl")
 include("laplace.jl")
 include("helmholtz.jl")

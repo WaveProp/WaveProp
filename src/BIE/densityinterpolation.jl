@@ -1,15 +1,3 @@
-"""
-    GreensCorrection{T,S} <: AbstractMatrix{T}
-
-An `AbstractMatrix` representing a correction to a singular boundary integral
-operator using density interpolation method (DIM) with Greens functions [^1].
-
-The underlying representation is *sparse* since only near-field interactions
-need to be taken into account. This structure is typically added to the dense
-part of an integral operator as a correction.
-
-[^1] TODO: CITE OUR PAPER
-"""
 struct GreensCorrection{T,S,U} 
     iop::S
     R::Matrix{T}
@@ -55,28 +43,26 @@ end
 function GreensCorrection(iop::IntegralOperator,Op1,Op2,basis,γ₁_basis,σ)
     T           = eltype(iop)    
     kernel,X,Y  = iop.kernel, iop.X, iop.Y
+    a,b         = combined_field_coefficients(kernel)
     op          = kernel.op
     m,n         = length(X),length(Y)
-    L           = Vector{Matrix{T}}(undef,length(Y.el2qnodes))
-
     nbasis      = length(basis)
-
     # compute matrix of basis evaluated on Y
-    γ₀B     = Matrix{T}(undef,length(Y),nbasis)
-    γ₁B     = Matrix{T}(undef,length(Y),nbasis)
     ynodes   = qnodes(Y)
     ynormals = qnormals(Y)
-    @threads for k in 1:nbasis
+    γ₀B     = Matrix{T}(undef,length(ynodes),nbasis)
+    γ₁B     = Matrix{T}(undef,length(ynodes),nbasis)
+    for k in 1:nbasis
         for i in 1:length(ynodes)
             γ₀B[i,k] = basis[k](ynodes[i])
             γ₁B[i,k] = γ₁_basis[k](ynodes[i],ynormals[i])
         end
     end
-
+    # integrate the basis over Y
     xnodes   = qnodes(X)
     xnormals = qnormals(X)
-    # integrate the basis over Y
-    R  = Op1*γ₁B - Op2*γ₀B   
+    R        = Op1*γ₁B - Op2*γ₀B   
+    # analytic correction for on-surface evaluation of Greens identity
     if kernel_type(iop) isa Union{SingleLayer,DoubleLayer}
         if σ !== 0
             for k in 1:nbasis
@@ -94,54 +80,32 @@ function GreensCorrection(iop::IntegralOperator,Op1,Op2,basis,γ₁_basis,σ)
             end
         end
     end
-    # compute the interpolation matrix
-    idxel_near = nearest_element_list(X,Y,tol=1)
-    for i in 1:m # loop over rows
-        idx_el = idxel_near[i]
-        idx_el < 0 && continue
-        idx_nodes  = Y.el2qnodes[idx_el]
-        ninterp    = length(idx_nodes)
-        M          = Matrix{T}(undef,2*ninterp,nbasis)
-        M[1:ninterp,:]     = γ₀B[idx_nodes,:]
-        M[ninterp+1:end,:] = γ₁B[idx_nodes,:]
-        L[idx_el]          = M
-    end
-    return GreensCorrection(iop,R,L,idxel_near)
-end
-
-function _source_gen(iop::IntegralOperator,kfactor=5)
-    Y      =  iop.Y
-    nquad  = mapreduce(x->length(x),max,Y.el2qnodes) # maximum number of quadrature nodes per element
-    nbasis = 3*nquad
-    # construct source basis
-    return _source_gen(iop,nbasis,kfactor=kfactor)
-end
-
-function _source_gen(iop,nsources;kfactor)
-    N      = ambient_dimension(iop)
-    Y      = iop.Y
-    pts    = qnodes(Y)
-    # create a bounding box
-    bbox   = bounding_box(pts)
-    xc     = center(bbox)
-    d      = diameter(bbox)
-    if N == 2
-        xs = _circle_sources(nsources=nsources,center=xc,radius=kfactor*d/2)
-    elseif N == 3
-        xs = _sphere_sources_lebedev(nsources=nsources,center=xc,radius=kfactor*d/2)
-    else
-        error("dimension must be 2 or 3. Got $N")
-    end
-    return xs
-end
-
-function _sphere_sources_lebedev(;nsources, radius=10, center=Point(0.,0.,0.))
-    lpts = lebedev_points(nsources)
-    Xs = Point{3,Float64}[]
-    for pt in lpts
-        push!(Xs,radius*pt .+ center)
-    end
-    return Xs
+    # we now have the residue R. For the correction we need the coefficients.
+    dict_near = near_interaction_list(X,Y,dim=ambient_dimension(Y)-1,atol=1e-16)
+    Is = Int[]
+    Js = Int[]
+    Vs = T[]
+    for (E,list_near) in dict_near
+        el2qnodes = Y.el2qnodes[E]
+        num_qnodes, num_els   = size(el2qnodes)
+        M                     = Matrix{T}(undef,2*num_qnodes,nbasis)
+        @assert length(list_near) == num_els
+        for n in 1:num_els
+            j_glob             = el2qnodes[:,n]
+            M[1:num_qnodes,:]     = γ₀B[j_glob,:]
+            M[num_qnodes+1:end,:] = γ₁B[j_glob,:]
+            F                  = qr(M)
+            for (i,_) in list_near[n]
+                tmp  = (R[i:i,:]/F.R)*adjoint(F.Q)
+                w    = axpby!(a,view(tmp,1:num_qnodes),b,view(tmp,(num_qnodes+1):(2*num_qnodes)))
+                append!(Is,fill(i,num_qnodes))
+                append!(Js,j_glob)
+                append!(Vs,w)
+            end
+        end    
+    end        
+    Sp = sparse(Is,Js,Vs,size(iop)...)
+    return Sp
 end
 
 # FIXME:this function needs to be cleaned up and optimized for perf
@@ -157,12 +121,12 @@ function precompute_weights_qr(c::GreensCorrection)
         idx_el    = c.idxel_near[i]
         idx_el < 0 && continue
         idx_nodes = iop.Y.el2qnodes[idx_el]
-        ninterp = length(idx_nodes)
+        num_qnodes = length(idx_nodes)
         if !isassigned(F,idx_el)
             F[idx_el]  = qr(c.L[idx_el])
         end
         tmp     = (c.R[i:i,:]/F[idx_el].R)*adjoint(F[idx_el].Q)
-        w[i]     = axpby!(a,view(tmp,1:ninterp),b,view(tmp,(ninterp+1):(2*ninterp)))
+        w[i]     = axpby!(a,view(tmp,1:num_qnodes),b,view(tmp,(num_qnodes+1):(2*num_qnodes)))
     end
     return w
 end
@@ -199,4 +163,40 @@ function SparseArrays.sparse(c::GreensCorrection)
         append!(V,w[i])
     end
     return sparse(I,J,V,m,n)
+end
+
+
+function _source_gen(iop::IntegralOperator,kfactor=5)
+    Y      =  iop.Y
+    nquad  = mapreduce(x->length(x),max,Y.el2qnodes) # maximum number of quadrature nodes per element
+    nbasis = 3*nquad
+    # construct source basis
+    return _source_gen(iop,nbasis,kfactor=kfactor)
+end
+
+function _source_gen(iop,nsources;kfactor)
+    N      = ambient_dimension(iop)
+    Y      = iop.Y
+    pts    = qnodes(Y)
+    # create a bounding box
+    bbox   = bounding_box(pts)
+    xc     = center(bbox)
+    d      = diameter(bbox)
+    if N == 2
+        xs = _circle_sources(nsources=nsources,center=xc,radius=kfactor*d/2)
+    elseif N == 3
+        xs = _sphere_sources_lebedev(nsources=nsources,center=xc,radius=kfactor*d/2)
+    else
+        error("dimension must be 2 or 3. Got $N")
+    end
+    return xs
+end
+
+function _sphere_sources_lebedev(;nsources, radius=10, center=Point(0.,0.,0.))
+    lpts = lebedev_points(nsources)
+    Xs = Point{3,Float64}[]
+    for pt in lpts
+        push!(Xs,radius*pt .+ center)
+    end
+    return Xs
 end

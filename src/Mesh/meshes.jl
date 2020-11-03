@@ -77,6 +77,7 @@ function GenericMesh{2}(mesh::GenericMesh{3})
         el2qnodes
     )
 end
+
 nodes(m::GenericMesh)    = m.nodes
 el2nodes(m::GenericMesh) = m.el2nodes
 ent2tags(m::GenericMesh) = m.ent2tags
@@ -88,11 +89,7 @@ convert_to_2d(::Type{LagrangeElement{R,N,3,T}}) where {R,N,T} = LagrangeElement{
 convert_to_2d(::Type{Point{3,T}}) where {T} = Point{2,T}
 
 el2qnodes(m::GenericMesh) = m.el2qnodes
-el2qnodes(m::GenericMesh,i::Int) = m.el2qnodes[i]
-function el2qnodes(m::GenericMesh,E::DataType) 
-    i = findfirst(x->x==E,etypes(m))
-    el2qnodes(m,i)
-end
+el2qnodes(m::GenericMesh,E::DataType) = m.el2qnodes[E]
 
 """
     etypes(M::GenericMesh)

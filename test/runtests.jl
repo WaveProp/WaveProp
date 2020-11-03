@@ -11,4 +11,4 @@ using SafeTestsets
 
 # @safetestset "BIE" begin include("BIE/runtests.jl") end
 
-# @safetestset "IO" begin include("IO/runtests.jl") end
+@safetestset "IO" begin include("IO/runtests.jl") end

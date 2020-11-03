@@ -17,5 +17,6 @@ module IO
 
     include("gmshIO.jl")
     include("plotsIO.jl")    
+    include("vtkIO.jl")
 
-end
+end # module

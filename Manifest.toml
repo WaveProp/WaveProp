@@ -53,9 +53,7 @@ version = "0.10.0"
 
 [[GmshSDK]]
 deps = ["Libdl", "Pkg"]
-git-tree-sha1 = "e9d55160861ebf19926f9b330da1dd4d42cfc868"
-repo-rev = "main"
-repo-url = "https://github.com/WaveProp/GmshSDK.git"
+path = "/Users/lfaria/.julia/dev/GmshSDK"
 uuid = "357176ee-4fc2-4a7a-b2e3-8358239da070"
 version = "0.1.0"
 

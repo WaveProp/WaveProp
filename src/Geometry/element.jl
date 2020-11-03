@@ -1,12 +1,13 @@
 """
     abstract type AbstractReferenceShape{N}
     
-A reference polygon of dimension `N`.
+A reference polygon in `ℜᴺ`.
 
-Reference shapes are used mostly for dispatch purposes when defining
-instances of an [`AbstractElement`](@ref).
+Reference shapes are used mostly for defining [`AbstractElement`](@ref)s as
+transformations mapping an `AbstractReferenceShape` into some region of `ℜᴹ`. 
 
-See e.g. [`ReferenceLine`](@ref) or [`ReferenceTriangle`](@ref) for
+See e.g. [`ReferenceLine`](@ref) or [`ReferenceTriangle`](@ref) for some
+examples of concrete subtypes.
 """
 abstract type AbstractReferenceShape{N} end
 
@@ -54,16 +55,25 @@ Base.in(x,::ReferenceTetrahedron) = 0 ≤ x[1] ≤ 1 && 0 ≤ x[2] ≤ 1 - x[1] 
 # TODO: generalize structs above to `ReferenceSimplex{N}` and `ReferenceCuboid{N}`
 
 """
-    abstract type AbstractElement{R,N}
+    abstract type AbstractElement{D,N}
 
 Abstract shape given by the image of a parametrization with domain
-`R<:AbstractReferenceShape`.
+`D<:AbstractReferenceShape`.
 
-The type parameter `N` represents the dimension of the embedding space.
+The type parameter `N` represents the dimension of the embedding space. The
+geometric dimension of the element can be obtained from the geometric dimension
+of its domain `D`. 
 
-The dimension of the reference space can be obtained from `R`. 
+Instances `el` of `AbstractElement` are expected to implement.
+
+- `el(x̂)`: evaluate the parametrization defining the element at the parametric
+    coordinates `x̂ ∈ D`.
+- `jacobian(el,x̂)` : evaluate the jacobian matrix of the parametrization at the
+    parametric coordinate `x ∈ D`. For performance reasons, this should return
+    an `SMatrix` of size `M × N`, where `M` is the [`ambient_dimension`](@ref)
+    of `el` and `N` is the [`geometric_dimension`](@ref) of `el`, respectively.
 """
-abstract type AbstractElement{R,N} end
+abstract type AbstractElement{D,N} end
 
 const AbstractLine{N} = AbstractElement{ReferenceLine,N}
 const AbstractTriangle{N} = AbstractElement{ReferenceTriangle,N}
@@ -76,7 +86,7 @@ Evaluate the underlying parametrization of the element `el` at point `x`. This i
 function (el::AbstractElement)(x) end
 
 """
-    reference_element(el::AbstractElement)
+    domain(el::AbstractElement)
 
 Return an instance of the singleton type `R`; i.e. the reference element.
 """
@@ -99,6 +109,14 @@ function measure(el,u)
     return μ
 end    
 
+"""
+    normal(el::AbstractElement,x̂)
+
+The outer normal vector for the `el` at the parametric coordinate `x̂ ∈
+domain(el)`.
+    
+Note that `normal` is only defined for co-dimension one elements. 
+"""
 function normal(el::AbstractElement,u)
     N = ambient_dimension(el)
     M = geometric_dimension(el)
@@ -118,8 +136,6 @@ function normal(el::AbstractElement,u)
         @notimplemented    
     end            
 end    
-
-push_forward(el,x̂) = map(el,x̂)
 
 """
     geometric_dimension(el::AbstractElement{R})
@@ -154,8 +170,8 @@ abstract type PolynomialElement{R,N} <: AbstractElement{R,N} end
 """
     struct LagrangeElement{R,Np,N,T}        
     
-Fields:
-    - `nodes`
+# Fields:
+- `nodes::SVector{Np,Point{N,T}}`
 
 A lagrange element is represented as a polynomial mapping the `Np` reference
 lagrangian nodes of the reference element `R` into `nodes`.
@@ -172,8 +188,10 @@ function LagrangeElement{R}(nodes::SVector{Np,Point{N,T}}) where {R,Np,N,T}
     LagrangeElement{R,Np,N,T}(nodes)
 end
 
+# constructor which converts each entry to a Point, and then creates an SVector
+# of that.
 function LagrangeElement{R}(nodes...) where {R} 
-    nodes = SVector.(nodes)
+    nodes = Point.(nodes)
     LagrangeElement{R}(SVector(nodes))
 end
 
@@ -183,16 +201,41 @@ const LagrangeTriangle    = LagrangeElement{ReferenceTriangle}
 const LagrangeTetrahedron = LagrangeElement{ReferenceTetrahedron}
 const LagrangeRectangle   = LagrangeElement{ReferenceSquare}
 
+"""
+    line(a,b)
+
+Create a straight line connecting points `a` and `b`. This returns an instance
+of [`LagrangeLine`](@ref).
+"""
 line(a,b) = LagrangeLine(a,b)
+
+"""
+    triangle(a,b,c)
+
+Create a triangle connecting points `a`, `b`, and `c`. This returns an instance
+of [`LagrangeTriangle`](@ref).
+"""
 triangle(a,b,c) = LagrangeTriangle(a,b,c)
+
+"""
+    tetrahedron(a,b,c,d)
+
+Create a tetrahedron with vertices `a`, `b`, `c` and `d`. This returns an instance
+of [`LagrangeTetrahedron`](@ref).
+"""
 tetrahedron(a,b,c,d) = LagrangeTetrahedron(a,b,c,d)
+
+"""
+    rectangle(a,b,c,d)
+
+Create a rectangle with vertices `a`, `b`, `c` and `d`. This returns an instance
+of [`LagrangeRectangle`](@ref).
+"""
 rectangle(a,b,c,d) = LagrangeRectangle(a,b,c,d)
 
 nodes(el::LagrangeElement) = el.nodes
 
 get_order(el::LagrangeElement{ReferenceLine,Np}) where {Np} = Np + 1
-
-dim(el::LagrangeElement{R,Np,N}) where {R,Np,N} = N
 
 # For a lagrangian element of order P on a triangle, there are Np = (P+1)(P+2)/2
 # elements
@@ -282,7 +325,7 @@ end
 Evaluate the gradient of the underlying parametrization of the element `el` at point `x`. 
 """
 function jacobian(el::LagrangeElement{ReferenceLine,2}, u)
-    N = dim(el)    
+    N = ambient_dimension(el)    
     @assert length(u) == 1
     @assert u ∈ ReferenceLine()    
     x = nodes(el)
@@ -290,7 +333,7 @@ function jacobian(el::LagrangeElement{ReferenceLine,2}, u)
 end    
 
 function jacobian(el::LagrangeElement{ReferenceTriangle,3}, u) 
-    N = dim(el)
+    N = ambient_dimension(el)
     @assert length(u) == 2    
     @assert u ∈ ReferenceTriangle()
     x = nodes(el)
@@ -312,7 +355,7 @@ function jacobian(el::LagrangeElement{ReferenceSquare,4},u)
 end 
 
 function jacobian(el::LagrangeElement{ReferenceTetrahedron,4}, u)
-    N = dim(el)    
+    N = ambient_dimension(el)    
     @assert length(u) == 3   
     @assert u ∈ ReferenceTriangle()
     x = nodes(el)
@@ -339,6 +382,7 @@ struct ParametricElement{R,N,F} <: AbstractParametricElement{R,N}
     parametrization::F    
 end
 
+# constructor which infers the dimension of the ambient space
 function ParametricElement{R}(f) where {R}
     F = typeof(f)
     N = f(center(R)) |> length

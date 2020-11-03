@@ -1,8 +1,7 @@
 """
     Geometry
 
-This module defines the basic geometrical objects manipulated. 
-
+This module defines the basic geometrical objects manipulated in `WaveProp`.
 """
 module Geometry 
 

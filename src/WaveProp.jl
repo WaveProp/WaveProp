@@ -1,11 +1,5 @@
 """
 Julia library for solving PDEs with a focus on wave-propagation problems.
-
-This package contains the following sub-modules:
-
-- [`WaveProp.Utils`](@ref)
-- [`WaveProp.Geometry`](@ref)
-
 """
 module WaveProp
 

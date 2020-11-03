@@ -34,7 +34,7 @@ end
     𝐃     = DoubleLayerOperator(pde,mesh) |> Matrix
     𝐒[diagind(𝐒)] .= 0
     𝐃[diagind(𝐃)] .= 0
-    ee = WaveProp.Utils.error_interior_green_identity(𝐒,𝐃,γ₀u,γ₁u) / norm(γ₀u,Inf)  
+    ee = WaveProp.BIE.error_interior_green_identity(𝐒,𝐃,γ₀u,γ₁u) / norm(γ₀u,Inf)  
     @test norm(ee,Inf) < 5e-2
 end
 
@@ -51,7 +51,7 @@ end
     γ₁u   = γ₁(dudn,mesh)
     𝐒     = SingleLayerOperator(pde,mesh) 
     𝐃     = DoubleLayerOperator(pde,mesh) 
-    ee = WaveProp.Utils.error_interior_green_identity(𝐒,𝐃,γ₀u,γ₁u) / norm(γ₀u,Inf)  
+    ee = WaveProp.BIE.error_interior_green_identity(𝐒,𝐃,γ₀u,γ₁u) / norm(γ₀u,Inf)  
     @test norm(ee,Inf) < 5e-2
     # singular_weights(𝐒)
     # δS = singular_weights(𝐒)

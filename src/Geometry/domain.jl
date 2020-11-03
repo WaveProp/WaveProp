@@ -4,10 +4,9 @@
 The basic building block of geometrical objects. 
 
 # Fields:
-
-    - `dim::UInt8`: the geometrical dimension of the entity (e.g. line has `dim=1`, surface has `dim=2`, etc)
-    - `tag::Int64`: an integer tag associated to the entity
-    - `boundary::Vector{ElementaryEntity}`: the entities of dimension `dim-1` forming the entity's boundary  
+- `dim::UInt8`: the geometrical dimension of the entity (e.g. line has `dim=1`, surface has `dim=2`, etc)
+- `tag::Int64`: an integer tag associated to the entity
+- `boundary::Vector{ElementaryEntity}`: the entities of dimension `dim-1` forming the entity's boundary  
 """
 struct ElementaryEntity
     dim::UInt8

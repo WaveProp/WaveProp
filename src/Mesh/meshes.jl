@@ -14,6 +14,10 @@ abstract type AbstractMesh{N,T} end
 
 ambient_dimension(M::AbstractMesh{N}) where {N} = N
 
+# we define the geometric dimension of the mesh to be the largest of the geometric
+# dimension of its entities. 
+geometric_dimension(M::AbstractMesh) = maximum(x->geometric_dimension(x),etypes(M))
+
 Base.eltype(M::AbstractMesh{N,T}) where {N,T} = T
 
 Base.length(mesh::AbstractMesh) = length(nodes(mesh))
@@ -46,6 +50,34 @@ function GenericMesh(nodes, etypes, el2nodes, ent2tag)
     GenericMesh{N,T}(nodes,etypes,el2nodes,ent2tag,P[],T[],P[],el2qnodes)
 end    
 
+# convert a mesh to 2d by ignoring third component
+function GenericMesh{2}(mesh::GenericMesh{3})
+    @assert all(x->geometric_dimension(x)<3,etypes(mesh)) 
+    T = eltype(mesh)
+    # create new dictionaries for el2nodes and el2qnodes with 2d elements as keys
+    el2nodes  = empty(mesh.el2nodes)
+    for (E,tags) in mesh.el2nodes
+        E2d = convert_to_2d(E)    
+        el2nodes[E2d] = tags
+    end
+    el2qnodes = empty(mesh.el2qnodes)
+    for (E,tags) in mesh.el2qnodes
+        E2d = convert_to_2d(E)    
+        el2qnodes[E2d] = tags
+    end
+    # construct new 2d mesh
+    GenericMesh{2,T}(
+        [x[1:2] for x in nodes(mesh)],
+        convert_to_2d.(etypes(mesh)),
+        el2nodes,
+        mesh.ent2tags,
+        [x[1:2] for x in qnodes(mesh)],
+        qweights(mesh),
+        [x[1:2] for x in qnormals(mesh)],
+        el2qnodes
+    )
+end
+
 nodes(m::GenericMesh)    = m.nodes
 el2nodes(m::GenericMesh) = m.el2nodes
 ent2tags(m::GenericMesh) = m.ent2tags
@@ -53,6 +85,11 @@ qnodes(m::GenericMesh)   = m.qnodes
 qweights(m::GenericMesh) = m.qweights
 qnormals(m::GenericMesh) = m.qnormals
 
+convert_to_2d(::Type{LagrangeElement{R,N,3,T}}) where {R,N,T} = LagrangeElement{R,N,2,T}
+convert_to_2d(::Type{Point{3,T}}) where {T} = Point{2,T}
+
+el2qnodes(m::GenericMesh) = m.el2qnodes
+el2qnodes(m::GenericMesh,E::DataType) = m.el2qnodes[E]
 
 """
     etypes(M::GenericMesh)
@@ -108,7 +145,7 @@ function _compute_quadrature!(mesh::GenericMesh,E,qrule;need_normal=false)
     nq  = length(x̂) # number of qnodes per element
     el2qnodes = Int[]
     for el in elements(mesh,E)
-        x,w = push_forward_map(el,x̂,ŵ)
+        x,w = qrule(el)
         # compute indices of quadrature nodes in this element
         qidxs  = length(mesh.qnodes) .+ (1:nq) |> collect
         append!(el2qnodes,qidxs)
@@ -158,7 +195,7 @@ an appropiate quadrature rule.
 """
 function _qrule_for_reference_element(ref,order)
     if ref isa ReferenceLine
-        n = (order + 1)/2 |> ceil
+        n = ((order + 1) ÷  2) + 1
         qrule = GaussLegendre{n}()
     elseif ref isa ReferenceSquare
         n  = (order + 1)/2 |> ceil

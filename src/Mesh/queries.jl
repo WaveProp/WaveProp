@@ -1,42 +1,37 @@
 """
-    nearest_element_list(X,Y;[tol])
+    near_interaction_list(X,Y;dim,atol)
 
-Return a vector of integers, where the `i` entry of the vector gives the index of the nearest element in `Y` to the *ith*-node.
-
-An optional keywork argument `tol` can be passed so that only elements which are closer than `tol` are considered. If a node `x ∈ X` with index `i` has no element in `Y` closer than `tol`, the value -1 is stored indicating such a case.
+Given a target mesh `X` and a source mesh `Y`, return a dictionary with keys given by element types of the source mesh `Y`. To each key, which represents an element type, we associate a vector encoding whose `i`-th entry encodes information about the points in `X` which are close to the a given element of the key type. 
 """
-function nearest_element_list(X,Y; tol=0)
-    n,m  = length(X),length(Y)
-    list = fill(-1,n) # idxel of nearest element for each x ∈ X. -1 means there is not element in `Y` closer than `tol`
-    xnodes = qnodes(X)
-    ynodes = qnodes(Y)
-    in2e   = _idx_nodes_to_elements(Y)
-    if X == Y
-        # special case (which arises often for integral operators) where X==Y.
-        # No distance computation is needed then
-        for i=1:n
-            @assert length(in2e[i]) == 1
-            list[i] = in2e[i] |>  first
-        end
-    else
-        @notimplemented
+function near_interaction_list(X,Y;dim,atol)
+    dict = Dict{DataType,Vector{Vector{Tuple{Int,Int}}}}()    
+    for E in etypes(Y)
+        geometric_dimension(E) == dim || continue
+        ilist = _etype_near_interaction_list(X,Y,E,atol)
+        push!(dict,E=>ilist)
     end
-    return list
-end
+    return dict
+end    
 
-"""
-    _idx_nodes_to_elements(mesh)
+function _etype_near_interaction_list(X,Y,E,atol)
+    ilist = Vector{Vector{Tuple{Int,Int}}}()
+    e2n   = el2qnodes(Y,E)
+    npts,nel = size(e2n)
+    for n in 1:nel
+        ynodes = qnodes(Y)[e2n[:,n]]
+        inear  = _near_interaction_list(X,ynodes,atol)
+        push!(ilist,inear)
+    end 
+    ilist       
+end    
 
-For each node in `q`, return the indices of the elements to which it belongs.
-
-Depending on the quadrature type, more efficient methods can be defined and overloaded if needed.
-"""
-function _idx_nodes_to_elements(mesh)
-    list = [Int[] for _ in 1:length(qnodes(mesh))]
-    for n in 1:length(mesh.el2quad)
-        for i in mesh.el2quad[n]
-            push!(list[i],n)
+function _near_interaction_list(X,ynodes,atol)
+    ilist    = Tuple{Int,Int}[]
+    for (i,x) in enumerate(qnodes(X))            
+        d,j = findmin([norm(x-y) for y in ynodes])        
+        if d ≤ atol
+            push!(ilist,(i,j))    
         end
-    end
-    return list
-end
+    end            
+    return ilist
+end   

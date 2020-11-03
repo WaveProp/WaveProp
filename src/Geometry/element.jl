@@ -22,6 +22,8 @@ struct ReferenceLine <: AbstractReferenceShape{1}
 end
 Base.in(x,::ReferenceLine) = 0 ≤ x[1] ≤ 1
 
+center(::Type{ReferenceLine}) = 0.5
+
 """
     struct ReferenceTriangle
     
@@ -63,6 +65,16 @@ The dimension of the reference space can be obtained from `R`.
 """
 abstract type AbstractElement{R,N} end
 
+const AbstractLine{N} = AbstractElement{ReferenceLine,N}
+const AbstractTriangle{N} = AbstractElement{ReferenceTriangle,N}
+
+"""
+    (el::AbstractElement)(x)
+
+Evaluate the underlying parametrization of the element `el` at point `x`. This is the push-forward map for the element. 
+"""
+function (el::AbstractElement)(x) end
+
 """
     reference_element(el::AbstractElement)
 
@@ -71,6 +83,22 @@ Return an instance of the singleton type `R`; i.e. the reference element.
 domain(::Type{<:AbstractElement{R}}) where {R} = R()
 domain(el::AbstractElement) = domain(typeof(el))
 
+"""
+    measure(τ,u)
+
+The integration measure `μ` of the transformation `τ` so that 
+```math
+\\int_\\tau f(y) ds_y = \\int_{\\hat{\\tau}} f(\\tau(\\hat{y})) \\mu(\\hat{y}) d\\hat{y}
+```
+where `` \\hat{\\tau} `` is the reference element.
+"""
+function measure(el,u)
+    jac = jacobian(el,u)
+    g   = transpose(jac)*jac |> det
+    μ   = sqrt(g)
+    return μ
+end    
+
 function normal(el::AbstractElement,u)
     N = ambient_dimension(el)
     M = geometric_dimension(el)
@@ -78,7 +106,7 @@ function normal(el::AbstractElement,u)
     @assert N-M == 1 msg
     if M == 1 # a line in 2d
         t⃗ = jacobian(el,u)
-        n⃗ = SVector(-t⃗[2],t⃗[1])
+        n⃗ = SVector(t⃗[2],-t⃗[1])
         return n⃗/norm(n⃗)
     elseif M == 2 # a surface in 3d
         j  = jacobian(el,u)    
@@ -91,22 +119,7 @@ function normal(el::AbstractElement,u)
     end            
 end    
 
-push_forward_map(el,x̂) = map(el,x̂)
-
-function push_forward_map(el,x̂,ŵ)
-    x   = push_forward_map(el,x̂)
-    w   = map(zip(x̂,ŵ)) do (x̂,ŵ)
-        jac = jacobian(el,x̂)
-        g   = transpose(jac)*jac |> det
-        sqrt(g)*prod(ŵ)
-    end 
-    return x,w
-end   
-# FIXME: the function above is somewhat inefficient when the ambient and
-# geometric dimensions of the element are the same. In that case `μ` simplifies
-# to the usual `|det(jac)|`. This should be easy to fix by checking e.g. whether
-# `jac` is a square matrix. Since these are static arrays there should be no
-# runtime overhead compared to the hand-written version
+push_forward(el,x̂) = map(el,x̂)
 
 """
     geometric_dimension(el::AbstractElement{R})
@@ -115,15 +128,21 @@ Return the geometric dimension of `el`, i.e. the number of variables needed to l
 parametrize the element.
 """
 geometric_dimension(t::Type{<:AbstractElement}) = geometric_dimension(domain(t))
-geometric_dimension(el)                         = geometric_dimension(typeof(el))
+geometric_dimension(el::AbstractElement)        = geometric_dimension(typeof(el))
 
 """
     ambient_dimension(el::AbstractElement)
 
 Return the dimension of the ambient space where `el` lives.
 """
-ambient_dimension(el::AbstractElement{R,N}) where {R,N} = N
-ambient_dimension(::Type{<:AbstractElement{R,N}}) where {R,N} = N
+ambient_dimension(el::AbstractElement{R,N})   where {R,N} = N
+ambient_dimension(t::Type{<:AbstractElement{R,N}}) where {R,N} = N
+
+boundary(el::AbstractLine) = el(0),el(1)
+
+function jacobian(el::AbstractLine,u;h=sqrt(eps()))
+    (el(u+h)-el(u))/h
+end    
 
 """
     abstract type PolynomialElement{R,M} <: AbstractElement{R,M}
@@ -153,7 +172,23 @@ function LagrangeElement{R}(nodes::SVector{Np,Point{N,T}}) where {R,Np,N,T}
     LagrangeElement{R,Np,N,T}(nodes)
 end
 
-get_nodes(el::LagrangeElement) = el.nodes
+function LagrangeElement{R}(nodes...) where {R} 
+    nodes = SVector.(nodes)
+    LagrangeElement{R}(SVector(nodes))
+end
+
+# define some aliases for convenience
+const LagrangeLine        = LagrangeElement{ReferenceLine}
+const LagrangeTriangle    = LagrangeElement{ReferenceTriangle}
+const LagrangeTetrahedron = LagrangeElement{ReferenceTetrahedron}
+const LagrangeRectangle   = LagrangeElement{ReferenceSquare}
+
+line(a,b) = LagrangeLine(a,b)
+triangle(a,b,c) = LagrangeTriangle(a,b,c)
+tetrahedron(a,b,c,d) = LagrangeTetrahedron(a,b,c,d)
+rectangle(a,b,c,d) = LagrangeRectangle(a,b,c,d)
+
+nodes(el::LagrangeElement) = el.nodes
 
 get_order(el::LagrangeElement{ReferenceLine,Np}) where {Np} = Np + 1
 
@@ -201,32 +236,44 @@ function get_reference_nodes(el::LagrangeElement{ReferenceTriangle,Np}) where {N
     end
 end
 
-"""
-    (el::LagrangeElement)(x)
 
-Evaluate the underlying parametrization of the element `el` at point `x`. This is the push-forward map for the element. 
-"""
-function (el::LagrangeElement) end
+
+# FIXME: for a line in 1d, it seems more convenient to return a Number instead
+# of a SVector of length(1). How should we handle this in general?
+function (el::LagrangeElement{ReferenceLine,2,1})(u)
+    @assert length(u) == 1
+    @assert u ∈ ReferenceLine()    
+    x = nodes(el)
+    out = x[1] + (x[2] - x[1]) * u[1]    
+    return out[1]
+end    
 
 function (el::LagrangeElement{ReferenceLine,2})(u)
     @assert length(u) == 1
     @assert u ∈ ReferenceLine()    
-    nodes = get_nodes(el)
-    nodes[1] + (nodes[2] - nodes[1]) * u[1]    
+    x = nodes(el)
+    x[1] + (x[2] - x[1]) * u[1]    
 end    
 
 function (el::LagrangeElement{ReferenceTriangle,3})(u)
     @assert length(u) == 2    
     @assert u ∈ ReferenceTriangle()
-    nodes = get_nodes(el)
-    nodes[1] + (nodes[2] - nodes[1]) * u[1] + (nodes[3] - nodes[1]) * u[2]
+    x = nodes(el)
+    x[1] + (x[2] - x[1]) * u[1] + (x[3] - x[1]) * u[2]
+end 
+
+function (el::LagrangeElement{ReferenceSquare,4})(u)
+    @assert length(u) == 2    
+    @assert u ∈ ReferenceSquare()
+    x = nodes(el)
+    x[1] + (x[2] - x[1]) * u[1] + (x[4] - x[1]) * u[2] + (x[3]+x[1]-x[2]-x[4]) * u[1]*u[2]
 end 
 
 function (el::LagrangeElement{ReferenceTetrahedron,4})(u)
     @assert length(u) == 3    
     @assert u ∈ ReferenceTetrahedron()
-    nodes = get_nodes(el)
-    nodes[1] + (nodes[2] - nodes[1]) * u[1] + (nodes[3] - nodes[1]) * u[2] + (nodes[4] - nodes[1]) * u[3]
+    x = nodes(el)
+    x[1] + (x[2] - x[1]) * u[1] + (x[3] - x[1]) * u[2] + (x[4] - x[1]) * u[3]
 end 
 
 """
@@ -238,18 +285,29 @@ function jacobian(el::LagrangeElement{ReferenceLine,2}, u)
     N = dim(el)    
     @assert length(u) == 1
     @assert u ∈ ReferenceLine()    
-    nodes = get_nodes(el)
-    return SMatrix{N,1}((nodes[2] - nodes[1])...)
+    x = nodes(el)
+    return SMatrix{N,1}((x[2] - x[1])...)
 end    
 
 function jacobian(el::LagrangeElement{ReferenceTriangle,3}, u) 
     N = dim(el)
     @assert length(u) == 2    
     @assert u ∈ ReferenceTriangle()
-    nodes = get_nodes(el)
+    x = nodes(el)
     SMatrix{N,2}(
-        (nodes[2] - nodes[1])..., 
-        (nodes[3] - nodes[1])...
+        (x[2] - x[1])..., 
+        (x[3] - x[1])...
+    )
+end 
+
+function jacobian(el::LagrangeElement{ReferenceSquare,4},u)
+    N = ambient_dimension(el)
+    @assert length(u) == 2    
+    @assert u ∈ ReferenceSquare()
+    x = nodes(el)
+    hcat(
+        ((x[2] - x[1]) + (x[3]+x[1]-x[2]-x[4])*u[2]),
+        ((x[4] - x[1]) + (x[3]+x[1]-x[2]-x[4])*u[1])
     )
 end 
 
@@ -257,18 +315,13 @@ function jacobian(el::LagrangeElement{ReferenceTetrahedron,4}, u)
     N = dim(el)    
     @assert length(u) == 3   
     @assert u ∈ ReferenceTriangle()
-    nodes = get_nodes(el)
+    x = nodes(el)
     SMatrix{N,3}( 
-        (nodes[2] - nodes[1])...,
-        (nodes[3] - nodes[1])...,
-        (nodes[4] - nodes[1])...
+        (x[2] - x[1])...,
+        (x[3] - x[1])...,
+        (x[4] - x[1])...
     )
 end 
-
-# define some aliases for convenience
-const LagrangeLine        = LagrangeElement{ReferenceLine}
-const LagrangeTriangle    = LagrangeElement{ReferenceTriangle}
-const LagrangeTetrahedron = LagrangeElement{ReferenceTetrahedron}
 
 """
     abstract type ParametricElement{R,N} <: AbstractElement{R,N}
@@ -286,5 +339,19 @@ struct ParametricElement{R,N,F} <: AbstractParametricElement{R,N}
     parametrization::F    
 end
 
+function ParametricElement{R}(f) where {R}
+    F = typeof(f)
+    N = f(center(R)) |> length
+    return ParametricElement{R,N,F}(f)
+end  
+
 (el::ParametricElement)(u) = el.parametrization(u)
 
+# define some aliases for convenience
+const ParametricLine  = ParametricElement{ReferenceLine}
+
+# some useful shapes
+function circle(;center=Point(0,0),radius=1)
+    f = (u) -> center + Point(radius*sin(2π*u),radius*cos(2π*u))
+    ParametricLine(f)
+end    

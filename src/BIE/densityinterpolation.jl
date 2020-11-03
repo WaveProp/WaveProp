@@ -1,82 +1,35 @@
-"""
-    GreensCorrection{T,S} <: AbstractMatrix{T}
-
-An `AbstractMatrix` representing a correction to a singular boundary integral
-operator using density interpolation method (DIM) with Greens functions [^1].
-
-The underlying representation is *sparse* since only near-field interactions
-need to be taken into account. This structure is typically added to the dense
-part of an integral operator as a correction.
-
-[^1] TODO: CITE OUR PAPER
-"""
-struct GreensCorrection{T,S,U} 
-    iop::S
-    R::Matrix{T}
-    L::U
-    idxel_near::Vector{Int}
+function singular_weights_dim(iop::IntegralOperator,compress=Matrix)
+    X,Y,op = iop.X, iop.Y, iop.kernel.op        
+    σ = X == Y ? -0.5 : 0.0
+    # 
+    basis,γ₁_basis = _basis_dim(iop)
+    Op1, Op2       = _auxiliary_operators_dim(iop,compress)    
+    γ₀B,γ₁B,R      = _auxiliary_quantities_dim(iop,Op1,Op2,basis,γ₁_basis,σ)
+    _singular_weights_dim(iop,γ₀B,γ₁B,R)
 end
 
-Base.size(c::GreensCorrection,args...) = size(c.iop,args...)
-Base.eltype(c::GreensCorrection{T}) where {T} = T
-
-function GreensCorrection(iop::IntegralOperator,compress=Matrix)
-    X,Y,op = iop.X, iop.Y, iop.kernel.op
-    T = eltype(iop)
-    # construct integral operators required for correction
-    if kernel_type(iop) isa Union{SingleLayer,DoubleLayer}
-        Op1 = IntegralOperator{T}(SingleLayerKernel(op),X,Y) |> compress
-        Op2 = IntegralOperator{T}(DoubleLayerKernel(op),X,Y) |> compress
-    elseif kernel_type(iop) isa Union{AdjointDoubleLayer,HyperSingular}
-        Op1 = IntegralOperator{T}(AdjointDoubleLayerKernel(op),X,Y) |> compress
-        Op2 = IntegralOperator{T}(HyperSingularKernel(op),X,Y) |> compress
-    end
-    GreensCorrection(iop,Op1,Op2)
-end
-
-function GreensCorrection(iop::IntegralOperator,Op1,Op2)
-    xs = _source_gen(iop)
-    GreensCorrection(iop,Op1,Op2,xs)
-end
-
-function GreensCorrection(iop::IntegralOperator,Op1,Op2,xs::Vector{<:Point})
-    # construct greens "basis" from source locations xs
-    op        = iop.kernel.op
-    basis     = [y->SingleLayerKernel(op)(x,y) for x in xs]
-    γ₁_basis  = [(y,ny)->transpose(DoubleLayerKernel(op)(x,y,ny)) for x in xs]
-    #FIXME: the value of σ depends on whether the observation point in `X` lies
-    #inside, outside, or on the integration surface. The current way of doing
-    #is hacky: if the surfaces are the same we say the points are on, otherwise
-    #we assume they are outside.
-    σ = iop.X === iop.Y ? -0.5 : 0.0
-    GreensCorrection(iop,Op1,Op2,basis,γ₁_basis,σ)
-end
-
-function GreensCorrection(iop::IntegralOperator,Op1,Op2,basis,γ₁_basis,σ)
+function _auxiliary_quantities_dim(iop,Op1,Op2,basis,γ₁_basis,σ) 
     T           = eltype(iop)    
     kernel,X,Y  = iop.kernel, iop.X, iop.Y
     op          = kernel.op
     m,n         = length(X),length(Y)
-    L           = Vector{Matrix{T}}(undef,length(Y.el2qnodes))
-
     nbasis      = length(basis)
-
     # compute matrix of basis evaluated on Y
-    γ₀B     = Matrix{T}(undef,length(Y),nbasis)
-    γ₁B     = Matrix{T}(undef,length(Y),nbasis)
     ynodes   = qnodes(Y)
     ynormals = qnormals(Y)
-    @threads for k in 1:nbasis
+    γ₀B     = Matrix{T}(undef,length(ynodes),nbasis)
+    γ₁B     = Matrix{T}(undef,length(ynodes),nbasis)
+    for k in 1:nbasis
         for i in 1:length(ynodes)
             γ₀B[i,k] = basis[k](ynodes[i])
             γ₁B[i,k] = γ₁_basis[k](ynodes[i],ynormals[i])
         end
     end
-
+    # integrate the basis over Y
     xnodes   = qnodes(X)
     xnormals = qnormals(X)
-    # integrate the basis over Y
-    R  = Op1*γ₁B - Op2*γ₀B   
+    R        = Op1*γ₁B - Op2*γ₀B   
+    # analytic correction for on-surface evaluation of Greens identity
     if kernel_type(iop) isa Union{SingleLayer,DoubleLayer}
         if σ !== 0
             for k in 1:nbasis
@@ -94,27 +47,73 @@ function GreensCorrection(iop::IntegralOperator,Op1,Op2,basis,γ₁_basis,σ)
             end
         end
     end
-    # compute the interpolation matrix
-    idxel_near = nearest_element_list(X,Y,tol=1)
-    for i in 1:m # loop over rows
-        idx_el = idxel_near[i]
-        idx_el < 0 && continue
-        idx_nodes  = Y.el2qnodes[idx_el]
-        ninterp    = length(idx_nodes)
-        M          = Matrix{T}(undef,2*ninterp,nbasis)
-        M[1:ninterp,:]     = γ₀B[idx_nodes,:]
-        M[ninterp+1:end,:] = γ₁B[idx_nodes,:]
-        L[idx_el]          = M
+    return γ₀B, γ₁B, R
+end    
+
+function _auxiliary_operators_dim(iop,compress)
+    X,Y,op = iop.X, iop.Y, iop.kernel.op    
+    T = eltype(iop)
+    # construct integral operators required for correction
+    if kernel_type(iop) isa Union{SingleLayer,DoubleLayer}
+        Op1 = IntegralOperator{T}(SingleLayerKernel(op),X,Y) |> compress
+        Op2 = IntegralOperator{T}(DoubleLayerKernel(op),X,Y) |> compress
+    elseif kernel_type(iop) isa Union{AdjointDoubleLayer,HyperSingular}
+        Op1 = IntegralOperator{T}(AdjointDoubleLayerKernel(op),X,Y) |> compress
+        Op2 = IntegralOperator{T}(HyperSingularKernel(op),X,Y) |> compress
     end
-    return GreensCorrection(iop,R,L,idxel_near)
+    return Op1,Op2
+end 
+
+function _basis_dim(iop)
+    op = iop.kernel.op
+    xs = _source_gen(iop)
+    basis     = [y->SingleLayerKernel(op)(x,y) for x in xs]
+    γ₁_basis  = [(y,ny)->transpose(DoubleLayerKernel(op)(x,y,ny)) for x in xs]
+    return basis,γ₁_basis
+end    
+
+function _singular_weights_dim(iop::IntegralOperator,γ₀B,γ₁B,R)
+    X,Y = iop.X, iop.Y    
+    T = eltype(iop)
+    num_basis = size(γ₀B,2)
+    a,b = combined_field_coefficients(iop)
+    # we now have the residue R. For the correction we need the coefficients.
+    dict_near = near_interaction_list(X,Y,dim=ambient_dimension(Y)-1,atol=1e-16)
+    Is = Int[]
+    Js = Int[]
+    Vs = T[]
+    for (E,list_near) in dict_near
+        el2qnodes = Y.el2qnodes[E]
+        num_qnodes, num_els   = size(el2qnodes)
+        M                     = Matrix{T}(undef,2*num_qnodes,num_basis)
+        @assert length(list_near) == num_els
+        for n in 1:num_els
+            j_glob                = el2qnodes[:,n]
+            M[1:num_qnodes,:]     = γ₀B[j_glob,:]
+            M[num_qnodes+1:end,:] = γ₁B[j_glob,:]
+            F                     = qr(M)
+            for (i,_) in list_near[n]
+                tmp  = (R[i:i,:]/F.R)*adjoint(F.Q)
+                w    = axpby!(a,view(tmp,1:num_qnodes),b,view(tmp,(num_qnodes+1):(2*num_qnodes)))
+                append!(Is,fill(i,num_qnodes))
+                append!(Js,j_glob)
+                append!(Vs,w)
+            end
+        end    
+    end        
+    Sp = sparse(Is,Js,Vs,size(iop)...)
+    return Sp
 end
 
 function _source_gen(iop::IntegralOperator,kfactor=5)
     Y      =  iop.Y
-    nquad  = mapreduce(x->length(x),max,Y.el2qnodes) # maximum number of quadrature nodes per element
+    nquad  = 0
+    for (E,tags) in el2qnodes(Y)        
+        nquad = max(nquad,size(tags,1))
+    end  
     nbasis = 3*nquad
     # construct source basis
-    return _source_gen(iop,nbasis,kfactor=kfactor)
+    return _source_gen(iop,nbasis;kfactor)
 end
 
 function _source_gen(iop,nsources;kfactor)
@@ -142,61 +141,4 @@ function _sphere_sources_lebedev(;nsources, radius=10, center=Point(0.,0.,0.))
         push!(Xs,radius*pt .+ center)
     end
     return Xs
-end
-
-# FIXME:this function needs to be cleaned up and optimized for perf
-function precompute_weights_qr(c::GreensCorrection)
-    T = eltype(c)    
-    w = [Vector{T}() for _ in 1:size(c,1)]
-    iop  = c.iop
-    a,b  = combined_field_coefficients(iop.kernel)
-    X,Y  = iop.X, iop.Y
-    QRTYPE = Base.promote_op(qr,Matrix{T})
-    F      = Vector{QRTYPE}(undef,length(c.L))
-    for i in 1:size(c,1)
-        idx_el    = c.idxel_near[i]
-        idx_el < 0 && continue
-        idx_nodes = iop.Y.el2qnodes[idx_el]
-        ninterp = length(idx_nodes)
-        if !isassigned(F,idx_el)
-            F[idx_el]  = qr(c.L[idx_el])
-        end
-        tmp     = (c.R[i:i,:]/F[idx_el].R)*adjoint(F[idx_el].Q)
-        w[i]     = axpby!(a,view(tmp,1:ninterp),b,view(tmp,(ninterp+1):(2*ninterp)))
-    end
-    return w
-end
-
-function Base.Matrix(c::GreensCorrection)
-    iop = c.iop
-    a,b   = combined_field_coefficients(iop.kernel)
-    M     = zeros(eltype(c),size(c))
-    w     = precompute_weights_qr(c)
-    for i in 1:size(c,1)
-        idx_el    = c.idxel_near[i]
-        idx_el < 0 && continue
-        idx_nodes = iop.Y.el2qnodes[idx_el]
-        M[i,idx_nodes] = w[i]
-    end
-    return M
-end
-
-function SparseArrays.sparse(c::GreensCorrection)
-    m,n = size(c)
-    iop = c.iop
-    T   = eltype(c)
-    a,b = combined_field_coefficients(iop.kernel)
-    I = Int[]
-    J = Int[]
-    V = T[]
-    w = precompute_weights_qr(c)
-    for i in 1:size(c,1)
-        idx_el    = c.idxel_near[i]
-        idx_el < 0 && continue
-        idx_nodes = getelements(iop.Y)[idx_el]
-        append!(I,fill(i,length(idx_nodes)))
-        append!(J,idx_nodes)
-        append!(V,w[i])
-    end
-    return sparse(I,J,V,m,n)
 end

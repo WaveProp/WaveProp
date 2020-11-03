@@ -54,7 +54,7 @@ end
         @test domain(l) == ReferenceLine()
         @test ambient_dimension(l) == 2
         @test geometric_dimension(l) == 1
-        @test normal(l,Point(0.5)) == Point(-1.,1.)/√2
+        @test normal(l,Point(0.5)) == Point(1.,-1.)/√2
     end
     @testset "LagrangeTriangle" begin
         # triangle in 2d

@@ -40,6 +40,8 @@ function Base.getindex(::HyperSingular,iop::IntegralOperator,i::Integer,j::Integ
     return iop.kernel(x,y,nx,ny)*w
 end
 
+combined_field_coefficients(iop::IntegralOperator) = combined_field_coefficients(iop.kernel)
+
 # convenience constructors
 SingleLayerOperator(op::AbstractPDE,X,Y=X)        = IntegralOperator(SingleLayerKernel(op),X,Y)
 DoubleLayerOperator(op::AbstractPDE,X,Y=X)        = IntegralOperator(DoubleLayerKernel(op),X,Y)

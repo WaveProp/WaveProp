@@ -74,7 +74,7 @@ Exactly integrates all polynomials up to degree `2N-1`.
 struct GaussLegendre{N} <: AbstractQuadratureRule{ReferenceLine} end
 
 function (q::GaussLegendre{N})() where {N}
-    x,w = gausslegendre(N) # gives integral in [-1,1]. Converted to [0,1] below
+    x,w  = gauss(N) # gives integral in [-1,1]. Converted to [0,1] below
     xs   = svector(i->(0.5*(x[i]+1)),N) 
     ws   = svector(i->w[i]/2,N)
     return xs,ws
@@ -176,23 +176,39 @@ function TensorProduct(q...)
     TensorProduct(q)
 end    
 
+# FIXME: instead of returning an iterator, the tensor product rule is currently
+# returning the actual matrices. 
 function (q::TensorProduct)()
     nodes   = map(q->q()[1],q.quad)    
     weights = map(q->q()[2],q.quad)    
-    x = Iterators.product(nodes...)
-    w = Iterators.product(weights...)
-    return x,w
+    x = Iterators.product(nodes...) 
+    w = Iterators.product(weights...) 
+    return Point.(x), prod.(collect(w))
 end    
 
-# function transform(q::AbstractQuadratureRule,cov::GeometricTransformation)
-#     @assert domain(q) == Geometry.domain(cov)
-#     x̂,ŵ = q()
-#     # modify the quadrature using the change of variables
-#     x   = map(cov,x̂)
-#     w   = map(zip(x̂,ŵ)) do (x̂,ŵ)
-#         jac = jacobian(cov,x̂)
-#         g   = transpose(jac)*jac |> det
-#         sqrt(g)*prod(ŵ)
-#     end 
-#     return x,w
-# end    
+function (qrule::AbstractQuadratureRule)(el)
+  x̂,ŵ = qrule()
+  x,w = _push_forward_quad(el,x̂,ŵ)
+  return x,w
+end
+
+function _push_forward_quad(cov,x̂,ŵ)
+    x   = map(x->cov(x),x̂)
+    w   = map(zip(x̂,ŵ)) do (x̂,ŵ)
+        μ = measure(cov,x̂)
+        μ*prod(ŵ)
+    end 
+    return x,w
+end
+
+function push_forward_quad_with_normal(el,qrule)
+    @assert domain(el) == domain(qrule)    
+    x̂,ŵ = qrule()
+    _push_forward_quad_with_normal(el,x̂,ŵ)
+end
+
+function _push_forward_quad_with_normal(el,x̂,ŵ)
+    x,w = _push_forward_quad(el,x̂,ŵ)
+    ν   = map(x->normal(el,x),x̂)
+    return x,w,ν
+end

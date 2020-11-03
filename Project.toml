@@ -1,6 +1,6 @@
 name = "WaveProp"
 uuid = "59f5f407-a2f4-4990-bd94-b423da74d595"
-authors = ["Luiz Faria <maltezfaria@gmail.com>"]
+authors = ["Luiz Faria <maltezfaria@gmail.com>", "Emile Parolin <emile.parolin@gmail.com>"]
 version = "0.1.0"
 
 [deps]

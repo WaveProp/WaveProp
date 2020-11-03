@@ -69,6 +69,13 @@ const AbstractLine{N} = AbstractElement{ReferenceLine,N}
 const AbstractTriangle{N} = AbstractElement{ReferenceTriangle,N}
 
 """
+    (el::AbstractElement)(x)
+
+Evaluate the underlying parametrization of the element `el` at point `x`. This is the push-forward map for the element. 
+"""
+function (el::AbstractElement)(x) end
+
+"""
     reference_element(el::AbstractElement)
 
 Return an instance of the singleton type `R`; i.e. the reference element.
@@ -229,12 +236,7 @@ function get_reference_nodes(el::LagrangeElement{ReferenceTriangle,Np}) where {N
     end
 end
 
-"""
-    (el::LagrangeElement)(x)
 
-Evaluate the underlying parametrization of the element `el` at point `x`. This is the push-forward map for the element. 
-"""
-function (el::LagrangeElement) end
 
 # FIXME: for a line in 1d, it seems more convenient to return a Number instead
 # of a SVector of length(1). How should we handle this in general?

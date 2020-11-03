@@ -16,7 +16,7 @@ export svector, @notimplemented, assert_extension
 """
     svector(f,n)
 
-Just like [`ntuple`](@ref), but convert output to a `StaticVector`.
+Just like `ntuple`, but convert output to a `StaticVector`.
 """
 svector(f,n) = ntuple(f,n) |> SVector
 # FIXME: how to cross-reference the function `ntuple` from base in the docstring?

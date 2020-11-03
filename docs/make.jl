@@ -3,7 +3,9 @@ using WaveProp
 
 makedocs(
     sitename = "WaveProp",
-    format = Documenter.HTML(),
+    format = Documenter.HTML(
+        prettyurls = get(ENV, "CI", nothing) == "true"
+    ),
     modules = [WaveProp]
 )
 

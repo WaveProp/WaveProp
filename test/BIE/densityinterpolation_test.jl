@@ -7,7 +7,7 @@ using WaveProp.Mesh
 
 @testset "Greens interpolant test" begin
     # construct interior solution
-    pde  = Laplace(dim=3)
+    pde  = Helmholtz(dim=3,k=1)
     xout = Point(3,3,3)
     u    = (x)   -> SingleLayerKernel(pde)(xout,x)
     dudn = (x,n) -> DoubleLayerKernel(pde)(xout,x,n)
@@ -18,10 +18,13 @@ using WaveProp.Mesh
     𝐒     = SingleLayerOperator(pde,mesh) 
     𝐃     = DoubleLayerOperator(pde,mesh) 
     e0    = WaveProp.Utils.error_interior_green_identity(𝐒,𝐃,γ₀u,γ₁u)
-    δS    = GreensCorrection(𝐒) 
-    δD    = GreensCorrection(𝐃) 
+    δS    = singular_weights_dim(𝐒) 
+    δD    = singular_weights_dim(𝐃) 
     Sfull = Matrix(𝐒) + δS
     Dfull = Matrix(𝐃) + δD
     e1 = WaveProp.Utils.error_interior_green_identity(Sfull,Dfull,γ₀u,γ₁u)
     @test norm(e1,Inf) < norm(e0,Inf)
+    S,D = BIE.single_double_layer(pde,mesh)
+    e2 = WaveProp.Utils.error_interior_green_identity(S,D,γ₀u,γ₁u)
+    @test e1 ≈ e2
 end

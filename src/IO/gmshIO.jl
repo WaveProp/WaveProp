@@ -1,4 +1,18 @@
 """
+macro gmsh(ex)
+
+Initialize `gmsh` through `gmsh.initilize(), execute `ex`, the close `gmsh`
+through `gmsh.finalize()`.
+"""
+macro gmsh(ex)
+    return quote
+        gmsh.initialize()
+        $(esc(ex))
+        gmsh.finalize()    
+    end
+end
+
+"""
     read_geo(fname::String;dim=3)
 
 Read a `.geo` file and generate a domain [`Ω::Domain`](@ref) of dimension `d`.
@@ -180,18 +194,19 @@ function gmsh_box(;origin=(0., 0., 0.),widths=(1., 1., 1.))
     return Ω, M
 end    
 
+""" 
+    gmsh_rectangle(;origin,widths)
 """
-    macro gmsh(ex)
-
-Initialize `gmsh` through `gmsh.initilize(), execute `ex`, the close `gmsh`
-through `gmsh.finalize()`.
-"""
-macro gmsh(ex)
-    return quote
-        gmsh.initialize()
-        $(esc(ex))
-        gmsh.finalize()    
+function gmsh_rectangle(;origin,dx,dy,dim,h)
+    @gmsh begin
+        _gmsh_set_meshsize(h)
+        gmsh.model.occ.addRectangle(origin...,dx,dy)
+        gmsh.model.occ.synchronize()
+        gmsh.model.mesh.generate(dim)
+        Ω = _initialize_domain(dim)
+        M = _initialize_mesh(Ω)
     end
+    return Ω,M
 end
 
 function _gmsh_set_meshsize(hmax, hmin=hmax)

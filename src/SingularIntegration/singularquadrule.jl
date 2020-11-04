@@ -28,8 +28,8 @@ function (qrule::SingularQuadratureRule)(s)
     l1    = line(s,0)
     l2    = line(s,1)
     # apply the quadrature
-    x1,w1 = Integration._push_forward_quad(l1,x,w)
-    x2,w2 = Integration._push_forward_quad(l2,x,w)
+    x1,w1 = qrule(l1)
+    x2,w2 = qrule(l2)
     return vcat(x1,x2), vcat(w1,w2)
 end 
 
@@ -40,9 +40,9 @@ function (qrule::SingularQuadratureRule{<:Any,Duffy{2}})(::ReferenceTriangle,s)
     t2    = triangle((0,0),s,(0,1))
     t3    = triangle((1,0),s,(0,1))
     # apply the quadrature
-    x1,w1 = Integration._push_forward_quad(t1,x,w)
-    x2,w2 = Integration._push_forward_quad(t2,x,w)
-    x3,w3 = Integration._push_forward_quad(t3,x,w)
+    x1,w1 = qrule(t1)
+    x2,w2 = qrule(t2)
+    x3,w3 = qrule(t3)
     return vcat(x1,x2,x3), vcat(w1,w2,w3)
 end 
 
@@ -54,10 +54,10 @@ function (qrule::SingularQuadratureRule{<:Any,Duffy{2}})(::ReferenceSquare,s)
     t3    = triangle((1,0),s,(1,1))
     t4    = triangle((0,1),s,(1,1))
     # apply the quadrature
-    x1,w1 = Integration._push_forward_quad(t1,x,w)
-    x2,w2 = Integration._push_forward_quad(t2,x,w)
-    x3,w3 = Integration._push_forward_quad(t3,x,w)
-    x4,w4 = Integration._push_forward_quad(t4,x,w)
+    x1,w1 = qrule(t1)
+    x2,w2 = qrule(t2)
+    x3,w3 = qrule(t3)
+    x4,w4 = qrule(t4)
     return vcat(x1,x2,x3,x4), vcat(w1,w2,w3,w4)
 end 
 
@@ -101,19 +101,18 @@ function integrate(f,q::SingularQuadratureRule,s)
     integrate(f,x,w)
 end    
 
-function (qrule::SingularQuadratureRule{<:Any,<:TensorProductHandler})(::ReferenceSquare,s)
+function (qrule::SingularQuadratureRule{<:Any,<:TensorProductQuadratureHandler})(::ReferenceSquare,s)
     sx,sy = s[1],s[2]
-    x,w   = qrule()    
     # split the domain
     s1    = rectangle(s,(0,sy),(0,0),(sx,0))
     s2    = rectangle(s,(sx,0),(1,0),(1,sy))
     s3    = rectangle(s,(1,sy),(1,1),(sx,1))
     s4    = rectangle(s,(sx,1),(0,1),(0,sy))
     # apply the quadrature
-    x1,w1 = Integration._push_forward_quad(s1,x,w)
-    x2,w2 = Integration._push_forward_quad(s2,x,w)
-    x3,w3 = Integration._push_forward_quad(s3,x,w)
-    x4,w4 = Integration._push_forward_quad(s4,x,w)
+    x1,w1 = qrule(s1)
+    x2,w2 = qrule(s2)
+    x3,w3 = qrule(s3)
+    x4,w4 = qrule(s4)
     return vcat(x1,x2,x3,x4), vcat(w1,w2,w3,w4)
 end 
 

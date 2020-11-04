@@ -111,23 +111,23 @@ function jacobian(::Duffy{2},u)
     SMatrix{2,2,Float64}(1,0,-u[2],(1-u[1]))
 end    
 
-struct TensorProductHandler{S} <: SingularityHandler{ReferenceSquare} 
+struct TensorProductQuadratureHandler{S} <: SingularityHandler{ReferenceSquare} 
     cov::S
 end
 
-domain(::TensorProductHandler) = ReferenceSquare()
+domain(::TensorProductQuadratureHandler) = ReferenceSquare()
 
-function TensorProductHandler(q...)
-    TensorProductHandler(q)
+function TensorProductQuadratureHandler(q...)
+    TensorProductQuadratureHandler(q)
 end    
 
-function (f::TensorProductHandler)(x)
+function (f::TensorProductQuadratureHandler)(x)
     cov = f.cov    
     @assert length(cov) == length(x)
     svector(i->cov[i](x[i]),2)
 end    
 
-function jacobian(f::TensorProductHandler,x)
+function jacobian(f::TensorProductQuadratureHandler,x)
     cov = f.cov    
     @assert length(cov) == length(x)
     jx = derivative(cov[1],x[1])

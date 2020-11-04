@@ -1,33 +1,112 @@
 """
     abstract type AbstractQuadratureRule{D<:AbstractReferenceShape}
     
-A quadrature rule for integrating a function over the region `D`.
+A quadrature rule for integrating a function over the domain `D`.
+
+An instance `q` of `AbstractQuadratureRule{D}` is expected to implement the
+following methods:
+
+- `q()` : return the nodes `x` and weights `w` of the quadrature rule on the
+  reference domain `D`. For performance reasons, the result shoudl depend only
+  on the type of `q`. 
+- `q(el)` : return the nodes `x` and weights `w` of the quadrature rule on the
+  elemenent `D`. This assumes that `domain(q)==domain(el)`, so that the element
+  quadrature can be computed by *pushing forward* a reference quadrature to `el`.  
 """
 abstract type AbstractQuadratureRule{D} end
 
 domain(q::AbstractQuadratureRule{D}) where {D} = D()
 
+"""
+    (q::AbstractQuadratureRule)()
+
+Return the quadrature nodes `x` and weights `w` on the `domain(q)`.
+"""
+function (q::AbstractQuadratureRule) end
+
+"""
+    (q::AbstractQuadratureRule)(el)
+
+Return the quadrature nodes `x` and weights `w` for integrating over `el`. Here
+`el` can represent an element, or a change of variables, as long as
+`domain(el)==domain(q)`. 
+
+The *lifted* quadrature is computed by mapping the reference quadrature through
+`el`. This requires `el` to support the methods `el(x̂)` and `jacobian(el,x̂)`.
+"""
+function (q::AbstractQuadratureRule)(el)
+    @assert domain(el) == domain(q) "the domains of the `q` and `el` must agree"
+    x̂,ŵ = q()
+    x   = map(x->el(x),x̂)
+    w   = map(zip(x̂,ŵ)) do (x̂,ŵ)
+        μ = measure(el,x̂)
+        μ*prod(ŵ)
+    end 
+    return x,w
+end
+
+"""
+    integrate(f,q::AbstractQuadrature)
+    integrate(f,x,w)
+
+Integrate the function `f` using the quadrature rule `q`. This is simply
+`sum(f.(x) .* w)`, where `x` and `w` are the quadrature nodes and weights, respectively.
+"""
 function integrate(f,q::AbstractQuadratureRule)
     x,w = q()
     integrate(f,x,w)
 end    
 
 function integrate(f,x,w)
-    mapreduce(+,zip(x,w)) do (x,w)
+    sum(zip(x,w)) do (x,w)
         f(x)*prod(w)
     end
 end    
 
-# One-dimensional quadratures
+# overload quadgk for integration over reference shapes. Useful for various
+# testing purposes.
+"""
+    integrate(f,s::AbstractReferenceShape)
+
+Use `quadgk` to (adaptively) integrate a function over the reference shape `s`. 
+
+This is used mostly for testing purposes. It returns only the value of the
+integral (i.e. without the error estimate).
+"""
+integrate(f,l::AbstractReferenceShape) = quadgk(f,typeof(l))
+
+integrate(f,::Type{ReferenceLine})     = quadgk(f,0,1)[1]
+
+function integrate(f,::Type{ReferenceSquare})
+    I    = x-> quadgk(y->f(Point(x,y)),0,1)[1]
+    out  = quadgk(I,0,1)[1]
+end    
+
+function integrate(f,::Type{ReferenceTriangle})
+    I    = x -> quadgk(y->f(Point(x,y)),0,1-x)[1]
+    out  = quadgk(I,0,1)[1]
+end
+
+## Define some one-dimensional quadrature rules
 
 """
-    struct Trapezoidal{N}()
+    struct Trapezoidal{N} <: AbstractQuadratureRule{ReferenceLine}
 
 `N`-point trapezoidal rule for integrating a function over the interval `[0,1]`.
 
-Note that for analytic periodic functions, the trapezoidal rule converges exponentially fast. 
+Note that for analytic 1-periodic functions, this rule will converge
+exponentially fast. 
+    
+# Examples:
+```julia
+q    = Trapezoidal(10)
+f(x) = exp(x)*cos(x)
+integrate(f,q)
+```
 """
 struct Trapezoidal{N} <: AbstractQuadratureRule{ReferenceLine} end
+
+Trapezoidal(n::Int) = Trapezoidal{n}()
 
 function (q::Trapezoidal{N})() where {N}
     h = 2/(N-1)
@@ -42,12 +121,14 @@ function (q::Trapezoidal{N})() where {N}
 end    
 
 """
-    struct Fejer{N}()
+    struct Fejer{N}
 
 `N`-point Fejer's first quadrature rule for integrating a function over `[0,1]`.
-Exactly integrates all polynomials up to degree `N-1`.
+Exactly integrates all polynomials of degree `≤ N-1`.
 """
 struct Fejer{N} <: AbstractQuadratureRule{ReferenceLine} end
+
+Fejer(n::Int) = Fejer{n}()
 
 function (q::Fejer{N})() where {N}
     theta = [(2j-1)*π/(2*N) for j=1:N]
@@ -66,62 +147,32 @@ function (q::Fejer{N})() where {N}
 end
 
 """
-    struct GaussLegendre{N}()
+    struct GaussLegendre{N}
 
 `N`-point Gauss-Legendre quadrature rule for integrating a function over `[0,1]`.
-Exactly integrates all polynomials up to degree `2N-1`.
+Exactly integrates all polynomials of degree `≤ 2N-1`.
 """
 struct GaussLegendre{N} <: AbstractQuadratureRule{ReferenceLine} end
 
+GaussLegendre(n::Int) = GaussLegendre{n}()
+
 function (q::GaussLegendre{N})() where {N}
-    x,w  = gauss(N) # gives integral in [-1,1]. Converted to [0,1] below
+    x,w  = gauss(N) # This is a quadgk function. Gives integral in [-1,1]. Converted to [0,1] below
     xs   = svector(i->(0.5*(x[i]+1)),N) 
     ws   = svector(i->w[i]/2,N)
     return xs,ws
 end
-
-# struct DoubleExponential{N} <: AbstractQuadratureRule{N} end
-
-# """
-#     double_exponential(n::Integer) -> (x,w)
-
-# Compute nodes `x` and weights `w` of the double expoenential quadrature rule for integrating a function over `[-1,1]`.
-# """
-# function double_exponential(n::Integer,h=_estimate_h(n))
-#     @assert isodd(n) "double exponential requires odd number of points."
-#     x̂ = (t) -> tanh(π/2*sinh(t))
-#     ŵ = (t) -> h*π/2*cosh(t)/cosh(π/2*sinh(t))^2
-#     krange = -(n-1)÷2 : (n-1)÷2
-#     x = [x̂(k*h) for k in krange]
-#     w = [ŵ(k*h) for k in krange]
-#     return x,w
-# end
-
-# # FIXME: find out a how to estimate the stepsize h in the double exponential
-# # formula. I think what you want is to find `h` s.t. n*h = constant, where the
-# # constant should depend on the desired precision. 
-# function _estimate_h(n;tol=1e-16)
-#     x̂ = (t) -> tanh(π/2*sinh(t))
-#     ŵ = (t) -> h*π/2*cosh(t)/cosh(π/2*sinh(t))^2
-#     h = 2^(-8)
-#     while true
-#         if ŵ(n*h) < tol || 1-x̂(n*h) < tol
-#             return h    
-#         else
-#             h = 2*h
-#         end    
-#     end
-# end    
-
+ 
 """
     struct Gauss{D,N} <: AbstractQuadratureRule{D}
     
 Tabulated `N`-point symmetric Gauss quadrature rule for integration over `D`.
 
-This is currently implemented for low values of `N` on triangles and tetrahedrons.
+This is currently implemented *by hand* for low values of `N` on triangles and tetrahedrons.
 """
 struct Gauss{D,N} <: AbstractQuadratureRule{D} end
 
+Gauss(ref,n) = Gauss{typeof(ref),n}()
 Gauss(ref;n) = Gauss{typeof(ref),n}()
 
 function (q::Gauss{ReferenceTriangle,N})() where {N}
@@ -138,16 +189,6 @@ function (q::Gauss{ReferenceTriangle,N})() where {N}
     end            
     return x,w
 end
-
-function get_order(q::Gauss{ReferenceTriangle,N}) where {N}
-    if N == 1
-        return 1
-    elseif N == 3
-        return 3
-    else    
-        @notimplemented        
-    end    
-end    
 
 function (q::Gauss{ReferenceTetrahedron,N})() where {N}
     if N == 1
@@ -168,47 +209,33 @@ function (q::Gauss{ReferenceTetrahedron,N})() where {N}
     return x,w
 end
 
-struct TensorProduct{Q} <: AbstractQuadratureRule{ReferenceSquare} 
+"""
+    TensorProductQuadrature{Q}
+
+A tensor-product of one-dimension quadrature rules. Integrates over `[0,1]^d`,
+where `d=length(quad)`.
+
+# Examples
+```julia
+qx = Fejer(10)
+qy = GaussLegendre(15)
+q  = TensorProductQuadrature(qx,qy)
+```
+"""
+struct TensorProductQuadrature{Q} <: AbstractQuadratureRule{ReferenceSquare} 
     quad::Q
 end
 
-function TensorProduct(q...)
-    TensorProduct(q)
+function TensorProductQuadrature(q...)
+    TensorProductQuadrature(q)
 end    
 
 # FIXME: instead of returning an iterator, the tensor product rule is currently
 # returning the actual matrices. 
-function (q::TensorProduct)()
+function (q::TensorProductQuadrature)()
     nodes   = map(q->q()[1],q.quad)    
     weights = map(q->q()[2],q.quad)    
     x = Iterators.product(nodes...) 
     w = Iterators.product(weights...) 
     return Point.(x), prod.(collect(w))
 end    
-
-function (qrule::AbstractQuadratureRule)(el)
-  x̂,ŵ = qrule()
-  x,w = _push_forward_quad(el,x̂,ŵ)
-  return x,w
-end
-
-function _push_forward_quad(cov,x̂,ŵ)
-    x   = map(x->cov(x),x̂)
-    w   = map(zip(x̂,ŵ)) do (x̂,ŵ)
-        μ = measure(cov,x̂)
-        μ*prod(ŵ)
-    end 
-    return x,w
-end
-
-function push_forward_quad_with_normal(el,qrule)
-    @assert domain(el) == domain(qrule)    
-    x̂,ŵ = qrule()
-    _push_forward_quad_with_normal(el,x̂,ŵ)
-end
-
-function _push_forward_quad_with_normal(el,x̂,ŵ)
-    x,w = _push_forward_quad(el,x̂,ŵ)
-    ν   = map(x->normal(el,x),x̂)
-    return x,w,ν
-end

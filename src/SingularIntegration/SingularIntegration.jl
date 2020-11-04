@@ -22,7 +22,7 @@ using WaveProp.Interpolation
 import WaveProp.Geometry: domain, range, jacobian
 import WaveProp.Integration: integrate
 
-export Kress, IMT, SingularQuadratureRule, singular_weights, Duffy, TensorProductHandler
+export Kress, IMT, SingularQuadratureRule, singular_weights, Duffy, TensorProductQuadratureHandler
 
 include("singularityhandler.jl")
 include("singularquadrule.jl")

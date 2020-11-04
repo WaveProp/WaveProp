@@ -21,7 +21,7 @@ end
 @testset "Duffy" begin
     @testset "Singularity at vertex" begin
         q1d   = GaussLegendre{5}()
-        qstd  = TensorProduct(q1d,q1d)
+        qstd  = TensorProductQuadrature(q1d,q1d)
         duffy = Duffy{2}()
         qsin = SingularQuadratureRule(qstd,duffy)
         x,w  = qsin()
@@ -46,7 +46,7 @@ end
 
     @testset "Singularity inside" begin
         q1d   = GaussLegendre{5}()
-        qstd  = TensorProduct(q1d,q1d)
+        qstd  = TensorProductQuadrature(q1d,q1d)
         duffy = Duffy{2}()
         qsin = SingularQuadratureRule(qstd,duffy)
         s    = Point(0.37,0.25) 
@@ -79,9 +79,9 @@ end
 
 @testset "2d Kress" begin
     q1d   = GaussLegendre{10}()
-    qstd  = TensorProduct(q1d,q1d)
+    qstd  = TensorProductQuadrature(q1d,q1d)
     s1d   = Kress(order=2)
-    sing_handler = TensorProductHandler(s1d,s1d)
+    sing_handler = TensorProductQuadratureHandler(s1d,s1d)
     qsin = SingularQuadratureRule(qstd,sing_handler)
     x,w  = qsin()    
     # regular kernel

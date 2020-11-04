@@ -201,7 +201,7 @@ function _qrule_for_reference_element(ref,order)
         n  = (order + 1)/2 |> ceil
         qx = GaussLegendre{n}()
         qy = qx
-        qrule = TensorProduct(qx,qy)
+        qrule = TensorProductQuadrature(qx,qy)
     elseif ref isa ReferenceTriangle
         if order <= 1
             return Gauss(ref,n=1) 

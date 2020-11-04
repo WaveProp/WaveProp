@@ -1,3 +1,4 @@
+# FIXME: I don't think we need this file anymore...
 abstract type AbstractQuadrature{N,T} end
 
 struct GenericQuadrature{N,T}

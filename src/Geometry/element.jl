@@ -84,7 +84,7 @@ const AbstractTriangle{N} = AbstractElement{ReferenceTriangle,N}
 Evaluate the underlying parametrization of the element `el` at point `x`. This is the push-forward map for the element. 
 """
 function (el::AbstractElement)(x) 
-    abstractmethod()
+    abstractmethod(typeof(el))
 end
 
 """

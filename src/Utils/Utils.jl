@@ -10,7 +10,7 @@ using StaticArrays
 
 using WaveProp
 
-export svector, notimplemented, @abstractmethod, assert_extension
+export svector, notimplemented, abstractmethod, assert_extension
 
 """
     svector(f,n)
@@ -34,8 +34,8 @@ end
 A method of an `abstract type` for which concrete subtypes are expected
 to provide an implementation.
 """
-function abstractmethod()
-    error("this method needs to be implemented by the concrete subtype.")
+function abstractmethod(T)
+    error("this method needs to be implemented by the concrete subtype $T.")
 end 
 
 """

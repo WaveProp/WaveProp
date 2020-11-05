@@ -10,7 +10,7 @@ using StaticArrays
 
 using WaveProp
 
-export svector, @notimplemented, assert_extension
+export svector, notimplemented, @abstractmethod, assert_extension
 
 """
     svector(f,n)
@@ -20,14 +20,22 @@ Just like `ntuple`, but convert output to a `StaticVector`.
 svector(f,n) = ntuple(f,n) |> SVector
 
 """
-    @notimplemented
+    notimplemented()
 
-Things which should probably be implemented.
+Things which should probably be implemented at some point.
 """
-macro notimplemented()
-    quote
-        error("not (yet) implemented")
-    end
+function notimplemented()
+    error("not (yet) implemented")
+end 
+
+"""
+    abstractmethod
+
+A method of an `abstract type` for which concrete subtypes are expected
+to provide an implementation.
+"""
+function abstractmethod()
+    error("this method needs to be implemented by the concrete subtype.")
 end 
 
 """

@@ -10,7 +10,7 @@
         zz = [pt[3] for pt in pts]    
         return xx,yy,zz
     else
-        @notimplemented
+        notimplemented()
     end        
 end    
 

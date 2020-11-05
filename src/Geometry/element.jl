@@ -83,7 +83,9 @@ const AbstractTriangle{N} = AbstractElement{ReferenceTriangle,N}
 
 Evaluate the underlying parametrization of the element `el` at point `x`. This is the push-forward map for the element. 
 """
-function (el::AbstractElement)(x) end
+function (el::AbstractElement)(x) 
+    abstractmethod()
+end
 
 """
     domain(el::AbstractElement)
@@ -133,7 +135,7 @@ function normal(el::AbstractElement,u)
         n⃗  = cross(t⃗₁,t⃗₂)
         return n⃗/norm(n⃗)
     else
-        @notimplemented    
+        notimplemented()    
     end            
 end    
 
@@ -275,7 +277,7 @@ function get_reference_nodes(el::LagrangeElement{ReferenceTriangle,Np}) where {N
                         Point(0.0, 1.0)
                 )        
     else    
-        @notimplemented
+        notimplemented()
     end
 end
 

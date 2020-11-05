@@ -208,7 +208,7 @@ function _qrule_for_reference_element(ref,order)
         elseif order <=2
             return Gauss(ref,n=3)     
         else
-            @notimplemented    
+            notimplemented()    
         end
     elseif ref isa ReferenceTetrahedron
         if order <= 1
@@ -216,7 +216,7 @@ function _qrule_for_reference_element(ref,order)
         elseif order <=2
             return Gauss(ref;n=4)
         else
-            @notimplemented    
+            notimplemented()    
         end
     end    
 end    

@@ -17,6 +17,19 @@ function (qs::SingularQuadratureRule)()
 end
 
 """
+    (qrule::SingularQuadratureRule)(k,s)
+
+Return the nodes and weights to integrate `∫k(x)f(x)dx ≈ sum(f.(x) .* w)`.
+"""
+function (qrule::SingularQuadratureRule)(k,s)
+    x,w = qrule(s)
+    w   = map(zip(x,w)) do (x,w)
+        k(x)*w
+    end
+    return x,w
+end 
+
+"""
     (qrule::SingularQuadratureRule)(s)
 
 Return a quadrature rule to integrate a function over `domain(qrule)`. The
@@ -33,7 +46,7 @@ function (qrule::SingularQuadratureRule)(s)
     return vcat(x1,x2), vcat(w1,w2)
 end 
 
-function (qrule::SingularQuadratureRule{<:Any,Duffy{2}})(::ReferenceTriangle,s)
+function (qrule::SingularQuadratureRule{<:Any,Duffy})(::ReferenceTriangle,s)
     x,w   = qrule()    
     # split the domain
     t1    = triangle((0,0),s,(1,0))
@@ -46,7 +59,7 @@ function (qrule::SingularQuadratureRule{<:Any,Duffy{2}})(::ReferenceTriangle,s)
     return vcat(x1,x2,x3), vcat(w1,w2,w3)
 end 
 
-function (qrule::SingularQuadratureRule{<:Any,Duffy{2}})(::ReferenceSquare,s)
+function (qrule::SingularQuadratureRule{<:Any,Duffy})(::ReferenceSquare,s)
     x,w   = qrule()    
     # split the domain
     t1    = triangle((0,0),s,(1,0))
@@ -61,18 +74,7 @@ function (qrule::SingularQuadratureRule{<:Any,Duffy{2}})(::ReferenceSquare,s)
     return vcat(x1,x2,x3,x4), vcat(w1,w2,w3,w4)
 end 
 
-"""
-    (qrule::SingularQuadratureRule)(k,s)
 
-Return the nodes and weights to integrate `∫k(x)f(x)dx ≈ sum(f.(x) .* w)`.
-"""
-function (qrule::SingularQuadratureRule)(k,s)
-    x,w = qrule(s)
-    w   = map(zip(x,w)) do (x,w)
-        k(x)*w
-    end
-    return x,w
-end 
 
 """
     singular_weights(q::SingularQuadratureRule,xi,k,s)
@@ -96,12 +98,17 @@ function singular_weights(qsin::SingularQuadratureRule,xi,K,s,el)
     singular_weights(qsin,xi,k,s)
 end 
 
+function integrate(f,q::SingularQuadratureRule)
+    x,w = q()
+    integrate(f,x,w)
+end
+
 function integrate(f,q::SingularQuadratureRule,s)
     x,w = q(s)
     integrate(f,x,w)
 end    
 
-function (qrule::SingularQuadratureRule{<:Any,<:TensorProductQuadratureHandler})(::ReferenceSquare,s)
+function (qrule::SingularQuadratureRule{<:Any,<:TensorProductSingularityHandler})(::ReferenceSquare,s)
     sx,sy = s[1],s[2]
     # split the domain
     s1    = rectangle(s,(0,sy),(0,0),(sx,0))

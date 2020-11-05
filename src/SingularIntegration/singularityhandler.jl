@@ -1,24 +1,13 @@
 """
     abstract type SingularityHandler{T}
     
-Functor types used in handling singularies in the integrand when using
-quadrature rules.        
+Functor types used in handling localized singularies in the integrand when
+performing numerical integration. 
+
+All concrete subtypes of `SingularityHandler` are expected to implement the following methods
+# TODO:
 """
 abstract type SingularityHandler{T} end
-
-# generic change of variables formula
-(f::SingularityHandler{ReferenceLine})(x,a,b)    = a + (b-a)*f((x-a)/(b-a))
-derivative(f::SingularityHandler{ReferenceLine},x,a,b)    = derivative(f,(x-a)/(b-a))
-(f::SingularityHandler{ReferenceLine})(x,a,b,xs) = x < xs ? f(x,xs,a) : f(x,xs,b)
-derivative(f::SingularityHandler{ReferenceLine},x,a,b,xs)    = x < xs ? derivative(f,x,xs,a) : derivative(f,x,xs,b)
-
-function QuadGK.quadgk(phi::SingularityHandler{ReferenceLine},f,args...;xs,kwargs...)
-    a,b = args[1], args[end]
-    QuadGK.quadgk(args...;kwargs...) do x
-        xi,dxi = phi(x,a,b,xs), derivative(phi,x,a,b,xs)
-        f(xi)*dxi
-    end
-end
 
 """
     struct IMT{A,P} <: SingularityHandler{ReferenceLine}
@@ -26,8 +15,7 @@ end
 One-dimensional change of variables mapping `[0,1] -> [0,1]` with the property that 
 all derivatives vanish at the point `x=0`.
 
-# FIXME: how do you add a reference to a docstring?
-See [Davis and Rabinowitz](https://www.elsevier.com/books/methods-of-numerical-integration/davis/978-0-12-206360-2)
+See [Davis and Rabinowitz](https://www.elsevier.com/books/methods-of-numerical-integration/davis/978-0-12-206360-2).
 """
 struct IMT{A,P} <: SingularityHandler{ReferenceLine}
 end
@@ -41,6 +29,7 @@ function (f::IMT{A,P})(x) where {A,P}
 end
 
 derivative(f::IMT{A,P},x) where {A,P} = f(x) * A*P*1 / x^(P+1)
+
 jacobian(f::IMT,x) = derivative(f,x) |> SMatrix{1,1}
 
 """
@@ -56,12 +45,13 @@ Kress(;order=5) = Kress{order}()
 domain(k::Kress) = ReferenceLine()
 range(k::Kress)  = ReferenceLine()
 
-# TODO: reorder operations of Kress so that fastmath is not needed
+# NOTE: fastmath is needed here to allow for various algebraic simplifications
+# which are not exact in floating arithmetic. Maybe reorder the operations *by
+# hand* to avoid having to use fastmath? In any case, benchmark first.
 @fastmath function (f::Kress{P})(x) where {P}
     v = (x) -> (1/P - 1/2)*((1-x))^3 + 1/P*((x-1)) + 1/2
     return 2v(x)^P / (v(x)^P + v(2-x)^P)
 end
-jacobian(f::Kress,x) = derivative(f,x) |> SMatrix{1,1}
 
 @fastmath function derivative(f::Kress{P},x) where {P}
     v = (x) -> (1/P - 1/2)*((1-x))^3 + 1/P*((x-1)) + 1/2
@@ -70,15 +60,41 @@ jacobian(f::Kress,x) = derivative(f,x) |> SMatrix{1,1}
         (v(x)^P + v(2-x)^P)^2
 end
 
-struct Window{A,B,S} end
+jacobian(f::Kress,x) = derivative(f,x) |> SMatrix{1,1}
+
+"""
+    Window{A,B,S}
+
+Change of variables mapping `[0,1]` to `[0,1]` with the following properties:
+- smooth (infinitely differentiable) on `[0,1]`
+- all derivatives vanish on both `x=0` and `x=1`
+- derivative of the transoformation is exactly 1 between `A` and `B`
+"""
+struct Window{A,B,S} <: SingularityHandler{ReferenceLine}
+end
+Window() = Window{0.25,0.75,1}()
+
+domain(::Window) = ReferenceLine()
+range(::Window)  = ReferenceLine()
+
+normalization(w::Window) = quadgk(t->_derivative(w,t),0,1,rtol=1e-16)[1]
 
 function (f::Window{A,B,S})(x) where {A,B,S}
+    x == 0 && return 0.0
+    I,_ = quadgk(t->derivative(f,t),0,x)  
+    return I  
     # TODO: Can the window function be used as a efficient change of variables?
     # The value of the function will probably have to be computed numerically
     # through a quadrature rule, but that should not be a problem. Test this?
 end    
 
-function derivative(f::Window{A,B,S},x) where {A,B,S}
+function derivative(f::Window,x)
+    x==0 && (return 0.0) 
+    x==1 && (return 0.0)
+    _derivative(f,x) / normalization(f)
+end    
+
+function _derivative(f::Window{A,B,S},x) where {A,B,S}
     if  A ≤ x ≤ B
         return 1
     elseif 0 ≤ x < A
@@ -92,45 +108,65 @@ function derivative(f::Window{A,B,S},x) where {A,B,S}
     end
 end    
 
+jacobian(f::Window,x) = derivative(f,x) |> SMatrix{1,1}
+
 """
-    struct Duffy{N} <: ChangeOfVariables
+    struct Duffy <: SingularityHandler{RefereceTriangle}
     
-Change of variables mapping the reference `HyperCube{N}` to the `Simplex{N}`
-with the property that the jacobian vanishes at the `𝐞₁` vertex of the simplex.
+Change of variables mapping the `ReferenceSquare` to the `RefereceTriangle`
+with the property that the jacobian vanishes at the `(1,0)` vertex of the
+triangle.
+
+Useful for integrating functions with a singularity on the `(1,0)` edge of the
+reference triangle.
 """
-struct Duffy{N} <: SingularityHandler{ReferenceTriangle} end
+struct Duffy <: SingularityHandler{ReferenceTriangle} end
 
-domain(::Duffy{2}) = ReferenceSquare()
-range(::Duffy{2})  = ReferenceTriangle()
+domain(::Duffy) = ReferenceTriangel()
 
-function (::Duffy{2})(u)
+function (::Duffy)(u)
     SVector(u[1],(1-u[1])*u[2])
 end    
 
-function jacobian(::Duffy{2},u)
+function jacobian(::Duffy,u)
     SMatrix{2,2,Float64}(1,0,-u[2],(1-u[1]))
 end    
 
-struct TensorProductQuadratureHandler{S} <: SingularityHandler{ReferenceSquare} 
-    cov::S
+struct TensorProductSingularityHandler{S} <: SingularityHandler{ReferenceSquare} 
+    shandler::S
 end
 
-domain(::TensorProductQuadratureHandler) = ReferenceSquare()
+domain(::TensorProductSingularityHandler) = ReferenceSquare()
 
-function TensorProductQuadratureHandler(q...)
-    TensorProductQuadratureHandler(q)
+function TensorProductSingularityHandler(q...)
+    TensorProductSingularityHandler(q)
 end    
 
-function (f::TensorProductQuadratureHandler)(x)
-    cov = f.cov    
-    @assert length(cov) == length(x)
-    svector(i->cov[i](x[i]),2)
+function (f::TensorProductSingularityHandler)(x)
+    shandler = f.shandler    
+    @assert length(shandler) == length(x)
+    N = length(shandler)
+    svector(i->shandler[i](x[i]),N)
 end    
 
-function jacobian(f::TensorProductQuadratureHandler,x)
-    cov = f.cov    
-    @assert length(cov) == length(x)
-    jx = derivative(cov[1],x[1])
-    jy = derivative(cov[2],x[2])
-    SMatrix{2,2}(jx,0,0,jy)
+function jacobian(f::TensorProductSingularityHandler,x)
+    shandler = f.shandler    
+    @assert length(shandler) == length(x)
+    N = length(shandler)
+    if N == 2
+        jx = derivative(shandler[1],x[1])
+        jy = derivative(shandler[2],x[2])
+        return SMatrix{2,2}(jx,0,0,jy)
+    else 
+        @notimplemented
+    end
 end    
+
+# # overload quadgk so that a singularity handler can be passed as first argument
+# function quadgk(phi::SingularityHandler{ReferenceLine},f,args...;xs,kwargs...)
+#     a,b = args[1], args[end]
+#     quadgk(args...;kwargs...) do x
+#         xi,dxi = phi(x,a,b,xs), derivative(phi,x,a,b,xs)
+#         f(xi)*dxi
+#     end
+# end

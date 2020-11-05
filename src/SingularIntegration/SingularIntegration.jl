@@ -4,9 +4,6 @@
 Implement specialised integration routines for non-smooth integrands. In
 particular, this module focuses on integrands which typically arise in boundary
 integral equations.
-
-Exports:
-$(EXPORTS)
 """
 module SingularIntegration
 
@@ -22,7 +19,9 @@ using WaveProp.Interpolation
 import WaveProp.Geometry: domain, range, jacobian
 import WaveProp.Integration: integrate
 
-export Kress, IMT, SingularQuadratureRule, singular_weights, Duffy, TensorProductQuadratureHandler
+import QuadGK: quadgk
+
+export Kress, IMT, Window, SingularQuadratureRule, singular_weights, Duffy, TensorProductSingularityHandler
 
 include("singularityhandler.jl")
 include("singularquadrule.jl")

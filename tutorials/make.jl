@@ -5,7 +5,11 @@ Pkg.instantiate()
 
 using Literate
 
-flist = ["sphere_scattering.jl", "singular_integrals.jl"]
+if isempty(ARGS)
+    flist = ["sphere_scattering.jl", "singular_integrals.jl"]
+else
+    flist = ARGS
+end    
 
 for file in flist
     fname =  joinpath(@__DIR__,file)

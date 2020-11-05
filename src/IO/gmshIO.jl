@@ -113,14 +113,15 @@ end
     _ent_to_mesh!(el2nodes, ent2tag, ω::ElementaryEntity)
 
 For each element type used to mesh `ω`:
-    - push into `el2nodes::Dict` the pair `etype=>ntags`;
-    - push into `ent2tag::Dict` the pair `etype=>etags`;
+- push into `el2nodes::Dict` the pair `etype=>ntags`;
+- push into `ent2tag::Dict` the pair `etype=>etags`;
+
 where:
-    - `etype::DataType` determines the type of the element (see
+- `etype::DataType` determines the type of the element (see
     [`type_tag_to_etype`](@ref));
-    - `ntags::Matrix{Int}` gives the indices of the nodes defining those
+- `ntags::Matrix{Int}` gives the indices of the nodes defining those
     elements;
-    - `etags::Vector{Int}` gives the indices of those elements in `el2nodes`.
+- `etags::Vector{Int}` gives the indices of those elements in `el2nodes`.
 """
 function _ent_to_mesh!(el2nodes, ent2tag, ω::ElementaryEntity)
     ω in keys(ent2tag) && (return el2nodes, ent2tag)

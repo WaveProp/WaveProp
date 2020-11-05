@@ -44,6 +44,7 @@ function (q::AbstractQuadratureRule)(el)
     end 
     return x,w
 end
+(q::AbstractQuadratureRule)(f::typeof(identity)) = q()
 
 """
     integrate(f,q::AbstractQuadrature)

@@ -5,22 +5,29 @@ using WaveProp.Integration
 using WaveProp.SingularIntegration
 using LinearAlgebra
 
-@testset "QuadGK" begin
-    function test_quadgk(f,sing_handler,a,b,xs)
-        val,er  = quadgk(f,a,xs,b)
-        val2,er = quadgk(sing_handler,f,a,xs,b,xs=xs)
-        @test val ≈ val2
+@testset "One dimensional handlers" begin
+    qstd = GaussLegendre(10)    
+    # simple test on smooth integrand
+    for shand in [IMT(), Kress()]
+        q     = SingularQuadratureRule(qstd,shand)
+        @test isapprox(integrate(cos,q),sin(1),rtol=1e-2)
     end
-    f = (x) -> x==0.1 ? 0.0 : log(abs(x-0.1))
-    kress = Kress{10}()
-    test_quadgk(f,kress,-1,1,0.1)
-    imt = IMT{1,1}()
-    test_quadgk(f,imt,-1,1,0.1)
+    # non-smooth integrand
+    for shand in [IMT(), Kress()]
+        f     = (x) -> log(abs(x))
+        q     = SingularQuadratureRule(qstd,shand)
+        I,_   = quadgk(f,0,1)
+        Ia    = integrate(f,q)
+        @test isapprox(Ia,I,rtol=1e-3)
+        Iw    = integrate(f,qstd)
+        @test !isapprox(Iw,I,rtol=1e-3)
+    end
 end
+
 
 @testset "Duffy" begin
     @testset "Singularity at vertex" begin
-        q1d   = GaussLegendre{5}()
+        q1d   = GaussLegendre(5)
         qstd  = TensorProductQuadrature(q1d,q1d)
         duffy = Duffy{2}()
         qsin = SingularQuadratureRule(qstd,duffy)

@@ -39,8 +39,8 @@ rect,out_mesh  =  WaveProp.IO.gmsh_rectangle(origin=(-5,-5,0),dx=10,dy=10,h=0.1,
 vals           = [u(x) for x in WaveProp.Mesh.nodes(out_mesh)]
 fname = joinpath(@__DIR__,"output")
 vtkfile = WaveProp.IO.vtk_mesh_file(out_mesh,rect,fname) 
-vtkfile["total field (real part)",VTKPointData()] = real(vals)
-vtkfile["total field (imag part)",VTKPointData()] = imag(vals)
+vtkfile["total field (real part)"] = real(vals)
+vtkfile["total field (imag part)"] = imag(vals)
 vtk_save(vtkfile)
 
 

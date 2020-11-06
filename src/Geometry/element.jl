@@ -281,23 +281,26 @@ function get_reference_nodes(el::LagrangeElement{ReferenceTriangle,Np}) where {N
     end
 end
 
-
-
-# FIXME: for a line in 1d, it seems more convenient to return a Number instead
-# of a SVector of length(1). How should we handle this in general?
-function (el::LagrangeElement{ReferenceLine,2,1})(u)
-    @assert length(u) == 1
-    @assert u ∈ ReferenceLine()    
-    x = nodes(el)
-    out = x[1] + (x[2] - x[1]) * u[1]    
-    return out[1]
-end    
-
-function (el::LagrangeElement{ReferenceLine,2})(u)
+function (el::LagrangeLine{2})(u)
     @assert length(u) == 1
     @assert u ∈ ReferenceLine()    
     x = nodes(el)
     x[1] + (x[2] - x[1]) * u[1]    
+end    
+
+function (el::LagrangeLine{3})(u)
+    @assert length(u) == 1
+    @assert u ∈ ReferenceLine()    
+    x = nodes(el)
+    x[1] + (4*x[3] - 3*x[1] - x[2])*u[1]  + 2*(x[2]+x[1]-2*x[3])*u[1]^2
+end    
+
+function jacobian(el::LagrangeLine{3},u)
+    N = ambient_dimension(el)        
+    @assert length(u) == 1
+    @assert u ∈ ReferenceLine()    
+    x = nodes(el)
+    SMatrix{N,1}((4*x[3] - 3*x[1] - x[2] + 4*(x[2]+x[1]-2*x[3])*u[1])...)
 end    
 
 function (el::LagrangeElement{ReferenceTriangle,3})(u)
@@ -322,9 +325,9 @@ function (el::LagrangeElement{ReferenceTetrahedron,4})(u)
 end 
 
 """
-    gradient(el::LagrangeElement,x)
+    jacobian(el::LagrangeElement,x)
 
-Evaluate the gradient of the underlying parametrization of the element `el` at point `x`. 
+Evaluate the jacobian of the underlying parametrization of the element `el` at point `x`. 
 """
 function jacobian(el::LagrangeElement{ReferenceLine,2}, u)
     N = ambient_dimension(el)    

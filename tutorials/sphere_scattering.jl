@@ -4,7 +4,7 @@
 # the modules
 using LinearAlgebra
 using WaveProp
-using WaveProp.BIE
+using WaveProp.Nystrom
 using WaveProp.Geometry
 using WriteVTK
 

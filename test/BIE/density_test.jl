@@ -1,6 +1,6 @@
 using Test
 using WaveProp
-using WaveProp.BIE
+using WaveProp.Nystrom
 using WaveProp.Geometry
 using WaveProp.Integration
 using WaveProp.Mesh

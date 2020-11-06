@@ -1,6 +1,6 @@
 using Test, LinearAlgebra
 using WaveProp
-using WaveProp.BIE
+using WaveProp.Nystrom
 using WaveProp.Geometry
 using WaveProp.Integration
 using WaveProp.Mesh
@@ -11,8 +11,8 @@ using WaveProp.Mesh
     compute_quadrature!(mesh;order=1,dim=2,need_normal=true)
     𝐒     = SingleLayerOperator(pde,mesh)
     𝐃     = DoubleLayerOperator(pde,mesh)
-    @test BIE.kernel_type(𝐒) == BIE.SingleLayer()
-    @test BIE.kernel_type(𝐃) == BIE.DoubleLayer()
+    @test Nystrom.kernel_type(𝐒) == Nystrom.SingleLayer()
+    @test Nystrom.kernel_type(𝐃) == Nystrom.DoubleLayer()
 end
 
 # this is a rought test that the Greens identities are satisfied. Note that
@@ -34,7 +34,7 @@ end
     𝐃     = DoubleLayerOperator(pde,mesh) |> Matrix
     𝐒[diagind(𝐒)] .= 0
     𝐃[diagind(𝐃)] .= 0
-    ee = WaveProp.BIE.error_interior_green_identity(𝐒,𝐃,γ₀u,γ₁u) / norm(γ₀u,Inf)  
+    ee = WaveProp.Nystrom.error_interior_green_identity(𝐒,𝐃,γ₀u,γ₁u) / norm(γ₀u,Inf)  
     @test norm(ee,Inf) < 5e-2
 end
 
@@ -51,7 +51,7 @@ end
     γ₁u   = γ₁(dudn,mesh)
     𝐒     = SingleLayerOperator(pde,mesh) 
     𝐃     = DoubleLayerOperator(pde,mesh) 
-    ee = WaveProp.BIE.error_interior_green_identity(𝐒,𝐃,γ₀u,γ₁u) / norm(γ₀u,Inf)  
+    ee = WaveProp.Nystrom.error_interior_green_identity(𝐒,𝐃,γ₀u,γ₁u) / norm(γ₀u,Inf)  
     @test norm(ee,Inf) < 5e-2
     # singular_weights(𝐒)
     # δS = singular_weights(𝐒)

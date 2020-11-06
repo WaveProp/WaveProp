@@ -17,7 +17,9 @@ include("SingularIntegration/SingularIntegration.jl")
 
 include("Mesh/Mesh.jl")
 
-include("BIE/BIE.jl")
+include("PhysicalProblem/PhysicalProblem.jl")
+
+include("Nystrom/Nystrom.jl")
 
 # include("FEM/FEM.jl")
 

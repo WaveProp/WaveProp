@@ -1,6 +1,6 @@
 using Test
 using WaveProp.Utils
-using WaveProp.BIE
+using WaveProp.Nystrom
 using WaveProp.Geometry
 using WaveProp.Integration
 using WaveProp.SingularIntegration
@@ -8,7 +8,7 @@ using QuadGK
 using LinearAlgebra
 using Plots
 
-using WaveProp.BIE: _auxiliary_quadrature, _auxiliary_expansion_surface,
+using WaveProp.Nystrom: _auxiliary_quadrature, _auxiliary_expansion_surface,
 _auxiliary_integration_matrix, _auxiliary_interpolation_matrix, combined_field_coefficients
 
 ## test 
@@ -56,7 +56,7 @@ I2 = integrate(y->g(y),xq,w̃)
 @show (I - I2)/I |> abs
 
 # cov = IMT{10,1}()
-# x,w,ν = BIE._auxiliary_quadrature(τ,qrule,cov)
+# x,w,ν = Nystrom._auxiliary_quadrature(τ,qrule,cov)
 # sum(w)
 
 # d⃗    = -20*h/n*normal(τ,0.5)

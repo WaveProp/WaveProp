@@ -1,4 +1,4 @@
-module BIE
+module Nystrom
 
 using DocStringExtensions
 using StaticArrays

@@ -150,9 +150,10 @@ end
 
 Use `gmsh` API to generate a disk and return `Ω::Domain` and `M::GenericMesh`.
 """
-function gmsh_disk(;rx=0.5,ry=0.5,center=(0.,0.,0.),dim=2,h=min(rx,ry)/10)
+function gmsh_disk(;rx=0.5,ry=0.5,center=(0.,0.,0.),dim=2,h=min(rx,ry)/10,order=1)
     gmsh.initialize()
     _gmsh_set_meshsize(h)
+    _gmsh_set_meshorder(order)
     gmsh.model.occ.addDisk(center...,rx,ry)
     gmsh.model.occ.synchronize()
     gmsh.model.mesh.generate(dim)
@@ -252,6 +253,7 @@ methods which work on a concrete subtype.
 const type_tag_to_etype = Dict(
     15 => Point{3,Float64},
     1  => LagrangeLine{2,3,Float64},
+    8  => LagrangeLine{3,3,Float64},
     2  => LagrangeTriangle{3,3,Float64},
     4  => LagrangeTetrahedron{4,3,Float64}
 )

@@ -2,3 +2,5 @@
 *.vtu
 *.vtk
 *.json
+tutorials/*.md
+tutorials/*.ipynb

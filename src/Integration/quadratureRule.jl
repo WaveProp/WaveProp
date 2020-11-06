@@ -64,6 +64,11 @@ function integrate(f,x,w)
     end
 end    
 
+function integrate(f,q::AbstractQuadratureRule,el::AbstractElement)
+    x,w = q(el)
+    integrate(f,x,w)
+end    
+
 # overload quadgk for integration over reference shapes. Useful for various
 # testing purposes.
 """
@@ -74,9 +79,16 @@ Use `quadgk` to (adaptively) integrate a function over the reference shape `s`.
 This is used mostly for testing purposes. It returns only the value of the
 integral (i.e. without the error estimate).
 """
-integrate(f,l::AbstractReferenceShape) = quadgk(f,typeof(l))
+integrate(f,l::AbstractReferenceShape;kwargs...)     = integrate(f,typeof(l);kwargs...)
 
-integrate(f,::Type{ReferenceLine})     = quadgk(f,0,1)[1]
+integrate(f,::Type{ReferenceLine};kwargs...) = quadgk(f,0,1;kwargs...)[1]
+
+function integrate(f,el::AbstractElement{<:ReferenceLine};kwargs...)
+    g = (u) -> f(el(u))*measure(el,u)
+    integrate(g,domain(el);kwargs...)
+end    
+
+
 
 function integrate(f,::Type{ReferenceSquare})
     I    = x-> quadgk(y->f(Point(x,y)),0,1)[1]
@@ -186,7 +198,7 @@ function (q::Gauss{ReferenceTriangle,N})() where {N}
                     Point(1/6,2/3))
         w = svector(i->1/6,3)
     else
-        @notimplemented
+        notimplemented()
     end            
     return x,w
 end
@@ -205,7 +217,7 @@ function (q::Gauss{ReferenceTetrahedron,N})() where {N}
                 )
         w = svector(i->1/24,4)
     else
-        @notimplemented
+        notimplemented()
     end            
     return x,w
 end

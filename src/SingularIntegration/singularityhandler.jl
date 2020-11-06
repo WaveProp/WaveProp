@@ -1,11 +1,7 @@
 """
-    abstract type SingularityHandler{T}
+    abstract type SingularityHandler{R}
     
-Functor types used in handling localized singularies in the integrand when
-performing numerical integration. 
-
-All concrete subtypes of `SingularityHandler` are expected to implement the following methods
-# TODO:
+Used for handling localized integrand singularities in `R`.
 """
 abstract type SingularityHandler{T} end
 
@@ -72,7 +68,7 @@ Change of variables mapping `[0,1]` to `[0,1]` with the following properties:
 """
 struct Window{A,B,S} <: SingularityHandler{ReferenceLine}
 end
-Window() = Window{0.25,0.75,1}()
+Window() = Window{1,1,5}()
 
 domain(::Window) = ReferenceLine()
 range(::Window)  = ReferenceLine()
@@ -83,9 +79,8 @@ function (f::Window{A,B,S})(x) where {A,B,S}
     x == 0 && return 0.0
     I,_ = quadgk(t->derivative(f,t),0,x)  
     return I  
-    # TODO: Can the window function be used as a efficient change of variables?
-    # The value of the function will probably have to be computed numerically
-    # through a quadrature rule, but that should not be a problem. Test this?
+    # FIXME: the current way of computing the values of the `Window` change of
+    # variables is very innefficient. Could use a e.g. `cumsum`. 
 end    
 
 function derivative(f::Window,x)
@@ -116,13 +111,14 @@ jacobian(f::Window,x) = derivative(f,x) |> SMatrix{1,1}
 Change of variables mapping the `ReferenceSquare` to the `RefereceTriangle`
 with the property that the jacobian vanishes at the `(1,0)` vertex of the
 triangle.
-
+≤
 Useful for integrating functions with a singularity on the `(1,0)` edge of the
 reference triangle.
 """
 struct Duffy <: SingularityHandler{ReferenceTriangle} end
 
-domain(::Duffy) = ReferenceTriangel()
+domain(::Duffy) = ReferenceSquare()
+range(::Duffy)  = RefereceTriangle()
 
 function (::Duffy)(u)
     SVector(u[1],(1-u[1])*u[2])
@@ -158,7 +154,7 @@ function jacobian(f::TensorProductSingularityHandler,x)
         jy = derivative(shandler[2],x[2])
         return SMatrix{2,2}(jx,0,0,jy)
     else 
-        @notimplemented
+        notimplemented()
     end
 end    
 

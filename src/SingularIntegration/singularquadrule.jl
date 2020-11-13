@@ -31,6 +31,44 @@ end
 qrule(q::SingularQuadratureRule) = q.qrule
 singularity_handler(q::SingularQuadratureRule) = q.singularity_handler
 
+"""
+    singular_quadrature(q::SingularQuadratureRule,s)
+
+Use `q` to produce nodes `x` and weigths `w` for integrating a function over
+`domain(q)` with a possible singularity at `s ∈ domain(q)`.
+
+The actual implementation depends closely on the type of `q`.
+"""
+function singular_quadrature end
+
+"""
+    singular_quadrature(k,q::SingularQuadratureRule,s)
+
+Return nodes and weights to integrate a function over `domain(q)` with a
+factored weight `k`. 
+"""
+function singular_quadrature(k,q::SingularQuadratureRule,s)
+    x,w = singular_quadrature(q,s)
+    w   = map(zip(x,w)) do (x,w)
+        k(x)*w
+    end
+    return x,w
+end    
+
+"""
+    singular_weights(k,ui,q::SingularQuadratureRule,s)
+
+Return weights to integrate a function over `domain(q)` with value known only at
+nodes `ui` and a factored weight `k`. 
+"""
+function singular_weights(k,ui,q::SingularQuadratureRule,s)
+    x,w = singular_quadrature(k,q,s)
+    x   = map(x->x[1],x)
+    wlag = barycentric_lagrange_weights(ui)
+    L    = barycentric_lagrange_matrix(ui,x,wlag)
+    return transpose(L)*w
+end    
+
 function (qs::SingularQuadratureRule)()
     qstd = qs |> qrule
     cov  = qs |> singularity_handler    
@@ -56,7 +94,7 @@ Integrate `f` over `el` assuming a singularity of `f` at `el(s)`.
 function integrate(f,q::SingularQuadratureRule,el,s)
     x,w = q(el,s)
     integrate(f,x,w)
-end    
+end
 
 """
     singular_quadrature(q::SingularQuadratureRule,s)
@@ -103,18 +141,18 @@ function singular_quadrature(qrule::SingularQuadratureRule{ReferenceSquare,<:Any
     return vcat(x1,x2,x3,x4), vcat(w1,w2,w3,w4)
 end 
 
-# """
-#     singular_weights(q::SingularQuadratureRule,xi,k,s)
+"""
+    singular_weights(q::SingularQuadratureRule,xi,k,s)
 
-# Return the weights to integrate `∫k(x)f(x)dx ≈ sum(f.(xi) .* w)` where a
-# singularity can be efficiently handled at location `s`.
-# """
-# function singular_weights(qsin::SingularQuadratureRule,xi,k,s)
-#     x,w = qsin(k,s)
-#     wlag = barycentric_lagrange_weights(xi)
-#     L   = barycentric_lagrange_matrix(xi,x,wlag)
-#     return transpose(L)*w
-# end 
+Return the weights to integrate `∫k(x)f(x)dx ≈ sum(f.(xi) .* w)` where a
+singularity can be efficiently handled at location `s`.
+"""
+function singular_weights(qsin::SingularQuadratureRule,xi,k,s)
+    x,w = qsin(k,s)
+    wlag = barycentric_lagrange_weights(xi)
+    L   = barycentric_lagrange_matrix(xi,x,wlag)
+    return transpose(L)*w
+end 
 
 # function singular_weights(qsin::SingularQuadratureRule,xi,K,s,el)
 #     k   = (v) -> begin
@@ -124,20 +162,3 @@ end
 #     end    
 #     singular_weights(qsin,xi,k,s)
 # end 
-
-# function (qrule::SingularQuadratureRule{<:Any,<:TensorProductSingularityHandler})(::ReferenceSquare,s)
-#     sx,sy = s[1],s[2]
-#     # split the domain
-#     s1    = rectangle(s,(0,sy),(0,0),(sx,0))
-#     s2    = rectangle(s,(sx,0),(1,0),(1,sy))
-#     s3    = rectangle(s,(1,sy),(1,1),(sx,1))
-#     s4    = rectangle(s,(sx,1),(0,1),(0,sy))
-#     # apply the quadrature
-#     x1,w1 = qrule(s1)
-#     x2,w2 = qrule(s2)
-#     x3,w3 = qrule(s3)
-#     x4,w4 = qrule(s4)
-#     return vcat(x1,x2,x3,x4), vcat(w1,w2,w3,w4)
-# end 
-
-

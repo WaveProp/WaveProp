@@ -37,14 +37,18 @@ The *lifted* quadrature is computed by mapping the reference quadrature through
 function (q::AbstractQuadratureRule)(el)
     @assert domain(el) == domain(q) "the domains of the `q` and `el` must agree"
     x̂,ŵ = q()
+    _push_forward_quadrature(el,x̂,ŵ)
+end
+(q::AbstractQuadratureRule)(f::typeof(identity)) = q()
+
+function _push_forward_quadrature(el,x̂,ŵ)
     x   = map(x->el(x),x̂)
     w   = map(zip(x̂,ŵ)) do (x̂,ŵ)
         μ = measure(el,x̂)
         μ*prod(ŵ)
     end 
     return x,w
-end
-(q::AbstractQuadratureRule)(f::typeof(identity)) = q()
+end    
 
 """
     integrate(f,q::AbstractQuadrature)

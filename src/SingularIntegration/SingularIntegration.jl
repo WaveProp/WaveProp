@@ -21,7 +21,7 @@ import WaveProp.Integration: integrate
 
 import QuadGK: quadgk
 
-export Kress, IMT, Window, SingularQuadratureRule, singular_weights, Duffy, TensorProductSingularityHandler
+export Kress, IMT, Window, SingularQuadratureRule, singular_weights, singular_quadrature, Duffy, TensorProductSingularityHandler
 
 include("singularityhandler.jl")
 include("singularquadrule.jl")

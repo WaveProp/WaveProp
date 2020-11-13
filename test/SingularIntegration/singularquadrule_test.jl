@@ -73,6 +73,33 @@ end
     end
 end
 
+@testset "Singular weights" begin
+    qstd = GaussLegendre(20)    
+    el   = LagrangeLine((0,0),(1,1),(1/2,1/4))
+    vs   = 1/3
+    xs   = el(vs)
+    k    = x -> x==xs ? 0.0 : log(norm(x-xs))
+    f    = x -> cos(x[1])
+    g    = x -> k(x)*f(x)
+    I    = integrate(g,el)
+    shand = Kress()    
+    q     = SingularQuadratureRule(qstd,shand)    
+    x̂,ŵ   = singular_quadrature(q,vs)
+    x,w   = Integration._push_forward_quadrature(el,x̂,ŵ)
+    Ia    = integrate(g,x,w)
+    @test isapprox(I,Ia;rtol=1e-5)
+    # include k in the weights
+    x̂,ŵ   = singular_quadrature(u->k(el(u)),q,vs)
+    x,w   = Integration._push_forward_quadrature(el,x̂,ŵ)
+    Ia    = integrate(f,x,w)
+    @test isapprox(I,Ia;rtol=1e-5)
+    # compute only weights
+    ui    = qstd()[1]
+    w     = singular_weights(u->k(el(u))*measure(el,u),ui,q,vs)
+    Ia    = integrate(f,el.(ui),w)
+    @test isapprox(I,Ia;rtol=1e-5)
+end
+
 # @testset "Duffy" begin
 #     @testset "Singularity at vertex" begin
 #         q1d   = GaussLegendre(5)

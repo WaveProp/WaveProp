@@ -169,6 +169,8 @@ end
 
 # helper iterator 
 function _iterate(mesh::GenericMesh,E,ent::ElementaryEntity,i::Int=1)
+    # if ent has not elements of type `E`, stop inner iteration
+    haskey(mesh.ent2tags[ent],E) || (return nothing)
     # get tag for i-th elements in ent of type E
     el_tags = mesh.ent2tags[ent][E]
     if i > length(el_tags)

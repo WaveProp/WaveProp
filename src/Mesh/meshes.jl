@@ -35,22 +35,10 @@ struct GenericMesh{N,T} <: AbstractMesh{N,T}
     el2nodes::Dict{DataType,Matrix{Int}}
     # mapping from elementary entity to (etype,tags)
     ent2tags::Dict{ElementaryEntity,Dict{DataType,Vector{Int}}}
-    # quadrature info
-    qnodes::Vector{Point{N,T}}
-    qweights::Vector{T}
-    qnormals::Vector{Point{N,T}}
-    # for each element type, the indices of quadrature in each element
-    el2qnodes::Dict{DataType,Matrix{Int}}
 end
 
-function GenericMesh(nodes, etypes, el2nodes, ent2tag)
-    P = eltype(nodes)
-    N,T = length(P), eltype(P)
-    el2qnodes = Dict{DataType,Matrix{Int}}()
-    GenericMesh{N,T}(nodes,etypes,el2nodes,ent2tag,P[],T[],P[],el2qnodes)
-end    
-
-# convert a mesh to 2d by ignoring third component
+# convert a mesh to 2d by ignoring third component. Note that this also requires
+# converting various element types to their 2d counterpart.
 function GenericMesh{2}(mesh::GenericMesh{3})
     @assert all(x->geometric_dimension(x)<3,etypes(mesh)) 
     T = eltype(mesh)
@@ -69,37 +57,21 @@ function GenericMesh{2}(mesh::GenericMesh{3})
         end
         ent2tags[ent] = new_dict
     end    
-    el2qnodes = empty(mesh.el2qnodes)
-    for (E,tags) in mesh.el2qnodes
-        E2d = convert_to_2d(E)    
-        el2qnodes[E2d] = tags
-    end
-  
     # construct new 2d mesh
     GenericMesh{2,T}(
         [x[1:2] for x in nodes(mesh)],
         convert_to_2d.(etypes(mesh)),
         el2nodes,
-        ent2tags,
-        [x[1:2] for x in qnodes(mesh)],
-        qweights(mesh),
-        [x[1:2] for x in qnormals(mesh)],
-        el2qnodes
+        ent2tags
     )
 end
 
 nodes(m::GenericMesh)    = m.nodes
 el2nodes(m::GenericMesh) = m.el2nodes
 ent2tags(m::GenericMesh) = m.ent2tags
-qnodes(m::GenericMesh)   = m.qnodes
-qweights(m::GenericMesh) = m.qweights
-qnormals(m::GenericMesh) = m.qnormals
 
 convert_to_2d(::Type{LagrangeElement{R,N,3,T}}) where {R,N,T} = LagrangeElement{R,N,2,T}
 convert_to_2d(::Type{Point{3,T}}) where {T} = Point{2,T}
-
-el2qnodes(m::GenericMesh) = m.el2qnodes
-el2qnodes(m::GenericMesh,E::DataType) = m.el2qnodes[E]
 
 """
     etypes(M::GenericMesh)
@@ -194,97 +166,97 @@ function Base.iterate(iter::ElementIterator{<:Any,<:SubMesh},state=(1,1))
     end    
 end  
 
-"""
-    _compute_quadrature!(msh::GenericMesh,E,qrule;need_normal=false)
+# """
+#     _compute_quadrature!(msh::GenericMesh,E,qrule;need_normal=false)
 
-For all elements of `msh` of type `E::Type{<:AbstractElement}`, use `qrule::AbstractQuadratureRule`
-to compute an element quadrature and push that information into `msh`. Set
-`need_normal=true` if the normal vector at the quadrature nodes should be computed.
-"""
-function _compute_quadrature!(mesh::GenericMesh,E,qrule;need_normal=false)
-    @assert domain(qrule) == domain(E) "quadrature rule must be defined on domain of 
-    element"    
-    E ∈ etypes(mesh) || (return mesh)
-    N,T = ambient_dimension(mesh), eltype(mesh)
-    x̂,ŵ = qrule() # quadrature on reference element
-    nq  = length(x̂) # number of qnodes per element
-    el2qnodes = Int[]
-    for el in elements(mesh,E)
-        x,w = qrule(el)
-        # compute indices of quadrature nodes in this element
-        qidxs  = length(mesh.qnodes) .+ (1:nq) |> collect
-        append!(el2qnodes,qidxs)
-        append!(mesh.qnodes,x)
-        append!(mesh.qweights,w)
-        if need_normal==true
-            n⃗ = map(u->normal(el,u),x̂) 
-            append!(mesh.qnormals,n⃗)
-        end
-    end
-    el2qnodes = reshape(el2qnodes, nq, :)
-    push!(mesh.el2qnodes,E=>el2qnodes)
-    return mesh   
-end    
+# For all elements of `msh` of type `E::Type{<:AbstractElement}`, use `qrule::AbstractQuadratureRule`
+# to compute an element quadrature and push that information into `msh`. Set
+# `need_normal=true` if the normal vector at the quadrature nodes should be computed.
+# """
+# function _compute_quadrature!(mesh::GenericMesh,E,qrule;need_normal=false)
+#     @assert domain(qrule) == domain(E) "quadrature rule must be defined on domain of 
+#     element"    
+#     E ∈ etypes(mesh) || (return mesh)
+#     N,T = ambient_dimension(mesh), eltype(mesh)
+#     x̂,ŵ = qrule() # quadrature on reference element
+#     nq  = length(x̂) # number of qnodes per element
+#     el2qnodes = Int[]
+#     for el in elements(mesh,E)
+#         x,w = qrule(el)
+#         # compute indices of quadrature nodes in this element
+#         qidxs  = length(mesh.qnodes) .+ (1:nq) |> collect
+#         append!(el2qnodes,qidxs)
+#         append!(mesh.qnodes,x)
+#         append!(mesh.qweights,w)
+#         if need_normal==true
+#             n⃗ = map(u->normal(el,u),x̂) 
+#             append!(mesh.qnormals,n⃗)
+#         end
+#     end
+#     el2qnodes = reshape(el2qnodes, nq, :)
+#     push!(mesh.el2qnodes,E=>el2qnodes)
+#     return mesh   
+# end    
 
-function _compute_quadrature!(mesh::GenericMesh,e2qrule::Dict;need_normal=false)
-    for (E,qrule) in e2qrule
-        _compute_quadrature!(mesh,E,qrule;need_normal)    
-    end
-    return mesh
-end    
+# function _compute_quadrature!(mesh::GenericMesh,e2qrule::Dict;need_normal=false)
+#     for (E,qrule) in e2qrule
+#         _compute_quadrature!(mesh,E,qrule;need_normal)    
+#     end
+#     return mesh
+# end    
 
-"""
-    compute_quadrature!(mesh;order,dim,need_normal=false)
+# """
+#     compute_quadrature!(mesh;order,dim,need_normal=false)
 
-Compute a quadrature of a desired `order` for all elements of dimension `dim`.
-Set `need_normal=true` if the normal at the quadrature nodes is to be computed.
-"""
-function compute_quadrature!(mesh::GenericMesh;order,dim,need_normal=false)
-    dict = Dict()
-    @assert allunique(etypes(mesh))
-    for E in etypes(mesh)
-        geometric_dimension(E) == dim || continue
-        ref = domain(E)
-        qrule = _qrule_for_reference_element(ref,order)
-        push!(dict,E=>qrule)
-    end
-    _compute_quadrature!(mesh,dict;need_normal)
-    return mesh
-end 
+# Compute a quadrature of a desired `order` for all elements of dimension `dim`.
+# Set `need_normal=true` if the normal at the quadrature nodes is to be computed.
+# """
+# function compute_quadrature!(mesh::GenericMesh;order,dim,need_normal=false)
+#     dict = Dict()
+#     @assert allunique(etypes(mesh))
+#     for E in etypes(mesh)
+#         geometric_dimension(E) == dim || continue
+#         ref = domain(E)
+#         qrule = _qrule_for_reference_element(ref,order)
+#         push!(dict,E=>qrule)
+#     end
+#     _compute_quadrature!(mesh,dict;need_normal)
+#     return mesh
+# end 
 
-"""
-    _qrule_for_reference_element(ref,order)
+# """
+#     _qrule_for_reference_element(ref,order)
 
-Given a `ref`erence element and a desired quadrature `order`, return 
-an appropiate quadrature rule.
-"""
-function _qrule_for_reference_element(ref,order)
-    if ref isa ReferenceLine
-        n = ((order + 1) ÷  2) + 1
-        qrule = GaussLegendre{n}()
-    elseif ref isa ReferenceSquare
-        n  = (order + 1)/2 |> ceil
-        qx = GaussLegendre{n}()
-        qy = qx
-        qrule = TensorProductQuadrature(qx,qy)
-    elseif ref isa ReferenceTriangle
-        if order <= 1
-            return Gauss(ref,n=1) 
-        elseif order <=2
-            return Gauss(ref,n=3)     
-        else
-            notimplemented()    
-        end
-    elseif ref isa ReferenceTetrahedron
-        if order <= 1
-            return Gauss(ref;n=1) 
-        elseif order <=2
-            return Gauss(ref;n=4)
-        else
-            notimplemented()    
-        end
-    end    
-end    
+# Given a `ref`erence element and a desired quadrature `order`, return 
+# an appropiate quadrature rule.
+# """
+# function _qrule_for_reference_element(ref,order)
+#     if ref isa ReferenceLine
+#         n = ((order + 1) ÷  2) + 1
+#         qrule = GaussLegendre{n}()
+#     elseif ref isa ReferenceSquare
+#         n  = (order + 1)/2 |> ceil
+#         qx = GaussLegendre{n}()
+#         qy = qx
+#         qrule = TensorProductQuadrature(qx,qy)
+#     elseif ref isa ReferenceTriangle
+#         if order <= 1
+#             return Gauss(ref,n=1) 
+#         elseif order <=2
+#             return Gauss(ref,n=3)     
+#         else
+#             notimplemented()    
+#         end
+#     elseif ref isa ReferenceTetrahedron
+#         if order <= 1
+#             return Gauss(ref;n=1) 
+#         elseif order <=2
+#             return Gauss(ref;n=4)
+#         else
+#             notimplemented()    
+#         end
+#     end    
+# end    
 
 
 

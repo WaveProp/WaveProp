@@ -16,14 +16,11 @@ using LinearAlgebra
 
 using WaveProp.Utils
 using WaveProp.Geometry
-using WaveProp.Integration
 
 import WaveProp.Geometry: ambient_dimension, geometric_dimension, domain, range
-import WaveProp.Integration: qnodes, qweights, qnormals
 
-export GenericMesh, ElementIterator, nodes, etypes, el2nodes, el2qnodes, ent2tags,
-qnodes, qweights, qnormals, elements, near_interaction_list,
-compute_quadrature!
+export GenericMesh, ElementIterator, nodes, etypes, el2nodes, ent2tags, elements, near_interaction_list,
+compute_quadrature!,SubMesh
 
 include("meshes.jl")
 include("queries.jl")

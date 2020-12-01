@@ -17,6 +17,10 @@ abstract type AbstractQuadratureRule{D} end
 
 domain(q::AbstractQuadratureRule{D}) where {D} = D()
 
+qnodes(q::AbstractQuadratureRule) = q()[1]
+qweights(q::AbstractQuadratureRule) = q()[2]
+function qnormals end
+
 """
     (q::AbstractQuadratureRule)()
 

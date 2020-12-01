@@ -405,7 +405,10 @@ function ParametricElement{R}(f) where {R}
     return ParametricElement{R,T,F}(f)
 end  
 
-(el::ParametricElement)(u) = el.parametrization(u)
+function (el::ParametricElement)(u) 
+    @assert u ∈ domain(el)
+    el.parametrization(u)
+end
 
 # define some aliases for convenience
 const ParametricLine  = ParametricElement{ReferenceLine}

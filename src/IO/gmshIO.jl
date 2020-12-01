@@ -87,7 +87,7 @@ function _initialize_mesh(Ω::Domain)
     tags, coord, _ = gmsh.model.mesh.getNodes()
     pts = reinterpret(SVector{3,Float64}, coord) |> collect
     # map gmsh type tags to actual internal types
-    etypes = [type_tag_to_etype[e] for e in gmsh.model.mesh.getElementTypes()]
+    etypes = [_type_tag_to_etype(e) for e in gmsh.model.mesh.getElementTypes()]
     # Recursively populating the dictionaries
     el2nodes = Dict{DataType,Matrix{Int}}()
     ent2tag = Dict{ElementaryEntity,Dict{DataType,Vector{Int}}}()
@@ -131,7 +131,7 @@ function _ent_to_mesh!(el2nodes, ent2tag, ω::ElementaryEntity)
     for (type_tag, ntags) in zip(type_tags, ntagss)
         _, _, _, Np, _ = gmsh.model.mesh.getElementProperties(type_tag)
         ntags = reshape(ntags, Int(Np), :)
-        etype = type_tag_to_etype[type_tag]
+        etype = _type_tag_to_etype(type_tag)
         if etype in keys(el2nodes)
             etag = size(el2nodes[etype], 2) .+ collect(1:size(ntags,2))
             ntags = hcat(el2nodes[etype], ntags)
@@ -157,24 +157,26 @@ function gmsh_disk(;rx=0.5,ry=0.5,center=(0.,0.,0.),dim=2,h=min(rx,ry)/10,order=
     gmsh.model.occ.addDisk(center...,rx,ry)
     gmsh.model.occ.synchronize()
     gmsh.model.mesh.generate(dim)
-    Ω = _initialize_domain(dim)
+    Ω = _initialize_domain(2)
     M = _initialize_mesh(Ω)
     gmsh.finalize()
     return Ω,M
 end    
 
 """
-    gmsh_sphere(;radius=0.5,center=(0,0,0)) -> Ω, M
+    gmsh_sphere(;radius=0.5,center=(0,0,0),dim=3,h=radius/10,order=1) -> Ω, M
 
 Use `gmsh` API to generate a sphere and return `Ω::Domain` and `M::GenericMesh`.
+Only entities of dimension `≤ dim` are meshed.
 """
-function gmsh_sphere(;radius=0.5,center=(0., 0., 0.),dim=3,h=radius / 10)
+function gmsh_sphere(;radius=0.5,center=(0., 0., 0.),dim=3,h=radius/10,order=1)
     gmsh.initialize()
     _gmsh_set_meshsize(h)
+    _gmsh_set_meshorder(order)
     gmsh.model.occ.addSphere(center..., radius)
     gmsh.model.occ.synchronize()
     gmsh.model.mesh.generate(dim)
-    Ω = _initialize_domain(dim)
+    Ω = _initialize_domain(3)
     M = _initialize_mesh(Ω)
     gmsh.finalize()
     return Ω, M
@@ -257,3 +259,27 @@ const type_tag_to_etype = Dict(
     2  => LagrangeTriangle{3,3,Float64},
     4  => LagrangeTetrahedron{4,3,Float64}
 )
+
+"""
+    _type_tag_to_etype(tag)
+
+Mapping of `gmsh` element types, encoded as an integer, to the internal
+equivalent of those. This function assumes `gmsh` has been initilized.
+"""
+function _type_tag_to_etype(tag)
+    T = Float64    
+    name,dim,order,num_nodes,ref_nodes,num_primary_nodes  = gmsh.model.mesh.getElementProperties(tag)
+    num_nodes = Int(num_nodes) #convert to Int64
+    if occursin("Point",name)
+        etype = Point{3,T}    
+    elseif occursin("Line",name)
+    etype = LagrangeLine{num_nodes,3,T} 
+    elseif occursin("Triangle",name)            
+        etype = LagrangeTriangle{num_nodes,3,T}
+    elseif occursin("Quadrilateral",name)
+        etype = LagrangeRectangle{num_nodes,3,T}
+    elseif occursin("Tetrahedron",name)
+        etype = LagrangeTetrahedron{num_nodes,3,T}
+    end    
+    return etype 
+end    

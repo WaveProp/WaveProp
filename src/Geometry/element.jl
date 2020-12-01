@@ -379,19 +379,30 @@ An element given by some explicit parametric function.
 abstract type AbstractParametricElement{R,N} <: AbstractElement{R,N} end
 
 """
-    ParametricElement{R,N,F}
+    ParametricElement{D,N,F}
 
-An element represented as the explicit mapping `f::F` with domain `R`.  
+An element represented as the explicit mapping `f::F` with domain `D`.  
+
+Unlike e.g. `LagrangeElements`, whose domain are `<:AbstractReferenceShape`s, a
+`ParametricElement` has a domain given by a `HyperRectangle`. This means 
 """
-struct ParametricElement{R,N,F} <: AbstractParametricElement{R,N}
-    parametrization::F    
+struct ParametricElement{D,N,F} <: AbstractParametricElement{D,N}
+    parametrization::F
+    domain::D    
 end
 
-# constructor which infers the dimension of the ambient space
+Base.eltype(p::ParametricElement{D,T,F}) where {D,T,F} = T
+
+domain(p::ParametricElement) = p.domain
+geometric_dimension(p::ParametricElement) = geometric_dimension(domain(p))
+ambient_dimension(p::ParametricElement)   = length(eltype(p))
+
+# constructor which infers the return type of f by applying it to a point in the
+# reference domain.
 function ParametricElement{R}(f) where {R}
     F = typeof(f)
-    N = f(center(R)) |> length
-    return ParametricElement{R,N,F}(f)
+    T = f(center(R)) |> length
+    return ParametricElement{R,T,F}(f)
 end  
 
 (el::ParametricElement)(u) = el.parametrization(u)
@@ -399,8 +410,20 @@ end
 # define some aliases for convenience
 const ParametricLine  = ParametricElement{ReferenceLine}
 
+derivative(l::ParametricLine,s)  = ForwardDiff.derivative(l,s)
+derivative2(l::ParametricLine,s) = ForwardDiff.derivative(s -> derivative(l,s),s)
+derivative3(l::ParametricLine,s) = ForwardDiff.derivative(s -> derivative2(l,s),s)
+
 # some useful shapes
 function circle(;center=Point(0,0),radius=1)
-    f = (u) -> center + Point(radius*sin(2π*u),radius*cos(2π*u))
-    ParametricLine(f)
+    f      = (u) -> center + Point(radius*sin(2π*u),radius*cos(2π*u))
+    d      = HyperRectangle(0,1)
+    return ParametricLine(f,d)
 end    
+
+function kite(;radius=1,Point=(0,0))
+    f = (s) -> center .+ radius.*SVector(cospi(s[1]) + 0.65*cospi(2*s[1]) - 0.65,
+                              1.5*sinpi(s[1]))
+    domain = HyperRectangle(-1.0,2.0)
+    return ParametricLine(f,domain)
+end

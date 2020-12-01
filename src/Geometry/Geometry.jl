@@ -11,6 +11,7 @@ import Base: union, setdiff, intersect, issubset
 using DocStringExtensions
 using StaticArrays
 using LinearAlgebra
+using ForwardDiff # for computing derivatives of parametric elements
 
 using WaveProp.Utils
 

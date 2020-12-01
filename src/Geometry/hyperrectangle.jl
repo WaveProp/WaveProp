@@ -9,7 +9,9 @@ struct HyperRectangle{N,T}
 end
 
 # promote 
-HyperRectangle(l,h) = HyperRectangle(SVector(l),SVector(h))
+HyperRectangle(l::Tuple,h::Tuple) = HyperRectangle(SVector(l),SVector(h))
+# 1d case
+HyperRectangle(a::Number,b::Number) = HyperRectangle(SVector(a),SVector(b))
 
 Base.:(==)(h1::HyperRectangle, h2::HyperRectangle) = (h1.low_corner == h2.low_corner) && (h1.high_corner == h2.high_corner)
 Base.in(point,h::HyperRectangle) = all(h.low_corner .<= point .<= h.high_corner)

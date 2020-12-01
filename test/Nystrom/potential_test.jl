@@ -7,8 +7,9 @@ using WaveProp.Mesh
 
 @testset "Potential test" begin
     pde  = Helmholtz(;dim=3,k=1)
-    Ω,mesh  = WaveProp.IO.gmsh_sphere(dim=2)
-    compute_quadrature!(mesh,order=1,dim=2,need_normal=true)
+    Ω,M  = WaveProp.IO.gmsh_sphere(dim=2)
+    Γ    = boundary(Ω)
+    mesh = NystromMesh(view(M,Γ))
     𝓢    = SingleLayerPotential(pde,mesh)
     𝓓    = DoubleLayerPotential(pde,mesh)
     @test Nystrom.kernel_type(𝓢) == Nystrom.SingleLayer()

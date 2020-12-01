@@ -7,8 +7,9 @@ using WaveProp.Mesh
 
 @testset "Basic tests" begin
     pde   = Helmholtz(;dim=3,k=1)
-    Ω,mesh   = WaveProp.IO.gmsh_sphere(dim=2)
-    compute_quadrature!(mesh;order=1,dim=2,need_normal=true)
+    Ω,M   = WaveProp.IO.gmsh_sphere(dim=2)
+    Γ     = boundary(Ω)
+    mesh  = NystromMesh(view(M,Γ))
     𝐒     = SingleLayerOperator(pde,mesh)
     𝐃     = DoubleLayerOperator(pde,mesh)
     @test Nystrom.kernel_type(𝐒) == Nystrom.SingleLayer()
@@ -26,15 +27,14 @@ end
     xout = Point(3,3,3)
     u    = (x)   -> SingleLayerKernel(pde)(xout,x)
     dudn = (x,n) -> DoubleLayerKernel(pde)(xout,x,n)
-    Ω,mesh   = WaveProp.IO.gmsh_sphere(dim=2,h=0.1)
-    compute_quadrature!(mesh,order=1,dim=2,need_normal=true)
+    Ω,M   = WaveProp.IO.gmsh_sphere(dim=2,h=0.1)
+    Γ     = boundary(Ω)
+    mesh  = NystromMesh(view(M,Γ))
     γ₀u   = γ₀(u,mesh)
     γ₁u   = γ₁(dudn,mesh)
     𝐒     = SingleLayerOperator(pde,mesh) |> Matrix
     𝐃     = DoubleLayerOperator(pde,mesh) |> Matrix
-    𝐒[diagind(𝐒)] .= 0
-    𝐃[diagind(𝐃)] .= 0
-    ee = WaveProp.Nystrom.error_interior_green_identity(𝐒,𝐃,γ₀u,γ₁u) / norm(γ₀u,Inf)  
+    ee    = WaveProp.Nystrom.error_interior_green_identity(𝐒,𝐃,γ₀u,γ₁u) / norm(γ₀u,Inf)  
     @test norm(ee,Inf) < 5e-2
 end
 
@@ -44,15 +44,14 @@ end
     xout = Point(3,3)
     u    = (x)   -> SingleLayerKernel(pde)(xout,x)
     dudn = (x,n) -> DoubleLayerKernel(pde)(xout,x,n)
-    Ω,mesh   = WaveProp.IO.gmsh_disk(dim=1,h=0.01)
-    mesh    = GenericMesh{2}(mesh)
-    compute_quadrature!(mesh,order=1,dim=1,need_normal=true)
+    Ω,M   = WaveProp.IO.gmsh_disk(dim=1,h=0.01)
+    M    = GenericMesh{2}(M)
+    Γ     = boundary(Ω)
+    mesh = NystromMesh(view(M,Γ))
     γ₀u   = γ₀(u,mesh)
     γ₁u   = γ₁(dudn,mesh)
     𝐒     = SingleLayerOperator(pde,mesh) 
     𝐃     = DoubleLayerOperator(pde,mesh) 
     ee = WaveProp.Nystrom.error_interior_green_identity(𝐒,𝐃,γ₀u,γ₁u) / norm(γ₀u,Inf)  
     @test norm(ee,Inf) < 5e-2
-    # singular_weights(𝐒)
-    # δS = singular_weights(𝐒)
 end

@@ -23,6 +23,5 @@ export GenericMesh, ElementIterator, nodes, etypes, el2nodes, ent2tags, elements
 compute_quadrature!,SubMesh, AbstractMesh
 
 include("meshes.jl")
-include("queries.jl")
 
 end

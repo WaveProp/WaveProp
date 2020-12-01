@@ -18,6 +18,7 @@ using WaveProp.PhysicalProblem
 import WaveProp.Geometry: geometric_dimension, ambient_dimension, domain, range
 import WaveProp.SingularIntegration: singular_weights
 import WaveProp.Mesh: etypes
+import WaveProp.Integration: qweights, qnormals, qnodes
 
 export Laplace, Helmholtz, SingleLayerKernel, DoubleLayerKernel, IntegralOperator, NystromMesh, Density, γ₀, γ₁, SingleLayerPotential, DoubleLayerPotential, SingleLayerOperator, DoubleLayerOperator, GreensCorrection, singular_weights_dim, single_double_layer
 

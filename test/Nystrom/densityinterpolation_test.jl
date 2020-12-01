@@ -5,15 +5,15 @@ using WaveProp.Geometry
 using WaveProp.Integration
 using WaveProp.Mesh
 
-
 @testset "Greens interpolant test" begin
     # construct interior solution
     pde  = Helmholtz(dim=3,k=1)
     xout = Point(3,3,3)
     u    = (x)   -> SingleLayerKernel(pde)(xout,x)
     dudn = (x,n) -> DoubleLayerKernel(pde)(xout,x,n)
-    Ω,mesh   = WaveProp.IO.gmsh_sphere(dim=2,h=0.2)
-    compute_quadrature!(mesh,dim=2,order=1,need_normal=true)
+    Ω,M  = WaveProp.IO.gmsh_sphere(dim=2,h=0.2)
+    Γ    = boundary(Ω)
+    mesh = NystromMesh(view(M,Γ))
     γ₀u   = γ₀(u,mesh)
     γ₁u   = γ₁(dudn,mesh)
     𝐒     = SingleLayerOperator(pde,mesh) 

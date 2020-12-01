@@ -98,7 +98,23 @@ Return the element types contained in the mesh.
 """
 etypes(mesh::GenericMesh) = mesh.etypes
 
-function elements(mesh::GenericMesh,E::Type{<:AbstractElement})
+# submesh structure
+struct SubMesh{N,T} <: AbstractMesh{N,T}
+    mesh::GenericMesh{N,T}
+    domain::Domain
+end
+
+function etypes(submesh::SubMesh)
+    Ω,M = submesh.domain, submesh.mesh    
+    ee = DataType[]
+    for ent in entities(Ω)
+        dict = M.ent2tags[ent]
+        append!(ee,keys(dict))
+    end    
+    return unique!(ee)
+end   
+
+function elements(mesh::AbstractMesh,E::Type{<:AbstractElement})
     return ElementIterator{E}(mesh)
 end    
 
@@ -109,6 +125,7 @@ ElementIterator{E}(mesh::M) where {E,M<:AbstractMesh} = ElementIterator{E,M}(mes
 
 Base.eltype(::Type{ElementIterator{E,M}}) where {E,M} = E
 
+# iterator for generic mesh (not associated with a domain)
 function Base.length(iter::ElementIterator{<:Any,<:GenericMesh})
     E       = eltype(iter)    
     tags    = iter.mesh.el2nodes[E]
@@ -128,6 +145,44 @@ function Base.iterate(iter::ElementIterator{<:Any,<:GenericMesh},state=1)
         return el, state+1
     end
 end    
+
+
+# iterator for submesh. Filter elements based on domain
+function Base.length(iter::ElementIterator{<:Any,<:SubMesh})
+    submesh    = iter.mesh
+    Ω,M        = submesh.domain, submesh.mesh
+    E          = eltype(iter)    
+    # loop over all entities and count the number of elements of type E
+    Nel        = 0
+    for ent in entities(Ω)
+        dict   = M.ent2tags[ent] 
+        v      = dict[E] # get element tags for type E
+        Nel += length(v)    
+    end
+    return Nel
+end    
+
+function Base.iterate(iter::ElementIterator{<:Any,<:SubMesh},state=(1,1))
+    # extract some constant fields for convenience
+    submesh   = iter.mesh    
+    Ω, M      = submesh.domain, submesh.mesh
+    E         = eltype(iter)    
+    ents      = entities(Ω)
+    # inner iteration over ent
+    n,i          = state
+    ent          = ents[n]
+    inner_state  = _iterate(M,E,ent,i)
+    if inner_state === nothing
+        if n == length(ents)
+            return nothing
+        else
+            return iterate(iter,(n+1,1))
+        end
+    else 
+        el,i = inner_state
+        return el,(n,i)
+    end    
+end  
 
 """
     _compute_quadrature!(msh::GenericMesh,E,qrule;need_normal=false)

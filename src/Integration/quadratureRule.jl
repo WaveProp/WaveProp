@@ -256,3 +256,57 @@ function (q::TensorProductQuadrature)()
     w = Iterators.product(weights...) 
     return Point.(x), prod.(collect(w))
 end    
+
+# some helper functions
+
+"""
+    _qrule_for_reference_shape(ref,order)
+
+Given a `ref`erence shape and a desired quadrature `order`, return 
+an appropiate quadrature rule.
+"""
+function _qrule_for_reference_shape(ref,order)
+    if ref isa ReferenceLine
+        n = ((order + 1) ÷  2) + 1
+        return GaussLegendre{n}()
+    elseif ref isa ReferenceSquare
+        n  = (order + 1)/2 |> ceil
+        qx = GaussLegendre{n}()
+        qy = qx
+        return TensorProductQuadrature(qx,qy)
+    elseif ref isa ReferenceTriangle
+        if order <= 1
+            return Gauss(ref,n=1) 
+        elseif order <=2
+            return Gauss(ref,n=3)     
+        end
+    elseif ref isa ReferenceTetrahedron
+        if order <= 1
+            return Gauss(ref;n=1) 
+        elseif order <=2
+            return Gauss(ref;n=4)
+        end
+    end    
+    error("no appropriate quadrature rule found.")
+end   
+
+"""
+    _qrule_for_element(E,p)
+
+Given an element type `E`, return an appropriate quadrature of order `p`.
+"""
+function _qrule_for_element(E,order)
+    _qrule_for_reference_shape(domain(E),order)
+end    
+
+"""
+    _qrule_for_mesh(m,p)
+
+Given a mesh `m`, create a dictionary mapping each element type of `m` to an appropriate quadrature rule of order
+`p` over that element type.
+
+See also [`_qrule_for_reference_shape`](@ref)
+"""
+function _qrule_for_mesh(m,order)
+    Dict(E=>_qrule_for_element(E,order) for E in etypes(m))
+end    

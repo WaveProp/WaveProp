@@ -16,7 +16,7 @@ ambient_dimension(M::AbstractMesh{N}) where {N} = N
 
 # we define the geometric dimension of the mesh to be the largest of the geometric
 # dimension of its entities. 
-geometric_dimension(M::AbstractMesh) = maximum(x->geometric_dimension(x),etypes(M))
+geometric_dimension(M::AbstractMesh) = maximum(x -> geometric_dimension(x), etypes(M))
 
 Base.eltype(M::AbstractMesh{N,T}) where {N,T} = T
 
@@ -40,18 +40,18 @@ end
 # convert a mesh to 2d by ignoring third component. Note that this also requires
 # converting various element types to their 2d counterpart.
 function GenericMesh{2}(mesh::GenericMesh{3})
-    @assert all(x->geometric_dimension(x)<3,etypes(mesh)) 
+    @assert all(x -> geometric_dimension(x) < 3, etypes(mesh)) 
     T = eltype(mesh)
     # create new dictionaries for el2nodes and ent2tags with 2d elements as keys
     el2nodes  = empty(mesh.el2nodes)
     ent2tags  = empty(mesh.ent2tags)
-    for (E,tags) in mesh.el2nodes
+    for (E, tags) in mesh.el2nodes
         E2d = convert_to_2d(E)    
         el2nodes[E2d] = tags
     end
-    for (ent,dict) in mesh.ent2tags
+    for (ent, dict) in mesh.ent2tags
         new_dict = empty(dict)    
-        for (E,tags) in dict
+        for (E, tags) in dict
             E2d = convert_to_2d(E)    
             new_dict[E2d] = tags
         end
@@ -86,24 +86,26 @@ struct SubMesh{N,T} <: AbstractMesh{N,T}
     domain::Domain
 end
 
+Base.view(m::GenericMesh,Ω::Domain) = SubMesh(m,Ω)
+
 function etypes(submesh::SubMesh)
-    Ω,M = submesh.domain, submesh.mesh    
+    Ω, M = submesh.domain, submesh.mesh    
     ee = DataType[]
     for ent in entities(Ω)
         dict = M.ent2tags[ent]
-        append!(ee,keys(dict))
+        append!(ee, keys(dict))
     end    
     return unique!(ee)
 end   
 
-function elements(mesh::AbstractMesh,E::Type{<:AbstractElement})
+function elements(mesh::AbstractMesh, E::Type{<:AbstractElement})
     return ElementIterator{E}(mesh)
 end    
 
 struct ElementIterator{E,M}
     mesh::M
 end    
-ElementIterator{E}(mesh::M) where {E,M<:AbstractMesh} = ElementIterator{E,M}(mesh)
+ElementIterator{E}(mesh::M) where {E,M <: AbstractMesh} = ElementIterator{E,M}(mesh)
 
 Base.eltype(::Type{ElementIterator{E,M}}) where {E,M} = E
 
@@ -115,7 +117,7 @@ function Base.length(iter::ElementIterator{<:Any,<:GenericMesh})
     return Nel
 end    
 
-function Base.iterate(iter::ElementIterator{<:Any,<:GenericMesh},state=1)
+function Base.iterate(iter::ElementIterator{<:Any,<:GenericMesh}, state=1)
     E      = eltype(iter)    
     mesh   = iter.mesh    
     tags   = mesh.el2nodes[E]
@@ -124,15 +126,14 @@ function Base.iterate(iter::ElementIterator{<:Any,<:GenericMesh},state=1)
     else    
         el_nodes = mesh.nodes[tags[:,state]] # get the coordinates of nodes in this element
         el  = E(el_nodes)                    # construct the element
-        return el, state+1
+        return el, state + 1
     end
 end    
-
 
 # iterator for submesh. Filter elements based on domain
 function Base.length(iter::ElementIterator{<:Any,<:SubMesh})
     submesh    = iter.mesh
-    Ω,M        = submesh.domain, submesh.mesh
+    Ω, M        = submesh.domain, submesh.mesh
     E          = eltype(iter)    
     # loop over all entities and count the number of elements of type E
     Nel        = 0
@@ -144,26 +145,41 @@ function Base.length(iter::ElementIterator{<:Any,<:SubMesh})
     return Nel
 end    
 
-function Base.iterate(iter::ElementIterator{<:Any,<:SubMesh},state=(1,1))
+function Base.iterate(iter::ElementIterator{<:Any,<:SubMesh}, state=(1, 1))
     # extract some constant fields for convenience
     submesh   = iter.mesh    
     Ω, M      = submesh.domain, submesh.mesh
     E         = eltype(iter)    
     ents      = entities(Ω)
     # inner iteration over ent
-    n,i          = state
+    n, i          = state
     ent          = ents[n]
-    inner_state  = _iterate(M,E,ent,i)
+    inner_state  = _iterate(M, E, ent, i)
     if inner_state === nothing
         if n == length(ents)
             return nothing
         else
-            return iterate(iter,(n+1,1))
+            return iterate(iter, (n + 1, 1))
         end
     else 
-        el,i = inner_state
-        return el,(n,i)
+        el, i = inner_state
+        return el, (n, i)
     end    
+end  
+
+# helper iterator 
+function _iterate(mesh::GenericMesh,E,ent::ElementaryEntity,i::Int=1)
+    # get tag for i-th elements in ent of type E
+    el_tags = mesh.ent2tags[ent][E]
+    if i > length(el_tags)
+        return nothing    
+    else
+        el_tag      = el_tags[i]        
+        node_tags   = view(mesh.el2nodes[E],:,el_tag)
+        vtx         = view(mesh.nodes,node_tags)
+        el          = E(vtx)
+        return el,i+1
+    end
 end  
 
 # """
@@ -223,43 +239,6 @@ end
 #     _compute_quadrature!(mesh,dict;need_normal)
 #     return mesh
 # end 
-
-# """
-#     _qrule_for_reference_element(ref,order)
-
-# Given a `ref`erence element and a desired quadrature `order`, return 
-# an appropiate quadrature rule.
-# """
-# function _qrule_for_reference_element(ref,order)
-#     if ref isa ReferenceLine
-#         n = ((order + 1) ÷  2) + 1
-#         qrule = GaussLegendre{n}()
-#     elseif ref isa ReferenceSquare
-#         n  = (order + 1)/2 |> ceil
-#         qx = GaussLegendre{n}()
-#         qy = qx
-#         qrule = TensorProductQuadrature(qx,qy)
-#     elseif ref isa ReferenceTriangle
-#         if order <= 1
-#             return Gauss(ref,n=1) 
-#         elseif order <=2
-#             return Gauss(ref,n=3)     
-#         else
-#             notimplemented()    
-#         end
-#     elseif ref isa ReferenceTetrahedron
-#         if order <= 1
-#             return Gauss(ref;n=1) 
-#         elseif order <=2
-#             return Gauss(ref;n=4)
-#         else
-#             notimplemented()    
-#         end
-#     end    
-# end    
-
-
-
 
 
 

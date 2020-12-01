@@ -15,12 +15,12 @@ using LinearAlgebra
 
 using WaveProp.Utils
 using WaveProp.Geometry
+using WaveProp.Mesh
 
 import WaveProp.Geometry: domain, range, ambient_dimension, geometric_dimension
 
 export integrate, Gauss, Trapezoidal, Fejer, GaussLegendre, GenericQuadrature, TensorProductQuadrature, AbstractQuadratureRule, qnodes, qweights, qnormals
 
 include("quadratureRule.jl")
-include("quadrature.jl")
 
 end

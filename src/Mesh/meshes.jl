@@ -54,23 +54,33 @@ end
 function GenericMesh{2}(mesh::GenericMesh{3})
     @assert all(x->geometric_dimension(x)<3,etypes(mesh)) 
     T = eltype(mesh)
-    # create new dictionaries for el2nodes and el2qnodes with 2d elements as keys
+    # create new dictionaries for el2nodes and ent2tags with 2d elements as keys
     el2nodes  = empty(mesh.el2nodes)
+    ent2tags  = empty(mesh.ent2tags)
     for (E,tags) in mesh.el2nodes
         E2d = convert_to_2d(E)    
         el2nodes[E2d] = tags
     end
+    for (ent,dict) in mesh.ent2tags
+        new_dict = empty(dict)    
+        for (E,tags) in dict
+            E2d = convert_to_2d(E)    
+            new_dict[E2d] = tags
+        end
+        ent2tags[ent] = new_dict
+    end    
     el2qnodes = empty(mesh.el2qnodes)
     for (E,tags) in mesh.el2qnodes
         E2d = convert_to_2d(E)    
         el2qnodes[E2d] = tags
     end
+  
     # construct new 2d mesh
     GenericMesh{2,T}(
         [x[1:2] for x in nodes(mesh)],
         convert_to_2d.(etypes(mesh)),
         el2nodes,
-        mesh.ent2tags,
+        ent2tags,
         [x[1:2] for x in qnodes(mesh)],
         qweights(mesh),
         [x[1:2] for x in qnormals(mesh)],

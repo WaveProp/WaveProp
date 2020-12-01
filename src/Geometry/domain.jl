@@ -202,6 +202,15 @@ function external_boundary(Ω::Domain)
     return remove(internal_boundary(Ω), skeleton(Ω))
 end
 
+"""
+    boundary(Ω)
+
+Return a domain comprising the external boundary of Ω. 
+
+See also: [`external_boundary`](@ref)
+"""
+boundary(Ω) = external_boundary(Ω)
+
 
 """
 Return all tags of the elementary entities in the domain `Ω` corresponding to the dimension `d`.

@@ -22,8 +22,8 @@ Singleton type representing the `[0,1]` segment.
 struct ReferenceLine <: AbstractReferenceShape{1}
 end
 Base.in(x,::ReferenceLine) = 0 ≤ x[1] ≤ 1
-
 center(::Type{ReferenceLine}) = 0.5
+center(::ReferenceLine)       = 0.5
 
 """
     struct ReferenceTriangle
@@ -42,6 +42,8 @@ Singleton type representing the square with vertices `(0,0),(0,1),(1,1),(1,0)`
 struct ReferenceSquare <: AbstractReferenceShape{2} 
 end    
 Base.in(x,::ReferenceSquare) = 0 ≤ x[1] ≤ 1 && 0 ≤ x[2] ≤ 1
+center(::Type{ReferenceSquare}) = SVector(0.5,0.5)
+center(::ReferenceSquare)       = SVector(0.5,0.5)
 
 """
     struct ReferenceTetrahedron
@@ -386,7 +388,7 @@ An element represented as the explicit mapping `f::F` with domain `D`.
 Unlike e.g. `LagrangeElements`, whose domain are `<:AbstractReferenceShape`s, a
 `ParametricElement` has a domain given by a `HyperRectangle`. This means 
 """
-struct ParametricElement{D,N,F} <: AbstractParametricElement{D,N}
+struct ParametricElement{D,T,F} <: AbstractParametricElement{D,T}
     parametrization::F
     domain::D    
 end
@@ -399,10 +401,11 @@ ambient_dimension(p::ParametricElement)   = length(eltype(p))
 
 # constructor which infers the return type of f by applying it to a point in the
 # reference domain.
-function ParametricElement{R}(f) where {R}
+function ParametricElement(f,d)
     F = typeof(f)
-    T = f(center(R)) |> length
-    return ParametricElement{R,T,F}(f)
+    D = typeof(d)
+    T = f(center(d)) |> typeof
+    return ParametricElement{D,T,F}(f,d)
 end  
 
 function (el::ParametricElement)(u) 
@@ -411,7 +414,7 @@ function (el::ParametricElement)(u)
 end
 
 # define some aliases for convenience
-const ParametricLine  = ParametricElement{ReferenceLine}
+const ParametricLine  = ParametricElement{HyperRectangle{1,<:Number}}
 
 derivative(l::ParametricLine,s)  = ForwardDiff.derivative(l,s)
 derivative2(l::ParametricLine,s) = ForwardDiff.derivative(s -> derivative(l,s),s)
@@ -419,14 +422,15 @@ derivative3(l::ParametricLine,s) = ForwardDiff.derivative(s -> derivative2(l,s),
 
 # some useful shapes
 function circle(;center=Point(0,0),radius=1)
-    f      = (u) -> center + Point(radius*sin(2π*u),radius*cos(2π*u))
+    f      = (u) -> center + Point(radius*sin(2π*u[1]),radius*cos(2π*u[1]))
     d      = HyperRectangle(0,1)
-    return ParametricLine(f,d)
+    bnd    = ParametricElement(f,d)
+    return ParametricBody([bnd],2)
 end    
 
-function kite(;radius=1,Point=(0,0))
-    f = (s) -> center .+ radius.*SVector(cospi(s[1]) + 0.65*cospi(2*s[1]) - 0.65,
+function kite(;radius=1,center::Point=(0,0))
+    f = (s) -> center .+ radius.*Point(cospi(s[1]) + 0.65*cospi(2*s[1]) - 0.65,
                               1.5*sinpi(s[1]))
     domain = HyperRectangle(-1.0,2.0)
-    return ParametricLine(f,domain)
+    return ParametricElement(f,domain)
 end

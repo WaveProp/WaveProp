@@ -19,11 +19,14 @@ include("point.jl")
 include("hyperrectangle.jl")
 include("domain.jl")
 include("element.jl")
+include("parametricentity.jl")
+include("parametricbody.jl")
 
 export ElementaryEntity, Domain,
     dim, entities, tag, tags, remove, assertequaldim,
     boundary, skeleton, internal_boundary, external_boundary,
     GenericMesh, LagrangeElement, Point, ReferenceLine, ReferenceTriangle, ReferenceTetrahedron, ReferenceSquare,
     domain, jacobian, normal, LagrangeLine, LagrangeTriangle, LagrangeTetrahedron, AbstractElement, ambient_dimension, geometric_dimension, push_forward,
-    IMT, Duffy, GeometricTransformation, bounding_box, HyperRectangle, center, diameter, radius, line, triangle, rectangle, extrude, translate, ParametricLine, AbstractReferenceShape, measure
+    IMT, Duffy, GeometricTransformation, bounding_box, HyperRectangle, center, diameter, radius, line, triangle, rectangle, extrude, translate, ParametricLine, AbstractReferenceShape, measure,
+    ParametricBody, AbstractParametricBody, ParametricEntity, SVector, SMatrix
 end # module

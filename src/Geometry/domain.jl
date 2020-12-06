@@ -13,10 +13,13 @@ struct ElementaryEntity
     tag::Int64
     boundary::Vector{ElementaryEntity}
     function ElementaryEntity(d::Integer, t::Integer, boundary::Vector{ElementaryEntity})
-        msg = "An elementaty entities in the boundary has a wrong dimension"
+        msg = "an elementaty entities in the boundary has a wrong dimension"
         for b in boundary
             @assert geometric_dimension(b) == d-1 msg
         end
+        # modify global variable TAGS by adding the new (d,t) for the
+        # entity. It shows a warning if (d,t) already exists.
+        _add_tag!(d,t) 
         new(d, t, boundary)
     end
 end
@@ -29,6 +32,7 @@ Construct an [`ElementaryEntity`](@ref) with an empty boundary .
 function ElementaryEntity(dim,tag)
     ElementaryEntity(dim,tag,ElementaryEntity[])
 end
+ElementaryEntity(dim) = ElementaryEntity(dim,_new_tag(dim))
 
 """Return geometric the dimension of the elementary entity."""
 geometric_dimension(ω::ElementaryEntity) = ω.dim

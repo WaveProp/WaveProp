@@ -139,6 +139,32 @@ function (q::Trapezoidal{N})() where {N}
     xs = svector(i->(0.5*(x[i]+1)),N) 
     ws = svector(i->w[i]/2,N)
     return xs,ws
+end   
+
+"""
+    struct TrapezoidalP{N} <: AbstractQuadratureRule{ReferenceLine}
+
+Like [`Trapezoidal{N}`](@ref), but assumes the function is 1-periodic, and so the
+nodes and weights at the endSVectors of the interval `[0,1]` need not be duplicated.
+"""
+struct TrapezoidalP{N} <: AbstractQuadratureRule{ReferenceLine} end
+
+TrapezoidalP(n::Int) = TrapezoidalP{n}()
+
+# periodic trapezoidal rule on [0,1], open on the left
+function _trapezoidalP(n)    
+    h = 1/n
+    x = [k*h for k in 1:n]
+    w = [h   for k in 1:n]
+    return x,w
+end    
+
+function (q::TrapezoidalP{N})() where {N}
+    x,w = _trapezoidalP(N)
+    # convert to static arrays
+    xs = SVector{N}(x)
+    ws = SVector{N}(w)
+    return xs,ws
 end    
 
 """

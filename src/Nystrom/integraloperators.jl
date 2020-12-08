@@ -21,6 +21,8 @@ Base.size(iop::IntegralOperator)      = (length(qnodes(iop.X)), length(qnodes(io
 
 kernel_type(iop::IntegralOperator) = kernel_type(iop.kernel)
 
+kernel(iop::IntegralOperator) = iop.kernel
+
 Base.getindex(iop::IntegralOperator,i::Integer,j::Integer)  = getindex(kernel_type(iop),iop,i,j)
 
 function Base.getindex(::SingleLayer,iop::IntegralOperator,i::Integer,j::Integer)

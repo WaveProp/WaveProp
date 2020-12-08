@@ -142,3 +142,14 @@ function _sphere_sources_lebedev(;nsources, radius=10, center=Point(0.,0.,0.))
     end
     return Xs
 end
+
+function _circle_sources(;nsources, radius=10, center=Point(0.,0.))
+    geo   = Circle(center=center,radius=radius)
+    par   = boundary(geo)[1]
+    x,_   = Integration._trapezoidalP(nsources)
+    Xs    = Point{2,Float64}[]
+    for pt in x
+        push!(Xs,par(pt))
+    end
+    return Xs
+end

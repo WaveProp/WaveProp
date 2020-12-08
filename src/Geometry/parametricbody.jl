@@ -40,7 +40,7 @@ end
 Kite(args...;kwargs...) = Kite{Float64}(args...;kwargs...)
 
 function Kite{T}(;radius=1,center=(0,0)) where {T}
-    f(s) = center .+ radius.*SVector(cospi(2*s[1]) + 0.65*cospi(4*s[1]) - 0.65,
+    f = (s) -> center .+ radius.*SVector(cospi(2*s[1]) + 0.65*cospi(4*s[1]) - 0.65,
                               1.5*sinpi(2*s[1]))
     domain = ReferenceLine()
     surf   = ParametricEntity(f,domain)

@@ -1,11 +1,11 @@
-struct NystromMesh{N,T} <: AbstractMesh{N,T}
-    elements::Dict{DataType,ElementIterator}
+Base.@kwdef struct NystromMesh{N,T} <: AbstractMesh{N,T}
+    elements::Dict{DataType,ElementIterator} = Dict{DataType,ElementIterator}()
     # quadrature info
-    qnodes::Vector{Point{N,T}}
-    qweights::Vector{T}
-    qnormals::Vector{Point{N,T}}
-    el2qnodes::Dict{DataType,Matrix{Int}}
-    etype2qrule::Dict{DataType,AbstractQuadratureRule}
+    qnodes::Vector{Point{N,T}} = Vector{Point{N,T}}()
+    qweights::Vector{T} = Vector{T}()
+    qnormals::Vector{Point{N,T}} = Vector{Point{N,T}}()
+    el2qnodes::Dict{DataType,Matrix{Int}} = Dict{DataType,Matrix{Int}}()
+    etype2qrule::Dict{DataType,AbstractQuadratureRule}= Dict{DataType,AbstractQuadratureRule}()
 end
 
 # getters
@@ -17,20 +17,10 @@ el2qnodes(m::NystromMesh,E::DataType) = m.el2qnodes[E]
 
 Base.length(m::NystromMesh) = length(qnodes(m))
 
-function NystromMesh{N,T}() where {N,T}
-    elements    = Dict{DataType,ElementIterator}()
-    qnodes      = Vector{Point{N,T}}()
-    qweights    = Vector{T}()
-    qnormals    = Vector{Point{N,T}}()
-    el2qnodes   = Dict{DataType,Matrix{Int}}()
-    etype2qrule = Dict{DataType,AbstractQuadratureRule}()
-    NystromMesh{N,T}(elements,qnodes,qweights,qnormals,el2qnodes,etype2qrule)
-end    
-
-function NystromMesh(mesh::AbstractMesh,e2qrule,compute_normal::Bool)
+function NystromMesh(mesh::AbstractMesh,e2qrule,compute_normal::Bool=true)
     N,T        = ambient_dimension(mesh), eltype(mesh)
     # initialize empty fields
-    nmesh = NystromMesh{N,T}()
+    nmesh = NystromMesh{N,T}(;etype2qrule=e2qrule)
     # loop over element types, then call inner function. This allows for the
     # heavy lifting to be type-stable.
     for E in etypes(mesh)

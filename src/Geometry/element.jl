@@ -451,8 +451,12 @@ end
 jacobian(psurf::ParametricElement,s) = jacobian(psurf,SVector(s))
 
 # define some aliases for convenience
-const ParametricLine  = ParametricElement{HyperRectangle{1,<:Number}}
+const ParametricLine  = ParametricElement{HyperRectangle{1}}
 
-derivative(l::ParametricLine,s)  = ForwardDiff.derivative(l,s)
-derivative2(l::ParametricLine,s) = ForwardDiff.derivative(s -> derivative(l,s),s)
-derivative3(l::ParametricLine,s) = ForwardDiff.derivative(s -> derivative2(l,s),s)
+# derivative(l::ParametricLine,s)  = ForwardDiff.derivative(l,s)
+# derivative2(l::ParametricLine,s) = ForwardDiff.derivative(s -> derivative(l,s),s)
+# derivative3(l::ParametricLine,s) = ForwardDiff.derivative(s -> derivative2(l,s),s)
+
+derivative(l::ParametricElement,s)  = ForwardDiff.derivative(l,s)
+derivative2(l::ParametricElement,s) = ForwardDiff.derivative(s -> derivative(l,s),s)
+derivative3(l::ParametricElement,s) = ForwardDiff.derivative(s -> derivative2(l,s),s)

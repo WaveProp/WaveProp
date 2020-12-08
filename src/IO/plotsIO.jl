@@ -65,7 +65,9 @@ end
     d = domain(ent)
     if d === ReferenceLine()
         h       =  gridsize[1]
-        s       =  0:h:1
+        a       = ent.domain.low_corner[1]
+        b       = ent.domain.high_corner[1]
+        s       =  a:h:b
         pts     = [par(v) for v in s]
         x       = [pt[1] for pt in pts]
         y       = [pt[2] for pt in pts]

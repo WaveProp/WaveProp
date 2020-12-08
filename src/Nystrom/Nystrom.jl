@@ -33,5 +33,6 @@ include("potential.jl")
 include("integraloperators.jl")
 include("densityinterpolation.jl")
 include("assemble.jl")
+include("martensen_kussmaul.jl")
 
 end # module

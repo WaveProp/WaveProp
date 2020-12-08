@@ -1,65 +1,7 @@
 """
-    abstract type AbstractEntity
-    
-Entitty of geometrical nature. 
-"""
-abstract type AbstractEntity end
+    struct Domain
 
-"""
-    struct ElementaryEntity <: AbstractEntity
-    
-The basic building block of geometrical objects. 
-
-# Fields:
-- `dim::UInt8`: the geometrical dimension of the entity (e.g. line has `dim=1`, surface has `dim=2`, etc)
-- `tag::Int64`: an integer tag associated to the entity
-- `boundary::Vector{ElementaryEntity}`: the entities of dimension `dim-1` forming the entity's boundary  
-"""
-struct ElementaryEntity <: AbstractEntity
-    dim::UInt8
-    tag::Int64
-    boundary::Vector{ElementaryEntity}
-    function ElementaryEntity(d::Integer, t::Integer, boundary::Vector{ElementaryEntity})
-        msg = "an elementaty entities in the boundary has a wrong dimension"
-        for b in boundary
-            @assert geometric_dimension(b) == d-1 msg
-        end
-        # modify global variable TAGS by adding the new (d,t) for the
-        # entity. It shows a warning if (d,t) already exists.
-        _add_tag!(d,t) 
-        new(d, t, boundary)
-    end
-end
-
-"""
-    ElementaryEntity(dim,tag)
-
-Construct an [`ElementaryEntity`](@ref) with an empty boundary .
-"""
-function ElementaryEntity(dim,tag)
-    ElementaryEntity(dim,tag,ElementaryEntity[])
-end
-ElementaryEntity(dim) = ElementaryEntity(dim,_new_tag(dim))
-
-"""Return geometric the dimension of the elementary entity."""
-geometric_dimension(ω::ElementaryEntity) = ω.dim
-
-"""Return the unique tag (for a given dimension) of the elementary entity."""
-tag(ω::ElementaryEntity) = (geometric_dimension(ω), ω.tag)
-
-"""Return the vector of elementary entities making the boundary."""
-boundary(ω::ElementaryEntity) = ω.boundary
-
-"""Test equality between elementary entities."""
-function Base.:(==)(Ω1::ElementaryEntity, Ω2::ElementaryEntity)
-    Ω1.dim == Ω2.dim || return false
-    Ω1.tag == Ω2.tag || return false
-    Ω1.boundary == Ω2.boundary || return false
-    return true
-end
-
-"""
-Represent a physical domain (union of elementary entities).
+Represent a physical domain as a union of elementary entities.
 """
 struct Domain
     entities::Vector{ElementaryEntity}
@@ -67,11 +9,19 @@ end
 Domain(ω::ElementaryEntity) = Domain([ω,])
 Domain() = Domain(ElementaryEntity[])
 
+"""
+    entities(Ω::Domain)
 
-"""Return a vector of all elementary entities making up a domain."""
+Return a vector of all elementary entities making up a domain.
+"""
 entities(Ω::Domain) = Ω.entities
 
-"""Return the dimension of the domain."""
+"""
+    geometric_dimension(Ω::Domain)
+
+If all entities forming the domain have the same `geometric_dimension`, return
+that value; otherwise throw an assertion error. 
+"""
 function geometric_dimension(Ω::Domain)
     dims = [geometric_dimension(ent) for ent in entities(Ω)] |> unique!
     msg = "currently not able to handle a `Domain` with entities of different
@@ -81,21 +31,36 @@ function geometric_dimension(Ω::Domain)
 end
 
 """
+    length(Ω:::Domain)
+
 The length of a domain corresponds to the number of elementary entities that make it.
 """
 Base.length(Ω::Domain) = length(entities(Ω))
 
-"""Return all the boundaries of the domain."""
+"""
+    skeleton(Ω::Domain)
+
+Return all the boundaries of the domain, i.e. the domain's skeleton.
+"""
 skeleton(Ω::Domain) = union(Domain.(boundary.(entities(Ω)))...)
 
-"""Test equality between two sub-domains."""
+"""
+    ===(Ω1::Domain,Ω2::Domain)
+
+Two `Domain`s are equal if all their entities are equal.
+"""
 function Base.:(==)(Ω1::Domain, Ω2::Domain)
     return entities(Ω1) == entities(Ω2)
 end
 
 
 """
-Check whether an `ElementaryEntity` belongs to a `Domain`.
+    in(ω::ElementaryEntity,Ω::Domain)
+
+Check whether an `ElementaryEntity` belongs to a `Domain`. Not that his only
+does a *shallow* comparisson, meaning it only checks that `ω` is not one of the
+entities in `entities(Ω)`; thus `ω` could still belong equal one of the
+boundaries of an entity in `entities(Ω)`.
 """
 Base.in(ω::ElementaryEntity, Ω::Domain) = in(ω, entities(Ω))
 
@@ -103,7 +68,9 @@ Base.getindex(Ω::Domain, i) = entities(Ω)[i]
 Base.lastindex(Ω::Domain) = length(Ω)
 
 """
-Domain can be viewed as an iterable collection.
+    iterate()
+
+Iterating over domain means iterating over its entities. 
 """
 function Base.iterate(Ω::Domain, state=1)
     # Check if we are done iterating
@@ -127,13 +94,18 @@ function Base.setdiff(Ω1::Domain, Ω2::Domain)
 end
 
 """
-Union of domains.
+    union(Ωs::Domain...)
+
+Union of domains. This done perform a union on the true geometric objects in
+`entities(Ω)`, but simply on their identification through `(dim,tag)`. 
 """
 function Base.union(Ωs::Domain...)
     Domain(Vector{ElementaryEntity}(unique(vcat(entities.(Ωs)...))))
 end
 
 """
+    assertequaldim(Ω1::Domain,Ω2::Domain)
+
 Check that two domains have same dimension.
 
 If one of the domain (or both) are empty, the assertion is assumed to be true.

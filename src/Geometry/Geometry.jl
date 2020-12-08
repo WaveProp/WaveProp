@@ -17,6 +17,7 @@ using WaveProp.Utils
 
 include("point.jl")
 include("hyperrectangle.jl")
+include("entities.jl")
 include("domain.jl")
 include("element.jl")
 include("parametricentity.jl")

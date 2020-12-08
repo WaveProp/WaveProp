@@ -48,7 +48,7 @@ function assert_extension(fname::String,ext::String,msg="file extension must be 
     @assert occursin(r,fname) msg
 end
 
-function debug(mod)
+function debug(mod="WaveProp")
     @eval ENV["JULIA_DEBUG"] = $(mod)
 end
 

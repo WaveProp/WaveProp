@@ -9,7 +9,7 @@ using WaveProp.Mesh
     bnd = boundary(geo)
     els = Mesh._meshgen(bnd[1];gridsize=0.1)
     el  = els[1]
-    Geometry._global_add_entity(geo)
+    Geometry._global_add_entity!(geo)
     Ω,mesh =  Mesh.meshgen(geo;gridsize=0.1)
     # fig = plot()
     # for el in els   

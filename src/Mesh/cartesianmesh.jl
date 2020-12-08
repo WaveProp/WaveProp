@@ -29,6 +29,7 @@ function CartesianMesh(d::ReferenceSquare;gridsize)
 end    
 
 ElementIterator(m::CartesianMesh) = ElementIterator(m,etype(m))
+elements(m::CartesianMesh)        = ElementIterator(m)
 
 # element iterator for cartesian mesh
 function Base.length(iter::ElementIterator{<:Any,<:CartesianMesh})

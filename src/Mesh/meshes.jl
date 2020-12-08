@@ -27,14 +27,16 @@ Base.length(mesh::AbstractMesh) = length(nodes(mesh))
 
 A simple data structure representing a generic mesh in an ambient space of dimension `N`, with data of type `T`. 
 """
-struct GenericMesh{N,T} <: AbstractMesh{N,T}
-    nodes::Vector{Point{N,T}}
+Base.@kwdef struct GenericMesh{N,T} <: AbstractMesh{N,T}
+    nodes::Vector{Point{N,T}} = Vector{Point{N,T}}()
     # element types
-    etypes::Vector{DataType}
-    # for each element type, the indices of nodes in each element
-    el2nodes::Dict{DataType,Matrix{Int}}
+    etypes::Vector{DataType} = Vector{DataType}()
+    # for each lagrangian element type, the indices of nodes in each element
+    el2nodes::Dict{DataType,Matrix{Int}} = Dict{DataType,Matrix{Int}}()
     # mapping from elementary entity to (etype,tags)
-    ent2tags::Dict{ElementaryEntity,Dict{DataType,Vector{Int}}}
+    ent2tags::Dict{ElementaryEntity,Dict{DataType,Vector{Int}}} = Dict{ElementaryEntity,Dict{DataType,Vector{Int}}}()
+    # for each parametric elemenet type, a vector of the elements    
+    els::Dict{DataType,Vector} = Dict{DataType,Vector}()
 end
 
 # convert a mesh to 2d by ignoring third component. Note that this also requires
@@ -58,11 +60,11 @@ function GenericMesh{2}(mesh::GenericMesh{3})
         ent2tags[ent] = new_dict
     end    
     # construct new 2d mesh
-    GenericMesh{2,T}(
-        [x[1:2] for x in nodes(mesh)],
-        convert_to_2d.(etypes(mesh)),
-        el2nodes,
-        ent2tags
+    GenericMesh{2,T}(;
+        nodes=[x[1:2] for x in nodes(mesh)],
+        etypes=convert_to_2d.(etypes(mesh)),
+        el2nodes=el2nodes,
+        ent2tags=ent2tags
     )
 end
 
@@ -98,26 +100,34 @@ function etypes(submesh::SubMesh)
     return unique!(ee)
 end   
 
-function elements(mesh::AbstractMesh, E::Type{<:AbstractElement})
-    return ElementIterator{E}(mesh)
-end    
-
 struct ElementIterator{E,M}
     mesh::M
 end    
 ElementIterator{E}(mesh::M) where {E,M <: AbstractMesh} = ElementIterator{E,M}(mesh)
+ElementIterator(mesh,E) = ElementIterator{E}(mesh)
+
+"""
+    elements(mesh::AbstractMesh,E::Type)
+
+Return an iterator for iterating over all elements of `mesh` of type `E`.
+"""
+elements(mesh::AbstractMesh, E::Type)   = ElementIterator(mesh,E)
 
 Base.eltype(::Type{ElementIterator{E,M}}) where {E,M} = E
 
 # iterator for generic mesh (not associated with a domain)
-function Base.length(iter::ElementIterator{<:Any,<:GenericMesh})
+function Base.length(iter::ElementIterator{<:LagrangeElement,<:GenericMesh})
     E       = eltype(iter)    
     tags    = iter.mesh.el2nodes[E]
     Np, Nel = size(tags)
     return Nel
 end    
+function Base.length(iter::ElementIterator{<:ParametricElement,<:GenericMesh})
+    E       = eltype(iter)    
+    return length(iter.mesh.els[E])
+end    
 
-function Base.iterate(iter::ElementIterator{<:Any,<:GenericMesh}, state=1)
+function Base.iterate(iter::ElementIterator{<:LagrangeElement,<:GenericMesh}, state=1)
     E      = eltype(iter)    
     mesh   = iter.mesh    
     tags   = mesh.el2nodes[E]
@@ -130,8 +140,27 @@ function Base.iterate(iter::ElementIterator{<:Any,<:GenericMesh}, state=1)
     end
 end    
 
+function Base.iterate(iter::ElementIterator{<:ParametricElement,<:GenericMesh}, state=1)
+    E      = eltype(iter)    
+    els    = iter.mesh.els[E]
+    iterate(els,state)
+end    
+
 # iterator for submesh. Filter elements based on domain
-function Base.length(iter::ElementIterator{<:Any,<:SubMesh})
+function Base.length(iter::ElementIterator{<:LagrangeElement,<:SubMesh})
+    submesh    = iter.mesh
+    Ω, M        = submesh.domain, submesh.mesh
+    E          = eltype(iter)    
+    # loop over all entities and count the number of elements of type E
+    Nel        = 0
+    for ent in entities(Ω)
+        dict   = M.ent2tags[ent] 
+        v      = dict[E] # get element tags for type E
+        Nel += length(v)    
+    end
+    return Nel
+end    
+function Base.length(iter::ElementIterator{<:ParametricElement,<:SubMesh})
     submesh    = iter.mesh
     Ω, M        = submesh.domain, submesh.mesh
     E          = eltype(iter)    
@@ -145,7 +174,7 @@ function Base.length(iter::ElementIterator{<:Any,<:SubMesh})
     return Nel
 end    
 
-function Base.iterate(iter::ElementIterator{<:Any,<:SubMesh}, state=(1, 1))
+function Base.iterate(iter::ElementIterator{<:LagrangeElement,<:SubMesh}, state=(1, 1))
     # extract some constant fields for convenience
     submesh   = iter.mesh    
     Ω, M      = submesh.domain, submesh.mesh
@@ -176,71 +205,38 @@ function _iterate(mesh::GenericMesh,E,ent::ElementaryEntity,i::Int=1)
     if i > length(el_tags)
         return nothing    
     else
-        el_tag      = el_tags[i]        
-        node_tags   = view(mesh.el2nodes[E],:,el_tag)
-        vtx         = view(mesh.nodes,node_tags)
-        el          = E(vtx)
+        el_tag      = el_tags[i]            
+        if E <: LagrangeElement    
+            node_tags   = view(mesh.el2nodes[E],:,el_tag)
+            vtx         = view(mesh.nodes,node_tags)
+            el          = E(vtx)
+        elseif E <: ParametricElement
+            el          = mesh.els[E][el_tag]
+        else
+            notimplemented()    
+        end
         return el,i+1
     end
 end  
 
-# """
-#     _compute_quadrature!(msh::GenericMesh,E,qrule;need_normal=false)
-
-# For all elements of `msh` of type `E::Type{<:AbstractElement}`, use `qrule::AbstractQuadratureRule`
-# to compute an element quadrature and push that information into `msh`. Set
-# `need_normal=true` if the normal vector at the quadrature nodes should be computed.
-# """
-# function _compute_quadrature!(mesh::GenericMesh,E,qrule;need_normal=false)
-#     @assert domain(qrule) == domain(E) "quadrature rule must be defined on domain of 
-#     element"    
-#     E ∈ etypes(mesh) || (return mesh)
-#     N,T = ambient_dimension(mesh), eltype(mesh)
-#     x̂,ŵ = qrule() # quadrature on reference element
-#     nq  = length(x̂) # number of qnodes per element
-#     el2qnodes = Int[]
-#     for el in elements(mesh,E)
-#         x,w = qrule(el)
-#         # compute indices of quadrature nodes in this element
-#         qidxs  = length(mesh.qnodes) .+ (1:nq) |> collect
-#         append!(el2qnodes,qidxs)
-#         append!(mesh.qnodes,x)
-#         append!(mesh.qweights,w)
-#         if need_normal==true
-#             n⃗ = map(u->normal(el,u),x̂) 
-#             append!(mesh.qnormals,n⃗)
-#         end
-#     end
-#     el2qnodes = reshape(el2qnodes, nq, :)
-#     push!(mesh.el2qnodes,E=>el2qnodes)
-#     return mesh   
-# end    
-
-# function _compute_quadrature!(mesh::GenericMesh,e2qrule::Dict;need_normal=false)
-#     for (E,qrule) in e2qrule
-#         _compute_quadrature!(mesh,E,qrule;need_normal)    
-#     end
-#     return mesh
-# end    
-
-# """
-#     compute_quadrature!(mesh;order,dim,need_normal=false)
-
-# Compute a quadrature of a desired `order` for all elements of dimension `dim`.
-# Set `need_normal=true` if the normal at the quadrature nodes is to be computed.
-# """
-# function compute_quadrature!(mesh::GenericMesh;order,dim,need_normal=false)
-#     dict = Dict()
-#     @assert allunique(etypes(mesh))
-#     for E in etypes(mesh)
-#         geometric_dimension(E) == dim || continue
-#         ref = domain(E)
-#         qrule = _qrule_for_reference_element(ref,order)
-#         push!(dict,E=>qrule)
-#     end
-#     _compute_quadrature!(mesh,dict;need_normal)
-#     return mesh
-# end 
-
-
-
+function Base.iterate(iter::ElementIterator{<:ParametricElement,<:SubMesh}, state=(1, 1))
+    # extract some constant fields for convenience
+    submesh   = iter.mesh    
+    Ω, M      = submesh.domain, submesh.mesh
+    E         = eltype(iter)    
+    ents      = entities(Ω)
+    # inner iteration over ent
+    n, i          = state
+    ent          = ents[n]
+    inner_state  = _iterate(M, E, ent, i)
+    if inner_state === nothing
+        if n == length(ents)
+            return nothing
+        else
+            return iterate(iter, (n + 1, 1))
+        end
+    else 
+        el, i = inner_state
+        return el, (n, i)
+    end    
+end  

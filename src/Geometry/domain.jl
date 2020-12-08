@@ -1,5 +1,12 @@
 """
-    struct ElementaryEntity
+    abstract type AbstractEntity
+    
+Entitty of geometrical nature. 
+"""
+abstract type AbstractEntity end
+
+"""
+    struct ElementaryEntity <: AbstractEntity
     
 The basic building block of geometrical objects. 
 
@@ -8,7 +15,7 @@ The basic building block of geometrical objects.
 - `tag::Int64`: an integer tag associated to the entity
 - `boundary::Vector{ElementaryEntity}`: the entities of dimension `dim-1` forming the entity's boundary  
 """
-struct ElementaryEntity
+struct ElementaryEntity <: AbstractEntity
     dim::UInt8
     tag::Int64
     boundary::Vector{ElementaryEntity}
@@ -40,10 +47,8 @@ geometric_dimension(ω::ElementaryEntity) = ω.dim
 """Return the unique tag (for a given dimension) of the elementary entity."""
 tag(ω::ElementaryEntity) = (geometric_dimension(ω), ω.tag)
 
-
 """Return the vector of elementary entities making the boundary."""
 boundary(ω::ElementaryEntity) = ω.boundary
-
 
 """Test equality between elementary entities."""
 function Base.:(==)(Ω1::ElementaryEntity, Ω2::ElementaryEntity)
@@ -52,7 +57,6 @@ function Base.:(==)(Ω1::ElementaryEntity, Ω2::ElementaryEntity)
     Ω1.boundary == Ω2.boundary || return false
     return true
 end
-
 
 """
 Represent a physical domain (union of elementary entities).
@@ -67,20 +71,22 @@ Domain() = Domain(ElementaryEntity[])
 """Return a vector of all elementary entities making up a domain."""
 entities(Ω::Domain) = Ω.entities
 
-
 """Return the dimension of the domain."""
-geometric_dimension(Ω::Domain) = geometric_dimension(entities(Ω)[1])
-
+function geometric_dimension(Ω::Domain)
+    dims = [geometric_dimension(ent) for ent in entities(Ω)] |> unique!
+    msg = "currently not able to handle a `Domain` with entities of different
+           geometrical dimension. Got entities of dimensions ($dims)"
+    @assert length(dims) == 1 msg
+    return first(dims)
+end
 
 """
 The length of a domain corresponds to the number of elementary entities that make it.
 """
 Base.length(Ω::Domain) = length(entities(Ω))
 
-
 """Return all the boundaries of the domain."""
 skeleton(Ω::Domain) = union(Domain.(boundary.(entities(Ω)))...)
-
 
 """Test equality between two sub-domains."""
 function Base.:(==)(Ω1::Domain, Ω2::Domain)
@@ -91,12 +97,10 @@ end
 """
 Check whether an `ElementaryEntity` belongs to a `Domain`.
 """
-Base.in(ω::ElementaryEntity, Ω::Domain) = Base.in(ω, entities(Ω))
-
+Base.in(ω::ElementaryEntity, Ω::Domain) = in(ω, entities(Ω))
 
 Base.getindex(Ω::Domain, i) = entities(Ω)[i]
 Base.lastindex(Ω::Domain) = length(Ω)
-
 
 """
 Domain can be viewed as an iterable collection.
@@ -110,12 +114,10 @@ function Base.iterate(Ω::Domain, state=1)
     return (Ω[state], state+1)
 end
 
-
 """
 Check whether a Domain is empty.
 """
 Base.isempty(Ω::Domain) = length(entities(Ω)) == 0
-
 
 """
 Domain which is not in the intersection of domains Ω1 and Ω2.
@@ -124,14 +126,12 @@ function Base.setdiff(Ω1::Domain, Ω2::Domain)
     Domain(setdiff(entities(Ω1), entities(Ω2)))
 end
 
-
 """
 Union of domains.
 """
 function Base.union(Ωs::Domain...)
     Domain(Vector{ElementaryEntity}(unique(vcat(entities.(Ωs)...))))
 end
-
 
 """
 Check that two domains have same dimension.
@@ -144,7 +144,6 @@ function assertequaldim(Ω1::Domain, Ω2::Domain)
     of the second domain."
     @assert geometric_dimension(Ω1) == geometric_dimension(Ω2) msg
 end
-
 
 """
 Intersection between domain Ω1 and domain Ω2.
@@ -167,7 +166,6 @@ function Base.push!(Ω::Domain,ent::ElementaryEntity)
     push!(entities(Ω),ent)
 end    
 
-
 """
 Determine whether every element of domain Ω1 is also in domain Ω2.
 """
@@ -176,7 +174,6 @@ function Base.issubset(Ω1::Domain, Ω2::Domain)
     return issubset(entities(Ω1), entities(Ω2))
 end
 
-
 """
 Remove domain Ω1 from domain Ω2.
 """
@@ -184,7 +181,6 @@ function remove(Ω1::Domain, Ω2::Domain)
     assertequaldim(Ω1, Ω2)
     return Domain(setdiff(entities(Ω2), intersect(entities(Ω1), entities(Ω2))))
 end
-
 
 """Return the internal boundaries inside a domain."""
 function internal_boundary(Ω::Domain)
@@ -200,7 +196,6 @@ function internal_boundary(Ω::Domain)
     return γ
 end
 
-
 """Return the external boundaries inside a domain."""
 function external_boundary(Ω::Domain)
     return remove(internal_boundary(Ω), skeleton(Ω))
@@ -214,7 +209,6 @@ Return a domain comprising the external boundary of Ω.
 See also: [`external_boundary`](@ref)
 """
 boundary(Ω) = external_boundary(Ω)
-
 
 """
 Return all tags of the elementary entities in the domain `Ω` corresponding to the dimension `d`.
@@ -233,7 +227,6 @@ end
 function tags(Ω::Domain)
     isempty(Ω) ? Tuple{Int64, Int64}[] : tags(Ω, geometric_dimension(Ω))
 end
-
 
 """
 Return all tags of the elementary entities in the domain `Ω` corresponding to the dimensions contained in `dims`.

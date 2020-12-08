@@ -13,11 +13,11 @@ using WaveProp.Geometry
         @test ent(s) ≈ normal(ent,s)
     end
     @testset "surfaces" begin
-        f      = (x) -> SVector(x[1],x[2],0) #[-1,1]×[-1,1] square embedded in 3d
+        f      = (x) -> SVector(x[1],x[2],sin(x[1]))
         d      = ReferenceSquare()
         ent    = ParametricEntity(f,d)
         s      =  Point{2}(rand(2))
         @test ent(s) == f(s)
-        @test jacobian(ent,s) ≈ SMatrix{3,2}([1 0; 0 1; 0 0])
+        @test jacobian(ent,s) ≈ SMatrix{3,2}([1 0; 0 1; cos(s[1]) 0])
     end
 end

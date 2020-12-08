@@ -28,7 +28,23 @@ include("parametricbody.jl")
 Global dictionary storing the used entity tags (the value) for a given dimension
 (the key).
 """    
-const TAGS = Dict{Int,Vector{Int}}()
+const TAGS     = Dict{Int,Vector{Int}}()
+
+"""
+    const TAGS::Dict{Int,Vector{Int}}
+
+Global dictionary storing the used entity tags (the value) for a given dimension
+(the key).
+"""    
+const ENTITIES = Dict{Tuple{Int,Int},AbstractEntity}()
+
+function _global_add_entity(ent::AbstractEntity)
+    dim = geometric_dimension(ent)
+    tag = _new_tag(dim) # generate a new (unique) tag
+    _add_tag!(dim,tag) # add this tag to global list to make sure it is not used again
+    ENTITIES[(dim,tag)] = ent
+    return dim,tag
+end    
 
 function _new_tag(dim)
     if !haskey(TAGS,dim) 
@@ -71,5 +87,5 @@ export ElementaryEntity, Domain,
     GenericMesh, LagrangeElement, Point, ReferenceLine, ReferenceTriangle, ReferenceTetrahedron, ReferenceSquare,
     domain, jacobian, normal, LagrangeLine, LagrangeTriangle, LagrangeTetrahedron, AbstractElement, ambient_dimension, geometric_dimension, push_forward,
     IMT, Duffy, GeometricTransformation, bounding_box, HyperRectangle, center, diameter, radius, line, triangle, rectangle, extrude, translate, ParametricLine, AbstractReferenceShape, measure,
-    ParametricBody, AbstractParametricBody, ParametricEntity, SVector, SMatrix, Circle, Kite,AbstractParametricBody
+    ParametricBody, AbstractParametricBody, ParametricEntity, SVector, SMatrix, Circle, Kite,AbstractParametricBody, ParametricElement, AbstractParametricBody
 end # module

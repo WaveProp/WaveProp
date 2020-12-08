@@ -1,9 +1,9 @@
-"""
-    AbstractEntity{D,T}
+# """
+#     AbstractEntity{D,T}
 
-A geometric entity mapping `D` into points of type `T`. 
-"""
-abstract type AbstractEntity{D,T} end
+# A geometric entity mapping `D` into points of type `T`. 
+# """
+# abstract type AbstractEntity{D,T} end
 
 """
     ParametricEntity{D,T}
@@ -11,11 +11,12 @@ abstract type AbstractEntity{D,T} end
 A geometric entity given by an explicit `parametrization::Function` mapping `D`
 into points of type `T`. 
 """
-struct ParametricEntity{D,T} <: AbstractEntity{D,T}
-    parametrization::Function
+struct ParametricEntity{D,T,F} <: AbstractEntity
+    parametrization::F
 end
 
 domain(p::ParametricEntity{D}) where {D<:AbstractReferenceShape} = D()
+parametrization(p::ParametricEntity) = p.parametrization 
 
 Base.eltype(p::ParametricEntity{D,T}) where {D,T} = T
 
@@ -27,7 +28,7 @@ function ParametricEntity(f,d::AbstractReferenceShape)
     F = typeof(f)
     D = typeof(d)
     T = f(center(d)) |> typeof
-    return ParametricEntity{D,T}(f)
+    return ParametricEntity{D,T,F}(f)
 end  
 ParametricEntity{D}(f) where {D} = ParametricEntity(f,D())
 

@@ -94,7 +94,7 @@ end
 
 Return an instance of the singleton type `R`; i.e. the reference element.
 """
-domain(::Type{<:AbstractElement{R}}) where {R} = R()
+domain(::Type{<:AbstractElement{R}}) where {R<:AbstractReferenceShape} = R()
 domain(el::AbstractElement) = domain(typeof(el))
 
 """
@@ -395,7 +395,19 @@ end
 
 Base.eltype(p::ParametricElement{D,T,F}) where {D,T,F} = T
 
-domain(p::ParametricElement) = p.domain
+# The domain of a parametric element is the reference domain which can be used
+# to describe it.
+function domain(p::Type{ParametricElement{D,T,F}}) where {D,T,F}
+    if D <: HyperRectangle{1}
+        return ReferenceLine()    
+    elseif D <: HyperRectangle{2}
+        return ReferenceSquare()    
+    else
+        notimplemented()
+    end        
+end    
+domain(p::ParametricElement) = domain(typeof(p))
+
 geometric_dimension(p::ParametricElement) = geometric_dimension(domain(p))
 ambient_dimension(p::ParametricElement)   = length(eltype(p))
 
@@ -410,8 +422,33 @@ end
 
 function (el::ParametricElement)(u) 
     @assert u ∈ domain(el)
-    el.parametrization(u)
+    rec = el.domain
+    lc  = low_corner(rec)
+    hc  = high_corner(rec)
+    N = geometric_dimension(el)
+    # map from reference domain to domain of element (confusing...)
+    v = svector(N) do dim
+        lc[dim] + (hc[dim]-lc[dim])*u[dim]
+    end    
+    el.parametrization(v)
 end
+
+function jacobian(el::ParametricElement,u::SVector) 
+    @assert u ∈ domain(el)
+    rec = el.domain
+    lc  = low_corner(rec)
+    hc  = high_corner(rec)
+    N = geometric_dimension(el)
+    # map from reference domain to domain of element (confusing...)
+    v = svector(N) do dim
+        lc[dim] + (hc[dim]-lc[dim])*u[dim]
+    end        
+    scal = svector(N) do dim
+        (hc[dim]-lc[dim])
+    end        
+    ForwardDiff.jacobian(el.parametrization,v) * SDiagonal(scal)
+end
+jacobian(psurf::ParametricElement,s) = jacobian(psurf,SVector(s))
 
 # define some aliases for convenience
 const ParametricLine  = ParametricElement{HyperRectangle{1,<:Number}}
@@ -419,18 +456,3 @@ const ParametricLine  = ParametricElement{HyperRectangle{1,<:Number}}
 derivative(l::ParametricLine,s)  = ForwardDiff.derivative(l,s)
 derivative2(l::ParametricLine,s) = ForwardDiff.derivative(s -> derivative(l,s),s)
 derivative3(l::ParametricLine,s) = ForwardDiff.derivative(s -> derivative2(l,s),s)
-
-# some useful shapes
-function circle(;center=Point(0,0),radius=1)
-    f      = (u) -> center + Point(radius*sin(2π*u[1]),radius*cos(2π*u[1]))
-    d      = HyperRectangle(0,1)
-    bnd    = ParametricElement(f,d)
-    return ParametricBody([bnd],2)
-end    
-
-function kite(;radius=1,center::Point=(0,0))
-    f = (s) -> center .+ radius.*Point(cospi(s[1]) + 0.65*cospi(2*s[1]) - 0.65,
-                              1.5*sinpi(s[1]))
-    domain = HyperRectangle(-1.0,2.0)
-    return ParametricElement(f,domain)
-end

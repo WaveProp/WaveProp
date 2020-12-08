@@ -85,14 +85,14 @@ construct the mesh.
 """
 function _initialize_mesh(Ω::Domain)
     tags, coord, _ = gmsh.model.mesh.getNodes()
-    pts = reinterpret(SVector{3,Float64}, coord) |> collect
+    nodes = reinterpret(SVector{3,Float64}, coord) |> collect
     # map gmsh type tags to actual internal types
     etypes = [_type_tag_to_etype(e) for e in gmsh.model.mesh.getElementTypes()]
     # Recursively populating the dictionaries
     el2nodes = Dict{DataType,Matrix{Int}}()
-    ent2tag = Dict{ElementaryEntity,Dict{DataType,Vector{Int}}}()
-    el2nodes, ent2tag = _domain_to_mesh!(el2nodes, ent2tag, Ω)
-    return GenericMesh(pts, etypes, el2nodes, ent2tag)
+    ent2tags = Dict{ElementaryEntity,Dict{DataType,Vector{Int}}}()
+    el2nodes, ent2tag = _domain_to_mesh!(el2nodes, ent2tags, Ω)
+    return GenericMesh{3,Float64}(;nodes, etypes, el2nodes, ent2tags)
 end
 
 """

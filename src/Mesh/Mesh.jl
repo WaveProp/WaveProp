@@ -20,9 +20,10 @@ using WaveProp.Geometry
 import WaveProp.Geometry: ambient_dimension, geometric_dimension, domain, range
 
 export GenericMesh, ElementIterator, nodes, etypes, el2nodes, ent2tags, elements, near_interaction_list,
-compute_quadrature!,SubMesh, AbstractMesh, CartesianMesh
+compute_quadrature!,SubMesh, AbstractMesh, CartesianMesh, meshgen
 
 include("meshes.jl")
 include("cartesianmesh.jl")
+include("meshgen.jl")
 
 end

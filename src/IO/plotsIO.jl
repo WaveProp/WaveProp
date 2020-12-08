@@ -43,3 +43,69 @@ end
         @series [x1,x1],[y2,y2],[z1,z2]
     end
 end
+
+# recipe for parametric line
+@recipe function f(ent::ParametricEntity{ReferenceLine};h=0.01)
+    par = ent.parametrization
+    legend --> false
+    grid   --> false
+    # aspect_ratio --> :equal
+    s       = 0:h:1    
+    pts     = [par(v) for v in s]
+    x       = [pt[1] for pt in pts]
+    y       = [pt[2] for pt in pts]
+    x,y
+end
+
+@recipe function f(ent::ParametricElement;gridsize=0.01)
+    par = ent.parametrization
+    legend --> false
+    grid   --> false
+    aspect_ratio --> :equal
+    d = domain(ent)
+    if d === ReferenceLine()
+        h       =  gridsize[1]
+        s       =  0:h:1
+        pts     = [par(v) for v in s]
+        x       = [pt[1] for pt in pts]
+        y       = [pt[2] for pt in pts]
+        return x,y
+    else
+        notimplemented()    
+    end
+end
+
+# recipe for paramatric surface
+@recipe function f(ent::ParametricEntity{ReferenceSquare};h=0.1)
+    legend --> false
+    grid   --> false
+    aspect_ratio --> :equal
+    seriestype := :surface
+    xrange = 0:h:1
+    yrange = 0:h:1
+    pts    = [ent.parametrization((x,y)) for x in xrange, y in yrange]
+    x      =  [pt[1] for pt in pts]
+    y      =  [pt[2] for pt in pts]
+    z      =  [pt[3] for pt in pts]
+    vec(x),vec(y),vec(z)
+end
+
+# recipe for parametric body
+@recipe function f(bdy::AbstractParametricBody)
+    aspect_ratio --> :equal    
+    for patch in boundary(bdy)
+        @series begin
+            patch
+        end
+    end
+end
+
+# recipe for many parametric bodies
+@recipe function f(bdies::Vector{<:AbstractParametricBody})
+    aspect_ratio --> :equal    
+    for bdy in bdies
+        @series begin
+            bdy
+        end
+    end
+end

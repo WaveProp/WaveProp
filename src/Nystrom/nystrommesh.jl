@@ -42,11 +42,11 @@ function NystromMesh(mesh::AbstractMesh,e2qrule,compute_normal::Bool)
 end 
 
 @noinline function _build_nystrom_mesh!(nmesh,mesh,E,qrule,compute_normal)
-    iter        = ElementIterator{E}(mesh)
-    nmesh.elements[E] = iter    
+    els         = elements(mesh,E)    
+    nmesh.elements[E] = els
     x̂,ŵ         = qrule() #nodes and weights on reference element
     el2qnodes   = Int[]
-    for el in iter
+    for el in els
         # push forward to element    
         x = map(el,x̂)
         w = map(zip(x̂,ŵ)) do (x̂,ŵ)

@@ -10,15 +10,20 @@ end
 
 # promote 
 HyperRectangle(l::Tuple,h::Tuple) = HyperRectangle(SVector(l),SVector(h))
+HyperRectangle(l::SVector,h::SVector) = HyperRectangle(promote(l,h)...)
 # 1d case
 HyperRectangle(a::Number,b::Number) = HyperRectangle(SVector(a),SVector(b))
 
 Base.:(==)(h1::HyperRectangle, h2::HyperRectangle) = (h1.low_corner == h2.low_corner) && (h1.high_corner == h2.high_corner)
+Base.isapprox(h1::HyperRectangle,h2::HyperRectangle) = isapprox(h1.low_corner,h2.low_corner) && isapprox(h1.high_corner,h2.high_corner)
 Base.in(point,h::HyperRectangle) = all(h.low_corner .<= point .<= h.high_corner)
 
-Base.eltype(h::HyperRectangle{N,T}) where {N,T}    = T
-ambient_dimension(h::HyperRectangle{N}) where {N}          = N
-geometric_dimension(h::HyperRectangle{N}) where {N}          = N
+Base.eltype(h::HyperRectangle{N,T}) where {N,T}     = T
+ambient_dimension(h::HyperRectangle{N}) where {N}   = N
+geometric_dimension(h::HyperRectangle{N}) where {N} = N
+
+low_corner(r::HyperRectangle) = r.low_corner
+high_corner(r::HyperRectangle) = r.high_corner
 
 diameter(cub::HyperRectangle) = norm(cub.high_corner .- cub.low_corner,2)
 

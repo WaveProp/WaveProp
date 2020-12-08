@@ -1,15 +1,17 @@
 """
-    abstract type AbstractElement{D,N}
+    abstract type AbstractElement{D,T}
 
 Abstract shape given by the image of a parametrization with domain
 `D<:AbstractReferenceShape`.
 
-The type parameter `N` represents the dimension of the embedding space. The
-geometric dimension of the element can be obtained from the geometric dimension
-of its domain `D`. 
+The type parameter `T` represents how points are represented (e.g.
+SVector{3,Float64} for a typical point in three dimensions). Note that the
+`ambient_dimension` must inferrable from the type `T` alone. 
+
+The geometric dimension of the element can be obtained from the geometric
+dimension of its domain `D`. 
 
 Instances `el` of `AbstractElement` are expected to implement.
-
 - `el(x̂)`: evaluate the parametrization defining the element at the parametric
     coordinates `x̂ ∈ D`.
 - `jacobian(el,x̂)` : evaluate the jacobian matrix of the parametrization at the
@@ -50,8 +52,15 @@ where `` \\hat{\\tau} `` is the reference element.
 """
 function measure(el,u)
     jac = jacobian(el,u)
-    g   = transpose(jac)*jac |> det
-    μ   = sqrt(g)
+    M,N = size(jac)
+    if M === N
+        # faster case, regular integral    
+        μ   = abs(det(jac))
+    else
+        # general case of a surface measure
+        g   = transpose(jac)*jac |> det
+        μ   = sqrt(g)
+    end
     return μ
 end    
 
@@ -97,8 +106,8 @@ geometric_dimension(el::AbstractElement)        = geometric_dimension(typeof(el)
 
 Return the dimension of the ambient space where `el` lives.
 """
-ambient_dimension(el::AbstractElement{R,N})   where {R,N} = N
-ambient_dimension(t::Type{<:AbstractElement{R,N}}) where {R,N} = N
+ambient_dimension(el::AbstractElement{R,T})   where {R,T}      = length(T)
+ambient_dimension(t::Type{<:AbstractElement{R,T}}) where {R,T} = length(T)
 
 boundary(el::AbstractLine) = el(0),el(1)
 
@@ -107,37 +116,30 @@ function jacobian(el::AbstractLine,u;h=sqrt(eps()))
 end    
 
 """
-    abstract type PolynomialElement{R,M} <: AbstractElement{R,M}
-    
-Abstract elements whose parametrization is a polynomial.
-"""
-abstract type PolynomialElement{R,N} <: AbstractElement{R,N} end
-
-"""
-    struct LagrangeElement{R,Np,N,T}        
+    struct LagrangeElement{D,Np,T} <: AbstractElement{D,T}
     
 # Fields:
-- `nodes::SVector{Np,Point{N,T}}`
+- `nodes::SVector{Np,T}`
 
 A lagrange element is represented as a polynomial mapping the `Np` reference
 lagrangian nodes of the reference element `R` into `nodes`.
 
 The element's parametrization is fully determined by the image of the `Np`
-reference points, which are stored in `nodes`.
+reference points through polynomial interpolation.
 """
-struct LagrangeElement{R,Np,N,T} <: PolynomialElement{R,N}
-    nodes::SVector{Np,Point{N,T}}
+struct LagrangeElement{D,Np,T} <: AbstractElement{D,T}
+    nodes::SVector{Np,T}
 end
 
 # a contructor which infers the extra information from nodes
-function LagrangeElement{R}(nodes::SVector{Np,Point{N,T}}) where {R,Np,N,T} 
-    LagrangeElement{R,Np,N,T}(nodes)
+function LagrangeElement{R}(nodes::SVector{Np,T}) where {R,Np,T} 
+    LagrangeElement{R,Np,T}(nodes)
 end
 
 # constructor which converts each entry to a Point, and then creates an SVector
 # of that.
 function LagrangeElement{R}(nodes...) where {R} 
-    nodes = Point.(nodes)
+    nodes = SVector.(nodes)
     LagrangeElement{R}(SVector(nodes))
 end
 

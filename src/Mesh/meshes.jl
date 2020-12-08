@@ -72,7 +72,9 @@ nodes(m::GenericMesh)    = m.nodes
 el2nodes(m::GenericMesh) = m.el2nodes
 ent2tags(m::GenericMesh) = m.ent2tags
 
-convert_to_2d(::Type{LagrangeElement{R,N,3,T}}) where {R,N,T} = LagrangeElement{R,N,2,T}
+function convert_to_2d(::Type{LagrangeElement{R,N,SVector{3,T}}}) where {R,N,T} 
+    LagrangeElement{R,N,SVector{2,T}}
+end
 convert_to_2d(::Type{Point{3,T}}) where {T} = Point{2,T}
 
 """

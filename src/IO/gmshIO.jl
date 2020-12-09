@@ -263,6 +263,54 @@ function _type_tag_to_etype(tag)
         etype = LagrangeRectangle{num_nodes,SVector{3,T}}
     elseif occursin("Tetrahedron",name)
         etype = LagrangeTetrahedron{num_nodes,SVector{3,T}}
+    else
+        error("gmsh element of family $name does not an internal equivalent")    
     end    
     return etype 
+end    
+
+"""
+    _etype_to_type_tag(etype)
+
+Mapping of internal element types, to the integer tag of `gmsh` elements. This
+function assumes `gmsh` has been initialized.
+"""
+function _etype_to_type_tag(el::LagrangeElement)
+    etype = typeof(el)
+    tag = 1
+    while true
+        E   = _type_tag_to_etype(tag)
+        E === etype && (return tag)
+        tag = tag + 1
+    end    
+end    
+
+# use gmsh API to extract the reference nodes
+# TODO: we should just code these internally at some point instead of relying on
+# gmsh. 
+@generated function reference_nodes(el::LagrangeElement{ReferenceLine})
+    gmsh.initialize()
+    p           = Geometry.order(el)
+    family_name = "line"
+    tag = gmsh.model.mesh.getElementType(family_name,p)
+    name,dim,order,num_nodes,ref_nodes,num_primary_nodes  = gmsh.model.mesh.getElementProperties(tag)
+    num_nodes = Int(num_nodes)
+    gmsh.finalize()
+    ref_nodes = SVector{num_nodes}(ref_nodes)
+    return :($ref_nodes)
+end    
+
+@generated function reference_nodes(el::LagrangeElement{ReferenceTriangle})
+    gmsh.initialize()
+    p           = Geometry.order(el)
+    family_name = "triangle"
+    tag = gmsh.model.mesh.getElementType(family_name,p)
+    name,dim,order,num_nodes,ref_nodes,num_primary_nodes  = gmsh.model.mesh.getElementProperties(tag)
+    num_nodes = Int(num_nodes)
+    ref_nodes = reshape(ref_nodes,2,num_nodes)
+    gmsh.finalize()
+    sref_nodes = svector(num_nodes) do i
+        SVector{2}(ref_nodes[:,i])
+    end    
+    return :($sref_nodes)
 end    

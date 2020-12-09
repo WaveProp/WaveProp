@@ -10,6 +10,8 @@ module IO
     using WaveProp.Geometry    
     using WaveProp.Mesh
     using WaveProp.Utils
+
+    import WaveProp.Geometry: reference_nodes    
     
     export read_geo
     export read_msh

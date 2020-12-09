@@ -223,7 +223,7 @@ Global dictionary storing the used entity tags (the value) for a given dimension
 const TAGS     = Dict{Int,Vector{Int}}()
 
 """
-    const TAGS::Dict{Int,Vector{Int}}
+    const ENTITIES
 
 Global dictionary storing the used entity tags (the value) for a given dimension
 (the key).

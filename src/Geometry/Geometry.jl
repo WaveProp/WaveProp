@@ -27,7 +27,7 @@ export ElementaryEntity, Domain,
     dim, entities, tag, tags, remove, assertequaldim,
     boundary, skeleton, internal_boundary, external_boundary,
     GenericMesh, LagrangeElement, Point, ReferenceLine, ReferenceTriangle, ReferenceTetrahedron, ReferenceSquare,
-    domain, jacobian, normal, LagrangeLine, LagrangeTriangle, LagrangeTetrahedron, AbstractElement, ambient_dimension, geometric_dimension, push_forward,
+    domain, jacobian, normal, LagrangeLine, LagrangeTriangle, LagrangeRectangle, LagrangeTetrahedron, AbstractElement, ambient_dimension, geometric_dimension, push_forward,
     IMT, Duffy, GeometricTransformation, bounding_box, HyperRectangle, center, diameter, radius, line, triangle, rectangle, extrude, translate, ParametricLine, AbstractReferenceShape, measure,
     ParametricBody, AbstractParametricBody, ParametricEntity, SVector, SMatrix, Circle, Kite,AbstractParametricBody, ParametricElement, AbstractParametricBody
 end # module

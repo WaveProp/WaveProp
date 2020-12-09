@@ -21,10 +21,6 @@ include("PhysicalProblem/PhysicalProblem.jl")
 
 include("Nystrom/Nystrom.jl")
 
-# include("FEM/FEM.jl")
-
-# include("DDM/DDM.jl")
-
 include("IO/IO.jl")
 
 end # module

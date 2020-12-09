@@ -136,6 +136,20 @@ function LagrangeElement{R}(nodes::SVector{Np,T}) where {R,Np,T}
     LagrangeElement{R,Np,T}(nodes)
 end
 
+"""
+    reference_nodes(::LagrangeElement{D,Np,T})
+
+Return the nodes on the reference element for a given `el::LagrangeElement`. 
+
+For performance reasons, this should depend solely on the type of
+`LagrangeElement` so that no runtime computations need to be performed. The
+method returns a `SVector` with `Np` elements of type `T`.
+
+The current implementation uses the `gmsh` api for computing the reference nodes on Lagrange
+elements of an arbitrary order on any of the `AbstractReferenceShape`s.
+"""
+function reference_nodes end
+
 # constructor which converts each entry to a Point, and then creates an SVector
 # of that.
 function LagrangeElement{R}(nodes...) where {R} 
@@ -183,49 +197,17 @@ rectangle(a,b,c,d) = LagrangeRectangle(a,b,c,d)
 
 nodes(el::LagrangeElement) = el.nodes
 
-get_order(el::LagrangeElement{ReferenceLine,Np}) where {Np} = Np + 1
+order(el::LagrangeElement) = order(typeof(el))
 
-# For a lagrangian element of order P on a triangle, there are Np = (P+1)(P+2)/2
-# elements
-function get_order(el::LagrangeElement{ReferenceTriangle,Np}) where {Np} 
-    # TODO: make this generic by solving quadratic equation and assert integer solution
-    if Np == 3
-        return 1
-    elseif Np == 6 
-        return 2
-    else    
-        msh = "unable to determine order for element of type $(el) containing Np=$(Np)        interpolation points. Make sure Np = (P+1)(P+2)/2 for some integer P."
-        return error(msh)        
-    end    
+order(el::Type{LagrangeElement{ReferenceLine,Np,T}}) where {Np,T} = Np - 1
+
+function order(::Type{LagrangeElement{ReferenceTriangle,Np,T}}) where {Np,T} 
+   p   = (-3 + sqrt(1+8*Np))/2
+   msg = "unable to determine order for LagrangeTriangle containing Np=$(Np) interpolation points.
+          Need `Np = (p+1)*(p+2)/2` for some integer `p`."
+   @assert isinteger(p) msg
+   return Int(p)
 end 
-
-"""
-    get_reference_nodes(::LagrangeElement{R,Np,N,T})
-
-Return the nodes on the reference element for a given `el::LagrangeElement`. 
-
-For performance reasons, this should depend solely on the type of `LagrangeElement` so that no runtime computations need to be performed. The method returns a `SVector` with `Np` elements of type `Point{M,T}` where `M` is the dimension of the reference shape `R`.
-"""
-function get_reference_nodes end
-
-function get_reference_nodes(el::LagrangeElement{ReferenceLine,Np}) where {Np <: Integer}
-    dx = 1 / (Np - 1)
-    svector(i -> Point((i - 1) * dx), Np)
-end
-
-function get_reference_nodes(el::LagrangeElement{ReferenceTriangle,Np}) where {Np <: Integer}
-    if Np == 3
-        return SVector(Point(0., 0.), Point(1., 0.), Point(1.0, 0.0))    
-    elseif Np == 6
-        return SVector(
-                        Point(0., 0.),Point(0.5, 0.0),Point(0., 1.0),
-                        Point(0.0, 0.5),Point(0.5, 0.5),
-                        Point(0.0, 1.0)
-                )        
-    else    
-        notimplemented()
-    end
-end
 
 function (el::LagrangeLine{2})(u)
     @assert length(u) == 1

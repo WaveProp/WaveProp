@@ -125,11 +125,14 @@ function Base.length(iter::ElementIterator{<:LagrangeElement,<:GenericMesh})
 end    
 
 function Base.length(iter::ElementIterator{<:ParametricElement,<:GenericMesh})
-    E       = eltype(iter)    
+    E        = eltype(iter)
+    mesh     = iter.mesh    
+    tags::Vector{E} = mesh.elements[E]    
     return length(iter.mesh.elements[E])
 end    
 
-function Base.iterate(iter::ElementIterator{<:LagrangeElement,<:GenericMesh}, state=1)
+Base.iterate(iter::ElementIterator{<:LagrangeElement,<:GenericMesh}) = iterate(iter,1)
+function Base.iterate(iter::ElementIterator{<:LagrangeElement,<:GenericMesh},state)
     E                   = eltype(iter)    
     mesh                = iter.mesh    
     tags::Matrix{Int}   = mesh.elements[E]
@@ -143,10 +146,12 @@ function Base.iterate(iter::ElementIterator{<:LagrangeElement,<:GenericMesh}, st
     end
 end    
 
-function Base.iterate(iter::ElementIterator{<:ParametricElement,<:GenericMesh}, state=1)
-    E      = eltype(iter)    
-    els    = iter.mesh.elements[E]
-    iterate(els,state)
+Base.iterate(iter::ElementIterator{<:ParametricElement,<:GenericMesh}) = iterate(iter,1)
+function Base.iterate(iter::ElementIterator{<:ParametricElement,<:GenericMesh}, state)
+    E        = eltype(iter)
+    mesh     = iter.mesh    
+    tags::Vector{E} = mesh.elements[E]    
+    iterate(tags,state)
 end    
 
 # iterator for submesh. Filter elements based on domain
@@ -163,6 +168,7 @@ function Base.length(iter::ElementIterator{<:LagrangeElement,<:SubMesh})
     end
     return Nel
 end    
+
 function Base.length(iter::ElementIterator{<:ParametricElement,<:SubMesh})
     submesh    = iter.mesh
     Ω, M        = submesh.domain, submesh.mesh
@@ -177,7 +183,8 @@ function Base.length(iter::ElementIterator{<:ParametricElement,<:SubMesh})
     return Nel
 end    
 
-function Base.iterate(iter::ElementIterator{<:LagrangeElement,<:SubMesh}, state=(1, 1))
+Base.iterate(iter::ElementIterator{<:AbstractElement,<:SubMesh}) = iterate(iter,(1, 1))
+function Base.iterate(iter::ElementIterator{<:AbstractElement,<:SubMesh}, state)
     # extract some constant fields for convenience
     submesh   = iter.mesh    
     Ω, M      = submesh.domain, submesh.mesh
@@ -199,8 +206,9 @@ function Base.iterate(iter::ElementIterator{<:LagrangeElement,<:SubMesh}, state=
     end    
 end  
 
-# helper iterator 
-function _iterate(mesh::GenericMesh,E,ent::ElementaryEntity,i::Int=1)
+# helper iterator which dispatches based on the type of E. A type stable method
+# is obtained by *tagging* the mesh.elements[E] metadata with its expected type
+function _iterate(mesh::GenericMesh,E::Type{<:LagrangeElement},ent::ElementaryEntity,i::Int=1)
     # if ent has not elements of type `E`, stop inner iteration
     haskey(mesh.ent2tags[ent],E) || (return nothing)
     # get tag for i-th elements in ent of type E
@@ -209,37 +217,25 @@ function _iterate(mesh::GenericMesh,E,ent::ElementaryEntity,i::Int=1)
         return nothing    
     else
         el_tag      = el_tags[i]            
-        if E <: LagrangeElement    
-            node_tags   = view(mesh.elements[E],:,el_tag)
-            vtx         = view(mesh.nodes,node_tags)
-            el          = E(vtx)
-        elseif E <: ParametricElement
-            el          = mesh.elements[E][el_tag]
-        else
-            notimplemented()    
-        end
+        tags::Matrix{Int} = mesh.elements[E]
+        node_tags   = view(tags,:,el_tag)
+        vtx         = view(mesh.nodes,node_tags)
+        el          = E(vtx)
         return el,i+1
     end
-end  
+end 
 
-function Base.iterate(iter::ElementIterator{<:ParametricElement,<:SubMesh}, state=(1, 1))
-    # extract some constant fields for convenience
-    submesh   = iter.mesh    
-    Ω, M      = submesh.domain, submesh.mesh
-    E         = eltype(iter)    
-    ents      = entities(Ω)
-    # inner iteration over ent
-    n, i          = state
-    ent          = ents[n]
-    inner_state  = _iterate(M, E, ent, i)
-    if inner_state === nothing
-        if n == length(ents)
-            return nothing
-        else
-            return iterate(iter, (n + 1, 1))
-        end
-    else 
-        el, i = inner_state
-        return el, (n, i)
-    end    
-end  
+function _iterate(mesh::GenericMesh,E::Type{<:ParametricElement},ent::ElementaryEntity,i::Int=1)
+    # if ent has not elements of type `E`, stop inner iteration
+    haskey(mesh.ent2tags[ent],E) || (return nothing)
+    # get tag for i-th elements in ent of type E
+    el_tags = mesh.ent2tags[ent][E]
+    if i > length(el_tags)
+        return nothing    
+    else
+        el_tag      = el_tags[i]            
+        tags::Vector{E} = mesh.elements[E]    
+        el              = tags[el_tag]
+        return el,i+1
+    end
+end 

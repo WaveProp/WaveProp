@@ -25,7 +25,7 @@ struct ElementaryEntity <: AbstractEntity
             @assert geometric_dimension(b) == d-1 msg
         end
         # modify global variable TAGS by adding the new (d,t) for the
-        # entity. It shows a warning if (d,t) already exists.
+        # entity. 
         _add_tag!(d,t) 
         new(d, t, boundary)
     end
@@ -94,7 +94,7 @@ struct ParametricEntity{D,F} <: AbstractEntity
     function ParametricEntity{D,F}(dim,tag,f::F) where {D,F}
         msg  = "entity of dimension $dim and tag $tag already exists in TAGS. 
                 Creating a possibly duplicate entity."        
-        is_new_tag(dim,tag) || (@warn msg)
+        is_new_tag(dim,tag) || (@debug msg)
         _add_tag!(dim,tag) 
         new{D,F}(dim,tag,F)
     end    
@@ -175,7 +175,7 @@ struct GmshParametricEntity{M} <: AbstractEntity
         dim = M    
         msg  = "entity of dimension $dim and tag $tag already exists in TAGS. 
                 Creating a possibly duplicate entity."        
-        is_new_tag(dim,tag) || (@warn msg)
+        is_new_tag(dim,tag) || (@debug msg)
         _add_tag!(dim,tag) 
         new{M}(dim,domain)
     end    
@@ -251,7 +251,7 @@ function _add_tag!(dim,tag)
     # check for possible duplicate    
     msg  = "entity of dimension $dim and tag $tag already exists in TAGS. 
     Creating a possibly duplicate entity."    
-    is_new_tag(dim,tag) || (@warn msg)
+    is_new_tag(dim,tag) || (@debug msg)
     # now add key
     if haskey(TAGS,dim)   
         push!(TAGS[dim],tag)

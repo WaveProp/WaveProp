@@ -129,5 +129,4 @@ function Base.iterate(g::CartesianMesh,state)
     end
 end    
 
-# Base.IteratorSize(::Type{CartesianGrid{N}}) where {N} = Base.HasShape{N}()
 Base.IteratorSize(::CartesianMesh{N}) where {N} = Base.HasShape{N}()

@@ -89,31 +89,31 @@ function _initialize_mesh(Ω::Domain)
     # map gmsh type tags to actual internal types
     etypes = [_type_tag_to_etype(e) for e in gmsh.model.mesh.getElementTypes()]
     # Recursively populating the dictionaries
-    el2nodes = Dict{DataType,Matrix{Int}}()
+    elements = Dict{DataType,Matrix{Int}}()
     ent2tags = Dict{ElementaryEntity,Dict{DataType,Vector{Int}}}()
-    el2nodes, ent2tag = _domain_to_mesh!(el2nodes, ent2tags, Ω)
-    return GenericMesh{3,Float64}(;nodes, etypes, el2nodes, ent2tags)
+    elements, ent2tag = _domain_to_mesh!(elements, ent2tags, Ω)
+    return GenericMesh{3,Float64}(;nodes, etypes, elements, ent2tags)
 end
 
 """
-    _domain_to_mesh!(el2nodes, ent2tag, Ω::Domain)
+    _domain_to_mesh!(elements, ent2tag, Ω::Domain)
 
-Recursively populating the dictionaries `el2nodes` and `ent2tag`.
+Recursively populating the dictionaries `elements` and `ent2tag`.
 """
-function _domain_to_mesh!(el2nodes, ent2tag, Ω::Domain)
-    isempty(Ω) && (return el2nodes, ent2tag)
+function _domain_to_mesh!(elements, ent2tag, Ω::Domain)
+    isempty(Ω) && (return elements, ent2tag)
     for ω in Ω
-        el2nodes, ent2tag = _ent_to_mesh!(el2nodes, ent2tag, ω)
+        _ent_to_mesh!(elements, ent2tag, ω)
     end    
     Γ = skeleton(Ω)
-    _domain_to_mesh!(el2nodes, ent2tag, Γ)
+    _domain_to_mesh!(elements, ent2tag, Γ)
 end
 
 """
-    _ent_to_mesh!(el2nodes, ent2tag, ω::ElementaryEntity)
+    _ent_to_mesh!(elements, ent2tag, ω::ElementaryEntity)
 
 For each element type used to mesh `ω`:
-- push into `el2nodes::Dict` the pair `etype=>ntags`;
+- push into `elements::Dict` the pair `etype=>ntags`;
 - push into `ent2tag::Dict` the pair `etype=>etags`;
 
 where:
@@ -121,10 +121,10 @@ where:
     [`type_tag_to_etype`](@ref));
 - `ntags::Matrix{Int}` gives the indices of the nodes defining those
     elements;
-- `etags::Vector{Int}` gives the indices of those elements in `el2nodes`.
+- `etags::Vector{Int}` gives the indices of those elements in `elements`.
 """
-function _ent_to_mesh!(el2nodes, ent2tag, ω::ElementaryEntity)
-    ω in keys(ent2tag) && (return el2nodes, ent2tag)
+function _ent_to_mesh!(elements, ent2tag, ω::ElementaryEntity)
+    ω in keys(ent2tag) && (return elements, ent2tag)
     etypes_to_etags = Dict{DataType,Vector{Int}}()
     # Loop on GMSH element types (integer)
     type_tags, _, ntagss = gmsh.model.mesh.getElements(tag(ω)...)
@@ -132,17 +132,17 @@ function _ent_to_mesh!(el2nodes, ent2tag, ω::ElementaryEntity)
         _, _, _, Np, _ = gmsh.model.mesh.getElementProperties(type_tag)
         ntags = reshape(ntags, Int(Np), :)
         etype = _type_tag_to_etype(type_tag)
-        if etype in keys(el2nodes)
-            etag = size(el2nodes[etype], 2) .+ collect(1:size(ntags,2))
-            ntags = hcat(el2nodes[etype], ntags)
+        if etype in keys(elements)
+            etag = size(elements[etype], 2) .+ collect(1:size(ntags,2))
+            ntags = hcat(elements[etype], ntags)
         else
             etag = collect(1:size(ntags, 2))
         end
-        push!(el2nodes, etype => ntags)
+        push!(elements, etype => ntags)
         push!(etypes_to_etags, etype => etag)
     end    
     push!(ent2tag, ω => etypes_to_etags)
-    return el2nodes, ent2tag
+    return elements, ent2tag
 end    
 
 """

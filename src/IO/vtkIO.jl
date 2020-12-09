@@ -75,7 +75,7 @@ function _vtk_cells(tags, E::DataType)
     return [MeshCell(vtk_cell_type, tags[ind, i]) for i in 1:size(tags, 2)]
 end
 function _vtk_cells(mesh::GenericMesh, E::DataType)
-    tags = el2nodes(mesh)[E]
+    tags = elements(mesh)[E]
     return _vtk_cells(tags, E)
 end
 function _vtk_cells(mesh::GenericMesh, Ω::Domain)
@@ -85,7 +85,7 @@ function _vtk_cells(mesh::GenericMesh, Ω::Domain)
         # Loop on `AbstractElement`
         for (E, ind) in ent2tags(mesh)[ω]
             # Subset corresponding to the `ElementaryEntity`
-            tags = el2nodes(mesh)[E][:,ind]
+            tags = elements(mesh)[E][:,ind]
             append!(cells,  _vtk_cells(tags, E))
         end
     end
@@ -110,7 +110,7 @@ end
 Dictionary mapping internal element types to a tuple containing:
     - the corresponding `WriteVTK` cell types (following the convention
     chosen by `VTK`, see below);
-    - the indices in the `el2nodes` column that defines the element.
+    - the indices in the `elements` column that defines the element.
     This is because we want to support the export of more than just the flat
     elements available in the `VTK` specification, hence which may require
     a conversion of some sort.

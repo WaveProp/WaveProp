@@ -19,10 +19,10 @@ Instances `el` of `AbstractElement` are expected to implement.
     an `SMatrix` of size `M × N`, where `M` is the [`ambient_dimension`](@ref)
     of `el` and `N` is the [`geometric_dimension`](@ref) of `el`, respectively.
 """
-abstract type AbstractElement{D,N} end
+abstract type AbstractElement{D,T} end
 
-const AbstractLine{N} = AbstractElement{ReferenceLine,N}
-const AbstractTriangle{N} = AbstractElement{ReferenceTriangle,N}
+const AbstractLine{T} = AbstractElement{ReferenceLine,T}
+const AbstractTriangle{T} = AbstractElement{ReferenceTriangle,T}
 
 """
     (el::AbstractElement)(x)
@@ -318,24 +318,18 @@ function jacobian(el::LagrangeElement{ReferenceTetrahedron,4}, u)
 end 
 
 """
-    abstract type ParametricElement{R,N} <: AbstractElement{R,N}
-    
-An element given by some explicit parametric function.        
-"""
-abstract type AbstractParametricElement{R,N} <: AbstractElement{R,N} end
-
-"""
     ParametricElement{D,N,F}
 
-An element represented as the explicit mapping `f::F` with domain `D`.  
-
-Unlike e.g. `LagrangeElements`, whose domain are `<:AbstractReferenceShape`s, a
-`ParametricElement` has a domain given by a `HyperRectangle`. This means 
+An element represented through a (function) mapping `domain(el)` into the
+element.
 """
-struct ParametricElement{D,T,F} <: AbstractParametricElement{D,T}
+struct ParametricElement{D,T,F} <: AbstractElement{D,T}
     parametrization::F
-    domain::D    
+    preimage::D    
 end
+
+preimage(el::ParametricElement) = el.preimage
+parametrization(el::ParametricElement) = el.parametrization
 
 Base.eltype(p::ParametricElement{D,T,F}) where {D,T,F} = T
 
@@ -358,15 +352,16 @@ ambient_dimension(p::ParametricElement)   = length(eltype(p))
 # constructor which infers the return type of f by applying it to a point in the
 # reference domain.
 function ParametricElement(f,d)
-    F = typeof(f)
+    x = center(d)
+    T = Base.promote_op(f,typeof(x))    
     D = typeof(d)
-    T = f(center(d)) |> typeof
+    F = typeof(f)
     return ParametricElement{D,T,F}(f,d)
 end  
 
 function (el::ParametricElement)(u) 
     @assert u ∈ domain(el)
-    rec = el.domain
+    rec = preimage(el)
     lc  = low_corner(rec)
     hc  = high_corner(rec)
     N = geometric_dimension(el)
@@ -379,7 +374,7 @@ end
 
 function jacobian(el::ParametricElement,u::SVector) 
     @assert u ∈ domain(el)
-    rec = el.domain
+    rec = preimage(el)
     lc  = low_corner(rec)
     hc  = high_corner(rec)
     N = geometric_dimension(el)
@@ -395,12 +390,9 @@ end
 jacobian(psurf::ParametricElement,s) = jacobian(psurf,SVector(s))
 
 # define some aliases for convenience
-const ParametricLine  = ParametricElement{HyperRectangle{1}}
+const ParametricLine  = ParametricElement{HyperRectangle{1,Float64}}
 
-# derivative(l::ParametricLine,s)  = ForwardDiff.derivative(l,s)
-# derivative2(l::ParametricLine,s) = ForwardDiff.derivative(s -> derivative(l,s),s)
-# derivative3(l::ParametricLine,s) = ForwardDiff.derivative(s -> derivative2(l,s),s)
-
-derivative(l::ParametricElement,s)  = ForwardDiff.derivative(l,s)
-derivative2(l::ParametricElement,s) = ForwardDiff.derivative(s -> derivative(l,s),s)
-derivative3(l::ParametricElement,s) = ForwardDiff.derivative(s -> derivative2(l,s),s)
+# higher order derivatives
+derivative(l::ParametricLine,s)  = ForwardDiff.derivative(l,s)
+derivative2(l::ParametricLine,s) = ForwardDiff.derivative(s -> derivative(l,s),s)
+derivative3(l::ParametricLine,s) = ForwardDiff.derivative(s -> derivative2(l,s),s)

@@ -31,12 +31,11 @@ Base.@kwdef struct GenericMesh{N,T} <: AbstractMesh{N,T}
     nodes::Vector{Point{N,T}} = Vector{Point{N,T}}()
     # element types
     etypes::Vector{DataType} = Vector{DataType}()
-    # for each lagrangian element type, the indices of nodes in each element
-    el2nodes::Dict{DataType,Matrix{Int}} = Dict{DataType,Matrix{Int}}()
+    # for each element type (key), get the data required to reconstruct the
+    # elements (value)
+    elements::Dict{DataType,Any} = Dict{DataType,Any}()
     # mapping from elementary entity to (etype,tags)
     ent2tags::Dict{ElementaryEntity,Dict{DataType,Vector{Int}}} = Dict{ElementaryEntity,Dict{DataType,Vector{Int}}}()
-    # for each parametric elemenet type, a vector of the elements    
-    els::Dict{DataType,Vector} = Dict{DataType,Vector}()
 end
 
 # convert a mesh to 2d by ignoring third component. Note that this also requires
@@ -44,12 +43,12 @@ end
 function GenericMesh{2}(mesh::GenericMesh{3})
     @assert all(x -> geometric_dimension(x) < 3, etypes(mesh)) 
     T = eltype(mesh)
-    # create new dictionaries for el2nodes and ent2tags with 2d elements as keys
-    el2nodes  = empty(mesh.el2nodes)
+    # create new dictionaries for elements and ent2tags with 2d elements as keys
+    elements  = empty(mesh.elements)
     ent2tags  = empty(mesh.ent2tags)
-    for (E, tags) in mesh.el2nodes
+    for (E, tags) in mesh.elements
         E2d = convert_to_2d(E)    
-        el2nodes[E2d] = tags
+        elements[E2d] = tags
     end
     for (ent, dict) in mesh.ent2tags
         new_dict = empty(dict)    
@@ -63,13 +62,13 @@ function GenericMesh{2}(mesh::GenericMesh{3})
     GenericMesh{2,T}(;
         nodes=[x[1:2] for x in nodes(mesh)],
         etypes=convert_to_2d.(etypes(mesh)),
-        el2nodes=el2nodes,
+        elements=elements,
         ent2tags=ent2tags
     )
 end
 
 nodes(m::GenericMesh)    = m.nodes
-el2nodes(m::GenericMesh) = m.el2nodes
+elements(m::GenericMesh) = m.elements
 ent2tags(m::GenericMesh) = m.ent2tags
 
 function convert_to_2d(::Type{LagrangeElement{R,N,SVector{3,T}}}) where {R,N,T} 
@@ -119,32 +118,34 @@ Base.eltype(::Type{ElementIterator{E,M}}) where {E,M} = E
 
 # iterator for generic mesh (not associated with a domain)
 function Base.length(iter::ElementIterator{<:LagrangeElement,<:GenericMesh})
-    E       = eltype(iter)    
-    tags    = iter.mesh.el2nodes[E]
-    Np, Nel = size(tags)
+    E                 = eltype(iter)    
+    tags::Matrix{Int} = iter.mesh.elements[E]
+    Np, Nel           = size(tags)
     return Nel
 end    
+
 function Base.length(iter::ElementIterator{<:ParametricElement,<:GenericMesh})
     E       = eltype(iter)    
-    return length(iter.mesh.els[E])
+    return length(iter.mesh.elements[E])
 end    
 
 function Base.iterate(iter::ElementIterator{<:LagrangeElement,<:GenericMesh}, state=1)
-    E      = eltype(iter)    
-    mesh   = iter.mesh    
-    tags   = mesh.el2nodes[E]
+    E                   = eltype(iter)    
+    mesh                = iter.mesh    
+    tags::Matrix{Int}   = mesh.elements[E]
     if state > length(iter)
         return nothing
     else    
-        el_nodes = mesh.nodes[tags[:,state]] # get the coordinates of nodes in this element
-        el  = E(el_nodes)                    # construct the element
+        node_tags   = view(tags,:,state)
+        vtx         = view(mesh.nodes,node_tags)
+        el          = E(vtx)    
         return el, state + 1
     end
 end    
 
 function Base.iterate(iter::ElementIterator{<:ParametricElement,<:GenericMesh}, state=1)
     E      = eltype(iter)    
-    els    = iter.mesh.els[E]
+    els    = iter.mesh.elements[E]
     iterate(els,state)
 end    
 
@@ -209,11 +210,11 @@ function _iterate(mesh::GenericMesh,E,ent::ElementaryEntity,i::Int=1)
     else
         el_tag      = el_tags[i]            
         if E <: LagrangeElement    
-            node_tags   = view(mesh.el2nodes[E],:,el_tag)
+            node_tags   = view(mesh.elements[E],:,el_tag)
             vtx         = view(mesh.nodes,node_tags)
             el          = E(vtx)
         elseif E <: ParametricElement
-            el          = mesh.els[E][el_tag]
+            el          = mesh.elements[E][el_tag]
         else
             notimplemented()    
         end

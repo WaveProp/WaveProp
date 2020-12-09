@@ -12,7 +12,7 @@ function meshgen(p::AbstractParametricBody;gridsize)
         els             = _meshgen(bnd;gridsize)
         E               = eltype(els)
         push!(etypes(mesh),E)
-        vals            = get!(mesh.els,E,Vector{E}())
+        vals            = get!(mesh.elements,E,Vector{E}())
         istart          = length(vals) + 1
         append!(vals,els)
         iend            = length(vals)

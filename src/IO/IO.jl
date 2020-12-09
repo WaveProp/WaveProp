@@ -18,6 +18,5 @@ module IO
     include("gmshIO.jl")
     include("plotsIO.jl")    
     include("vtkIO.jl")
-    # include("parametricsurfacesIO.jl")
 
 end # module

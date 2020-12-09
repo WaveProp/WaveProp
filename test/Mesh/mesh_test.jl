@@ -11,7 +11,7 @@ using WaveProp.Mesh
     E    = etypes(M)[idx]
     iter = ElementIterator{E}(M)
     @test eltype(iter) == E
-    @test length(iter) == size(M.el2nodes[E],2)
+    @test length(iter) == size(M.elements[E],2)
 end
 
 @testset "Sub mesh" begin
@@ -22,6 +22,6 @@ end
     E    = etypes(M)[idx]
     iter = ElementIterator{E}(subM)
     @test eltype(iter) == E
-    @test length(iter) == size(M.el2nodes[E],2)
+    @test length(iter) == size(M.elements[E],2)
 end
 

@@ -99,9 +99,14 @@ end
 Union of domains. This done perform a union on the true geometric objects in
 `entities(Ω)`, but simply on their identification through `(dim,tag)`. 
 """
-function Base.union(Ωs::Domain...)
-    Domain(Vector{ElementaryEntity}(unique(vcat(entities.(Ωs)...))))
-end
+function Base.union(Ω1::Domain,Ωs::Domain...)
+    Domain(Vector{ElementaryEntity}(unique(vcat(entities(Ω1),entities.(Ωs)...))))
+end    
+Base.union(Ω::Domain) = Domain(unique(entities(Ω)))
+
+# function Base.union(Ωs::Domain...)
+#     Domain(Vector{ElementaryEntity}(unique(vcat(entities.(Ωs)...))))
+# end
 
 """
     assertequaldim(Ω1::Domain,Ω2::Domain)

@@ -3,12 +3,9 @@
 
 Return a `Domain` Ω and a `GenericMesh` M for the parametric body.
 """
-function meshgen(p::AbstractParametricBody;gridsize)
-    N       = ambient_dimension(p)    
-    mesh    = GenericMesh{N,Float64}()
+function meshgen!(mesh::GenericMesh,Ω::Domain,p::AbstractParametricBody;gridsize)
     dim,tag = Geometry._global_add_entity!(p) # add entity to global list to make it easily retriavable using only (dim,tag)
     ent     = ElementaryEntity(dim,tag)
-    Ω       = Domain(ent) 
     mesh.ent2tags[ent] = Dict{DataType,Vector{Int}}() # no mesh is generated for domain, only its boundary, empty entry
     for bnd in boundary(p)
         # add elements for each boundary segment    
@@ -26,8 +23,29 @@ function meshgen(p::AbstractParametricBody;gridsize)
         mesh.ent2tags[bnd_ent] = Dict(E=>collect(istart:iend)) # add key
     end 
     unique!(etypes(mesh))   
+    push!(Ω.entities,ent)
     return Ω,mesh
 end    
+
+function meshgen(p::AbstractParametricBody;gridsize)
+    N       = ambient_dimension(p)    
+    mesh    = GenericMesh{N,Float64}()
+    Ω       = Domain()
+    meshgen!(mesh,Ω,p;gridsize)
+end   
+
+function meshgen(ps::Vector{<:AbstractParametricBody};gridsize)
+    N       = ambient_dimension(first(ps))
+    @assert all(p->ambient_dimension(p)==N,ps)
+    mesh    = GenericMesh{N,Float64}()
+    Ω       = Domain()    
+    for p in ps
+        meshgen!(mesh,Ω,p;gridsize)
+    end
+    return Ω,mesh
+end   
+
+
 
 function _meshgen(p::ParametricEntity;gridsize)
     # mesh the domain of p

@@ -23,6 +23,9 @@ kernel_type(iop::IntegralOperator) = kernel_type(iop.kernel)
 
 kernel(iop::IntegralOperator) = iop.kernel
 
+target_surface(iop::IntegralOperator) = iop.X
+source_surface(iop::IntegralOperator) = iop.Y
+
 Base.getindex(iop::IntegralOperator,i::Integer,j::Integer)  = getindex(kernel_type(iop),iop,i,j)
 
 function Base.getindex(::SingleLayer,iop::IntegralOperator,i::Integer,j::Integer)

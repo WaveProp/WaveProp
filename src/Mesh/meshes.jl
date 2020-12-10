@@ -90,6 +90,7 @@ struct SubMesh{N,T} <: AbstractMesh{N,T}
 end
 
 Base.view(m::GenericMesh,Ω::Domain) = SubMesh(m,Ω)
+Base.view(m::GenericMesh,ent::ElementaryEntity) = SubMesh(m,Domain(ent))
 
 function etypes(submesh::SubMesh)
     Ω, M = submesh.domain, submesh.mesh    

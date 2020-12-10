@@ -19,12 +19,14 @@ using WaveProp.Geometry
 using WaveProp.Integration
 
 import WaveProp.Geometry: ambient_dimension, geometric_dimension, domain, range
+import WaveProp.Integration: qnodes, qweights, qnormals
 
-export GenericMesh, ElementIterator, nodes, etypes, elements, ent2tags, elements, near_interaction_list,
-compute_quadrature!,SubMesh, AbstractMesh, CartesianMesh, meshgen
+export GenericMesh, ElementIterator, nodes, etypes, elements, ent2tags, el2qnodes, elements, near_interaction_list,
+compute_quadrature!,SubMesh, AbstractMesh, CartesianMesh, meshgen, NystromMesh, dof
 
 include("meshes.jl")
 include("cartesianmesh.jl")
+include("nystrommesh.jl")
 include("meshgen.jl")
 
 end

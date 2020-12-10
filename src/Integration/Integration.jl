@@ -21,6 +21,6 @@ import WaveProp.Geometry: domain, range, ambient_dimension, geometric_dimension
 
 export integrate, Gauss, Trapezoidal, TrapezoidalP, Fejer, GaussLegendre, GenericQuadrature, TensorProductQuadrature, AbstractQuadratureRule, qnodes, qweights, qnormals
 
-include("quadratureRule.jl")
+include("quadrature_rules.jl")
 
 end

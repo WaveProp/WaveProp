@@ -16,15 +16,15 @@ using WaveProp.Mesh
     mesh = NystromMesh(view(M,Γ))
     γ₀u   = γ₀(u,mesh)
     γ₁u   = γ₁(dudn,mesh)
-    𝐒     = SingleLayerOperator(pde,mesh) 
-    𝐃     = DoubleLayerOperator(pde,mesh) 
-    e0    = WaveProp.Nystrom.error_interior_green_identity(𝐒,𝐃,γ₀u,γ₁u)
-    δS    = singular_weights_dim(𝐒) 
-    δD    = singular_weights_dim(𝐃) 
-    Sfull = Matrix(𝐒) + δS
-    Dfull = Matrix(𝐃) + δD
+    S     = SingleLayerOperator(pde,mesh) 
+    D     = DoubleLayerOperator(pde,mesh) 
+    e0    = WaveProp.Nystrom.error_interior_green_identity(S,D,γ₀u,γ₁u)
+    δS    = singular_weights_dim(S) 
+    δD    = singular_weights_dim(D) 
+    Sfull = Matrix(S) + δS
+    Dfull = Matrix(D) + δD
     e1 = WaveProp.Nystrom.error_interior_green_identity(Sfull,Dfull,γ₀u,γ₁u)
-    @test norm(e1,Inf) < norm(e0,Inf)
+    @test 10*norm(e1,Inf) < norm(e0,Inf)
     S,D = Nystrom.single_double_layer(pde,mesh)
     e2 = WaveProp.Nystrom.error_interior_green_identity(S,D,γ₀u,γ₁u)
     @test e1 ≈ e2

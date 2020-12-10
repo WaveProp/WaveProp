@@ -7,6 +7,7 @@ using WaveProp.Mesh
 
 @testset "Basic tests" begin
     Ω,M   = WaveProp.IO.gmsh_sphere(dim=2,h=0.05)
+    Γ = boundary(Ω)
     mesh  = view(M,boundary(Ω))
     nmesh = NystromMesh(mesh,order=2)
     @test isapprox(sum(nmesh.qweights),π,atol=0.1)

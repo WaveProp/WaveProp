@@ -49,12 +49,23 @@ end
     par = ent.parametrization
     legend --> false
     grid   --> false
-    # aspect_ratio --> :equal
+    aspect_ratio --> :equal
     s       = 0:h:1    
     pts     = [par(v) for v in s]
     x       = [pt[1] for pt in pts]
     y       = [pt[2] for pt in pts]
     x,y
+end
+
+@recipe function f(ents::Vector{ParametricEntity{ReferenceLine}};h=0.01)
+    legend --> false
+    grid   --> false
+    aspect_ratio --> :equal
+    for ent in ents
+        @series begin
+            ent    
+        end
+    end    
 end
 
 @recipe function f(ent::ParametricElement;gridsize=0.01)

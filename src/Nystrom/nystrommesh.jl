@@ -1,11 +1,12 @@
 Base.@kwdef struct NystromMesh{N,T} <: AbstractMesh{N,T}
-    elements::Dict{DataType,ElementIterator} = Dict{DataType,ElementIterator}()
+    elements::Dict{DataType,Any} = Dict{DataType,Any}()
     # quadrature info
     qnodes::Vector{Point{N,T}} = Vector{Point{N,T}}()
     qweights::Vector{T} = Vector{T}()
     qnormals::Vector{Point{N,T}} = Vector{Point{N,T}}()
     el2qnodes::Dict{DataType,Matrix{Int}} = Dict{DataType,Matrix{Int}}()
     etype2qrule::Dict{DataType,AbstractQuadratureRule}= Dict{DataType,AbstractQuadratureRule}()
+    ent2tags::Dict{ElementaryEntity,Dict{DataType,Vector{Int}}} = Dict{ElementaryEntity,Dict{DataType,Vector{Int}}}()
 end
 
 # getters
@@ -15,62 +16,86 @@ qnormals(m::NystromMesh) = m.qnormals
 el2qnodes(m::NystromMesh) = m.el2qnodes
 el2qnodes(m::NystromMesh,E::DataType) = m.el2qnodes[E]
 
+Geometry.entities(mesh::NystromMesh) = collect(keys(mesh.ent2tags))
+
+function dof(mesh::NystromMesh,domain::Domain)
+    idxs = Int[]
+    for ent in entities(domain)
+        dict = mesh.ent2tags[ent]
+        for (E,tags) in dict
+            append!(idxs,view(mesh.el2qnodes[E],:,tags))    
+        end    
+    end    
+    return idxs
+end    
+dof(mesh,ent::ElementaryEntity) = dof(mesh,Domain(ent))
+
 Base.length(m::NystromMesh) = length(qnodes(m))
 
-function NystromMesh(mesh::AbstractMesh,e2qrule,compute_normal::Bool=true)
+function NystromMesh(mesh::GenericMesh,Ω::Domain,e2qrule,compute_normal::Bool=true)
     N,T        = ambient_dimension(mesh), eltype(mesh)
     # initialize empty fields
-    nmesh = NystromMesh{N,T}(;etype2qrule=e2qrule)
-    # loop over element types, then call inner function. This allows for the
-    # heavy lifting to be type-stable.
-    for E in etypes(mesh)
-        haskey(e2qrule,E) || error("no quadrature rule found for element of type $E")
-        qrule = e2qrule[E]
-        _build_nystrom_mesh!(nmesh,mesh,E,qrule,compute_normal)
-    end
-    return nmesh
-end 
+    nys_mesh = NystromMesh{N,T}(;etype2qrule=e2qrule)
+    # loop over entities
+    for ent in entities(Ω) 
+        dict    = Dict{DataType,Vector{Int}}()    
+        submesh = view(mesh,ent)
+        for E in etypes(submesh)
+            haskey(e2qrule,E) || error("no quadrature rule found for element of type $E")
+            qrule = e2qrule[E]
+            if haskey(nys_mesh.elements,E)
+                istart = length(nys_mesh.elements[E])+1
+            else
+                istart = 1
+            end
+            _build_nystrom_mesh!(nys_mesh,submesh,E,qrule,compute_normal)
+            iend   = length(nys_mesh.elements[E])       
+            dict[E] = collect(istart:iend)
+        end  
+        nys_mesh.ent2tags[ent] = dict # new entry 
+    end   
+    return nys_mesh 
+end    
 
-@noinline function _build_nystrom_mesh!(nmesh,mesh,E,qrule,compute_normal)
-    els         = elements(mesh,E)    
-    nmesh.elements[E] = els
+@noinline function _build_nystrom_mesh!(nys_mesh,submesh,E,qrule,compute_normal)
+    els::Vector{E}         = get!(nys_mesh.elements,E,Vector{E}())
+    el2qnodes   = get!(nys_mesh.el2qnodes,E,Matrix{Int}(undef,0,0))
+    el2qnodes   = vec(el2qnodes)
     x̂,ŵ         = qrule() #nodes and weights on reference element
-    el2qnodes   = Int[]
-    for el in els
-        # push forward to element    
+    for el in elements(submesh,E)
+        # compute quadrature on element
         x = map(el,x̂)
         w = map(zip(x̂,ŵ)) do (x̂,ŵ)
             ŵ*measure(el,x̂)    
         end 
-        # append quadrature information and keep track of which nodes belong to
-        # which element 
-        istart = length(qnodes(nmesh)) + 1
-        append!(qweights(nmesh),w)
-        append!(qnodes(nmesh),x)
+        # add element
+        push!(els,el)
+        # append quadrature information
+        istart = length(qnodes(nys_mesh)) + 1
+        append!(qweights(nys_mesh),w)
+        append!(qnodes(nys_mesh),x)
         if compute_normal
             ν = map(x->normal(el,x),x̂)   
-            append!(qnormals(nmesh),ν)
+            append!(qnormals(nys_mesh),ν)
         end
-        iend   = length(qnodes(nmesh))
+        iend   = length(qnodes(nys_mesh))
+        # add information to recover qnodes from index of el
         append!(el2qnodes,collect(istart:iend))
     end
-    nmesh.el2qnodes[E] = reshape(el2qnodes,length(x̂),:)
-    return nmesh
+    el2qnodes = reshape(el2qnodes,length(x̂),:)
+    nys_mesh.el2qnodes[E] = el2qnodes
+    return nys_mesh
 end
 
-function NystromMesh(mesh::AbstractMesh;order=1,compute_normal::Bool=true)
+NystromMesh(submesh::SubMesh,args...) = NystromMesh(submesh.mesh,submesh.domain,args...)
+
+function NystromMesh(mesh::SubMesh;order=1,compute_normal::Bool=true)
     etype2qrule = Integration._qrule_for_mesh(mesh,order)
     NystromMesh(mesh,etype2qrule,compute_normal)
 end    
 
-function NystromMesh(mesh::AbstractMesh,Ω::Domain;kwargs...)
-    submesh = SubMesh(mesh,Ω)
-    NystromMesh(submesh;kwargs...)
-end    
-
 # interface methods
 etypes(m::NystromMesh) = keys(m.elements) |> collect
-
 
 """
     near_interaction_list(X,Y;dim,atol)

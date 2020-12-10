@@ -15,7 +15,6 @@ using LinearAlgebra
 
 using WaveProp.Utils
 using WaveProp.Geometry
-using WaveProp.Mesh
 
 import WaveProp.Geometry: domain, range, ambient_dimension, geometric_dimension
 

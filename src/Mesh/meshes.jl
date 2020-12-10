@@ -240,3 +240,15 @@ function _iterate(mesh::GenericMesh,E::Type{<:ParametricElement},ent::Elementary
         return el,i+1
     end
 end 
+
+"""
+    _qrule_for_mesh(m,p)
+
+Given a mesh `m`, create a dictionary mapping each element type of `m` to an appropriate quadrature rule of order
+`p` over that element type.
+
+See also [`_qrule_for_reference_shape`](@ref)
+"""
+function _qrule_for_mesh(m,order)
+    Dict(E=>Integration._qrule_for_element(E,order) for E in etypes(m))
+end    

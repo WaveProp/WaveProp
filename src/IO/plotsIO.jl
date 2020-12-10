@@ -68,26 +68,6 @@ end
     end    
 end
 
-@recipe function f(ent::ParametricElement;gridsize=0.01)
-    par = ent.parametrization
-    legend --> false
-    grid   --> false
-    aspect_ratio --> :equal
-    d = domain(ent)
-    if d === ReferenceLine()
-        h       =  gridsize[1]
-        a       = ent.domain.low_corner[1]
-        b       = ent.domain.high_corner[1]
-        s       =  a:h:b
-        pts     = [par(v) for v in s]
-        x       = [pt[1] for pt in pts]
-        y       = [pt[2] for pt in pts]
-        return x,y
-    else
-        notimplemented()    
-    end
-end
-
 # recipe for paramatric surface
 @recipe function f(ent::ParametricEntity{ReferenceSquare};h=0.1)
     legend --> false
@@ -120,5 +100,34 @@ end
         @series begin
             bdy
         end
+    end
+end
+
+@recipe function f(mesh::NystromMesh)
+    legend --> false
+    seriestype --> :scatter
+    grid   --> false
+    marker --> :x
+    aspect_ratio --> :equal    
+    return mesh.qnodes
+end    
+
+@recipe function f(ent::ParametricElement;gridsize=0.01)
+    par = ent.parametrization
+    legend --> false
+    grid   --> false
+    aspect_ratio --> :equal
+    d = domain(ent)
+    if d === ReferenceLine()
+        h       =  gridsize[1]
+        a       = ent.domain.low_corner[1]
+        b       = ent.domain.high_corner[1]
+        s       =  a:h:b
+        pts     = [par(v) for v in s]
+        x       = [pt[1] for pt in pts]
+        y       = [pt[2] for pt in pts]
+        return x,y
+    else
+        notimplemented()    
     end
 end

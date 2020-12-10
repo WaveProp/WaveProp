@@ -12,7 +12,7 @@ function assemble_mk(iop::IntegralOperator)
                 # nothing special to do here, just fill up the matrix using the
                 # regular quadrature    
                 target_dof  = dof(X,target_ent)
-                source_dof  = dof(X,source_ent)        
+                source_dof  = dof(Y,source_ent)        
                 @. out[target_dof,source_dof] = iop[target_dof,source_dof]
             end        
         end    

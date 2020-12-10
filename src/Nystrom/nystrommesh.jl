@@ -90,7 +90,7 @@ end
 NystromMesh(submesh::SubMesh,args...) = NystromMesh(submesh.mesh,submesh.domain,args...)
 
 function NystromMesh(mesh::SubMesh;order=1,compute_normal::Bool=true)
-    etype2qrule = Integration._qrule_for_mesh(mesh,order)
+    etype2qrule = Mesh._qrule_for_mesh(mesh,order)
     NystromMesh(mesh,etype2qrule,compute_normal)
 end    
 

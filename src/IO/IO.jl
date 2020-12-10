@@ -10,6 +10,7 @@ module IO
     using WaveProp.Geometry    
     using WaveProp.Mesh
     using WaveProp.Utils
+    using WaveProp.Nystrom
 
     import WaveProp.Geometry: reference_nodes    
     

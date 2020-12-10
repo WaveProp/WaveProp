@@ -12,7 +12,7 @@ using WaveProp.Mesh
     u    = (x)   -> SingleLayerKernel(pde)(xout,x)
     dudn = (x,n) -> DoubleLayerKernel(pde)(xout,x,n)
     geo  = Geometry.Kite()
-    Ω,M  = meshgen(geo,gridsize=40)
+    Ω,M  = meshgen(geo,gridsize=2)
     Γ    = boundary(Ω)
     # generate a Nystrom mesh with trapezoidal quadrature
     E    = etypes(M)[1] # element type
@@ -24,7 +24,7 @@ using WaveProp.Mesh
     γ₀u   = γ₀(u,mesh)
     γ₁u   = γ₁(dudn,mesh)
     S     = SingleLayerOperator(pde,mesh) 
-    D        = DoubleLayerOperator(pde,mesh) 
+    D     = DoubleLayerOperator(pde,mesh) 
     Smk  = Nystrom.assemble_mk(S)
     Dmk  = Nystrom.assemble_mk(D)
     e0    = WaveProp.Nystrom.error_interior_green_identity(S,D,γ₀u,γ₁u)    

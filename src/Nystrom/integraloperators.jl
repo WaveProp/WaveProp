@@ -55,7 +55,7 @@ HyperSingularOperator(op::AbstractPDE,X,Y=X)      = IntegralOperator(HyperSingul
 
 ambient_dimension(iop::IntegralOperator) = ambient_dimension(iop.kernel)
 
-function singular_weights(iop::IntegralOperator,qstd::AbstractQuadratureRule,q::SingularQuadratureRule)
+function SingularIntegration.singular_weights(iop::IntegralOperator,qstd::AbstractQuadratureRule,q::SingularQuadratureRule)
     X,Y = iop.X, iop.Y    
     T = eltype(iop)    
     K = iop.kernel

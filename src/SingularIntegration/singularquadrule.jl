@@ -91,7 +91,7 @@ end
 
 Integrate `f` over `el` assuming a singularity of `f` at `el(s)`.
 """
-function integrate(f,q::SingularQuadratureRule,el,s)
+function Integration.integrate(f,q::SingularQuadratureRule,el,s)
     x,w = q(el,s)
     integrate(f,x,w)
 end

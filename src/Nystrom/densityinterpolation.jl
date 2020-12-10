@@ -125,9 +125,9 @@ function _source_gen(iop,nsources;kfactor)
     xc     = center(bbox)
     d      = diameter(bbox)
     if N == 2
-        xs = _circle_sources(nsources=nsources,center=xc,radius=kfactor*d/2)
+        xs = _circle_sources(;nsources,center=xc,radius=kfactor*d/2)
     elseif N == 3
-        xs = _sphere_sources_lebedev(nsources=nsources,center=xc,radius=kfactor*d/2)
+        xs = _sphere_sources_lebedev(;nsources,center=xc,radius=kfactor*d/2)
     else
         error("dimension must be 2 or 3. Got $N")
     end

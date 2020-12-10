@@ -10,9 +10,9 @@ Base.@kwdef struct NystromMesh{N,T} <: AbstractMesh{N,T}
 end
 
 # getters
-qnodes(m::NystromMesh) = m.qnodes
-qweights(m::NystromMesh) = m.qweights
-qnormals(m::NystromMesh) = m.qnormals
+Integration.qnodes(m::NystromMesh) = m.qnodes
+Integration.qweights(m::NystromMesh) = m.qweights
+Integration.qnormals(m::NystromMesh) = m.qnormals
 el2qnodes(m::NystromMesh) = m.el2qnodes
 el2qnodes(m::NystromMesh,E::DataType) = m.el2qnodes[E]
 

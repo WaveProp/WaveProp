@@ -1,3 +1,40 @@
+function assemble_dim(iop::IntegralOperator;compress=Matrix,location=:onsurface)
+    X    = target_surface(iop)    
+    Y    = source_surface(iop)    
+    pde  = iop.kernel.op
+    T    = kernel_type(iop)    
+    if T === SingleLayer()
+        single_layer_dim(pde,X,Y;compress,location)    
+    elseif T === DoubleLayer()
+        double_layer_dim(pde,X,Y;compress,location)        
+    else
+        notimplemented()    
+    end    
+end    
+
+function single_double_layer_dim(pde,X,Y=X;compress=Matrix,location=:onsurface)
+    msg = "unrecognized value for kw `location`: received $location. 
+           Valid options are `:onsurface`, `:inside` and `:outside`."    
+    σ = location === :onsurface ? -0.5 : location === :inside ? 0 : location === :outside ? -1 : error(msg)
+    Sop  = SingleLayerOperator(pde,X,Y)
+    Dop  = DoubleLayerOperator(pde,X,Y)
+    # convert to a possibly more efficient format
+    S = compress(Sop)
+    D = compress(Dop)
+    basis,γ₁_basis = _basis_dim(Sop)    
+    γ₀B,γ₁B,R      = _auxiliary_quantities_dim(Sop,S,D,basis,γ₁_basis,σ)
+    # compute corrections
+    δS = _singular_weights_dim(Sop,γ₀B,γ₁B,R)
+    δD = _singular_weights_dim(Dop,γ₀B,γ₁B,R)
+    # add corrections to the dense part
+    axpy!(true,δS,S)
+    axpy!(true,δD,D)
+    return S,D
+end
+
+single_layer_dim(args...;kwargs...) = single_double_layer_dim(args...;kwargs...)[1]
+double_layer_dim(args...;kwargs...) = single_double_layer_dim(args...;kwargs...)[2]
+
 function singular_weights_dim(iop::IntegralOperator,compress=Matrix)
     X,Y,op = iop.X, iop.Y, iop.kernel.op        
     σ = X == Y ? -0.5 : 0.0
@@ -5,7 +42,8 @@ function singular_weights_dim(iop::IntegralOperator,compress=Matrix)
     basis,γ₁_basis = _basis_dim(iop)
     Op1, Op2       = _auxiliary_operators_dim(iop,compress)    
     γ₀B,γ₁B,R      = _auxiliary_quantities_dim(iop,Op1,Op2,basis,γ₁_basis,σ)
-    _singular_weights_dim(iop,γ₀B,γ₁B,R)
+    Sp = _singular_weights_dim(iop,γ₀B,γ₁B,R)
+    return Sp # a sparse matrix
 end
 
 function _auxiliary_quantities_dim(iop,Op1,Op2,basis,γ₁_basis,σ) 

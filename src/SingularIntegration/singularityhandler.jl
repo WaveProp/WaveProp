@@ -58,6 +58,34 @@ end
 
 jacobian(f::Kress,x) = derivative(f,x) |> SMatrix{1,1}
 
+
+"""
+    struct KressP{P} <: SingularityHandler{ReferenceLine}
+    
+Like [`Kress`](@ref), this change of variables maps the interval `[-1,1]` onto
+itself, but derivatives of the transformation vanish at both endpoints. 
+"""
+struct KressP{P} <: SingularityHandler{ReferenceLine}
+end
+KressP(;order=5) = KressP{order}()
+
+domain(k::KressP) = ReferenceLine()
+range(k::KressP)  = ReferenceLine()
+
+@fastmath function (f::KressP{P})(x) where {P}
+    v = (x) -> (1/P - 1/2)*((1-2x))^3 + 1/P*((2x-1)) + 1/2
+    return v(x)^P / (v(x)^P + v(1-x)^P)
+end
+
+@fastmath function derivative(f::KressP{P},x) where {P}
+    v =  (x) -> (1/P - 1/2)*((1-2x))^3 + 1/P*((2x-1)) + 1/2    
+    vp = (x) -> -6*(1/P - 1/2)*((1-2x))^2 + 2/P
+    return (P*v(x)^(P-1)*vp(x) * (v(x)^P + v(1-x)^P) - (P*v(x)^(P-1)*vp(x) - P*v(1-x)^(P-1)*vp(1-x) ) * v(x)^P ) /
+        (v(x)^P + v(1-x)^P)^2
+end
+
+jacobian(f::KressP,x) = derivative(f,x) |> SMatrix{1,1}
+
 """
     Window{A,B,S}
 

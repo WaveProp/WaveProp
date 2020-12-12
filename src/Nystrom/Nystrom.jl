@@ -29,7 +29,7 @@ include("helmholtz.jl")
 include("density.jl")
 include("potential.jl")
 include("integraloperators.jl")
-include("densityinterpolation.jl")
+include("dim.jl")
 include("assemble.jl")
 include("martensen_kussmaul.jl")
 

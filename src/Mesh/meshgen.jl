@@ -27,14 +27,14 @@ function meshgen!(mesh::GenericMesh,Ω::Domain,p::AbstractParametricBody;gridsiz
     return Ω,mesh
 end    
 
-function meshgen(p::AbstractParametricBody;gridsize)
+function meshgen(p::AbstractParametricBody;gridsize=floatmax())
     N       = ambient_dimension(p)    
     mesh    = GenericMesh{N,Float64}()
     Ω       = Domain()
     meshgen!(mesh,Ω,p;gridsize)
 end   
 
-function meshgen(ps::Vector{<:AbstractParametricBody};gridsize)
+function meshgen(ps::Vector{<:AbstractParametricBody};gridsize=floatmax())
     N       = ambient_dimension(first(ps))
     @assert all(p->ambient_dimension(p)==N,ps)
     mesh    = GenericMesh{N,Float64}()
@@ -44,8 +44,6 @@ function meshgen(ps::Vector{<:AbstractParametricBody};gridsize)
     end
     return Ω,mesh
 end   
-
-
 
 function _meshgen(p::ParametricEntity;gridsize)
     # mesh the domain of p

@@ -151,10 +151,10 @@ struct TrapezoidalP{N} <: AbstractQuadratureRule{ReferenceLine} end
 
 TrapezoidalP(n::Int) = TrapezoidalP{n}()
 
-# periodic trapezoidal rule on [0,1], open on the left
+# open periodic trapezoidal rule on [0,1]
 function _trapezoidalP(n)    
     h = 1/n
-    x = [k*h for k in 1:n]
+    x = [(k-0.5)*h for k in 1:n]
     w = [h   for k in 1:n]
     return x,w
 end    

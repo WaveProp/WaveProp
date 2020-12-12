@@ -1,3 +1,17 @@
+"""
+    struct NystromMesh{N,T} <: AbstractMesh{N,T}
+    
+A data structure convenient for solving boundary integral equation using Nyström
+methods.
+
+A `NystromMesh` can be constructed from an `mesh::AbstractMesh` and a dictionary
+`etype2qrule` mapping element types in `mesh` (the keys) to an appropriate
+quadrature rule for integration over elements of that type (the value).
+
+The degrees of freedom of a `NystromMesh` are associated to its quadrature nodes
+`qnodes::Vector{Point{N,T}}`. A mapping between the elements and the quadrature
+nodes is also stored in the form `el2qnodes`. 
+"""
 Base.@kwdef struct NystromMesh{N,T} <: AbstractMesh{N,T}
     elements::Dict{DataType,Any} = Dict{DataType,Any}()
     # quadrature info
@@ -89,9 +103,14 @@ end
 
 NystromMesh(submesh::SubMesh,args...) = NystromMesh(submesh.mesh,submesh.domain,args...)
 
-function NystromMesh(mesh::SubMesh;order=1,compute_normal::Bool=true)
+function NystromMesh(mesh::SubMesh;order,compute_normal::Bool=true)
     etype2qrule = Mesh._qrule_for_mesh(mesh,order)
     NystromMesh(mesh,etype2qrule,compute_normal)
+end    
+
+function NystromMesh(mesh::GenericMesh,Ω::Domain;quad_rule,compute_normal::Bool=true)
+    etype2qrule = Dict(E=>quad_rule for E in etypes(view(mesh,Ω)))
+    NystromMesh(mesh,Ω,etype2qrule,compute_normal)
 end    
 
 # interface methods
@@ -100,7 +119,11 @@ etypes(m::NystromMesh) = keys(m.elements) |> collect
 """
     near_interaction_list(X,Y;dim,atol)
 
-Given a target mesh `X` and a source mesh `Y`, return a dictionary with keys given by element types of the source mesh `Y`. To each key, which represents an element type, we associate a vector encoding whose `i`-th entry encodes information about the points in `X` which are close to the a given element of the key type. 
+Given a target mesh `X` and a source mesh `Y`, return a dictionary with keys
+given by element types of the source mesh `Y`. To each key, which represents an
+element type, we associate a vector whose `i`-th entry encodes
+information about the points in `X` which are close to a given element of
+the key type. 
 """
 function near_interaction_list(X,Y;dim,atol)
     dict = Dict{DataType,Vector{Vector{Tuple{Int,Int}}}}()    

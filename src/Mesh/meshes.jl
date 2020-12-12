@@ -244,8 +244,8 @@ end
 """
     _qrule_for_mesh(m,p)
 
-Given a mesh `m`, create a dictionary mapping each element type of `m` to an appropriate quadrature rule of order
-`p` over that element type.
+Given a mesh `m`, create a dictionary mapping each element type of `m` to an
+appropriate quadrature rule of order `p` over that element type.
 
 See also [`_qrule_for_reference_shape`](@ref)
 """

@@ -24,13 +24,22 @@ end
 function _assemble_mk_self!(out,iop,ent::AbstractEntity)
     X         = target_surface(iop)
     etype2tag = X.ent2tags[ent]
-    # loop over individual elements composing ent
-    for (E,tags) in etype2tag
-        for t in tags
-            idxs = X.el2qnodes[E][:,t] # dof for filling out in global matrix
-            el   = X.elements[E][t]
-            _assemble_mk_self!(out,iop,el,idxs)
-        end    
+    # loop over individual elements composing ent. Note that because we must
+    # handle meshes composed of elements of possiby different types, we must
+    # loop over element types, and then over the elements of that type
+    # (contained in the entity)
+    for (target_E,target_tags) in etype2tag, target_t in target_tags
+        for (source_E,source_tags) in etype2tag, source_t in source_tags
+            if source_E === target_E && target_t === source_t # same element
+                dof = X.el2qnodes[source_E][:,source_t] # dof for filling out in global matrix
+                el   = X.elements[source_E][source_t]                 # retrieve the element (i.e. access to its parametrization)     
+                _assemble_mk_self!(out,iop,el,dof)
+            else
+                target_dof  = X.el2qnodes[target_E][:,target_t] # dof for filling out in global matrix
+                source_dof  = X.el2qnodes[source_E][:,source_t] # dof for filling out in global matrix
+                out[target_dof,source_dof] = iop[target_dof,source_dof]
+            end        
+        end
     end 
     return out   
 end    
@@ -58,21 +67,21 @@ function _assemble_mk_self!(out,iop,el::AbstractElement,idxs)
         for (jloc,jglob) in enumerate(idxs)
             lSin = log(4*(sin(Δs*(iloc-jloc)/2))^2) # singular part factored
             if kernel_type(iop) === SingleLayer()
-                K1   = φ(x[iglob],x[jglob])*τ[jloc]      
+                K1   = φ(x[iglob],x[jglob])*w[jglob]
                 if iloc != jloc
-                    K2   = K(x[iglob],x[jglob])*τ[jloc]-K1*lSin # what is left after factoring out lSin and φ
+                    K2   = K(x[iglob],x[jglob])*w[jglob]-K1*lSin # what is left after factoring out lSin and φ
                 else    
-                    K2   = (im/4+psi/2/pi-1/4/pi*log(k^2/4*τ[jloc]^2))*τ[jloc]
+                    K2   = (im/4+psi/2/pi-1/4/pi*log(k^2/4*τ[jloc]^2))*w[jglob] + 2*log(w[jglob]/(τ[jloc]*Δs))*K1
                 end    
             elseif kernel_type(iop) == DoubleLayer()
-                K1   = φ(x[iglob],x[jglob],ν[jglob])*τ[jloc]      
+                K1   = φ(x[iglob],x[jglob],ν[jglob])*w[jglob]
                 if iloc != jloc
-                    K2   = K(x[iglob],x[jglob],ν[jglob])*τ[jloc]-K1*lSin
+                    K2   = K(x[iglob],x[jglob],ν[jglob])*w[jglob]-K1*lSin
                 else    
-                    K2   = -1/(4*pi)*(dx[jloc][1]*d2x[jloc][2]-dx[jloc][2]*d2x[jloc][1])/τ[jloc]^2
+                    K2   = -1/(4*pi)*(dx[jloc][1]*d2x[jloc][2]-dx[jloc][2]*d2x[jloc][1])/τ[jloc]^3*w[jglob] + 2*log(w[jglob]/(τ[jloc]*Δs))*K1
                 end    
             end
-            out[iglob,jglob] = (R[iloc,jloc]*K1 + Δs*K2)
+            out[iglob,jglob] = (R[iloc,jloc]*K1 + K2)
         end
     end   
     return out
@@ -107,7 +116,7 @@ function nystrom_weights(M)
         tp = pi/Md2*(p-1)
         for j=1:M
             tj = pi/Md2*(j-1)
-            R[p,j]=-2*pi/Md2*sum((ones(Md2-1)./collect(1:Md2-1)).*cos.(collect(1:Md2-1)*(tp-tj)))-pi/(Md2^2)*cos(Md2*(tp-tj))
+            R[p,j]=-2*sum((ones(Md2-1)./collect(1:Md2-1)).*cos.(collect(1:Md2-1)*(tp-tj)))-pi/(Md2^2)*cos(Md2*(tp-tj))
         end            
     end
     return R

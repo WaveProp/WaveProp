@@ -105,11 +105,20 @@ end
 
 @recipe function f(mesh::NystromMesh)
     legend --> false
-    seriestype --> :scatter
     grid   --> false
-    marker --> :x
     aspect_ratio --> :equal    
-    return mesh.qnodes
+    @series begin
+        seriestype --> :scatter    
+        marker --> :x
+        mesh.qnodes
+    end
+    for (E,els) in mesh.elements
+        for el in els
+            @series begin 
+                el
+            end
+        end        
+    end    
 end    
 
 @recipe function f(ent::ParametricElement;gridsize=0.01)
@@ -120,8 +129,8 @@ end
     d = domain(ent)
     if d === ReferenceLine()
         h       =  gridsize[1]
-        a       = ent.domain.low_corner[1]
-        b       = ent.domain.high_corner[1]
+        a       = ent.preimage.low_corner[1]
+        b       = ent.preimage.high_corner[1]
         s       =  a:h:b
         pts     = [par(v) for v in s]
         x       = [pt[1] for pt in pts]

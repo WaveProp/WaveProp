@@ -134,7 +134,7 @@ VTK_WEDGE (=13)
 VTK_PYRAMID (=14)
 """
 const etype_to_vtk_cell_type = Dict(
-    Point{3,Float64} => (VTKCellTypes.VTK_VERTEX, collect(1:1)),
+    SVector{3,Float64} => (VTKCellTypes.VTK_VERTEX, collect(1:1)),
     LagrangeLine{2,SVector{3,Float64}} => (VTKCellTypes.VTK_LINE, collect(1:2)),
     LagrangeTriangle{3,SVector{2,Float64}} => (VTKCellTypes.VTK_TRIANGLE, collect(1:3)),
     LagrangeTriangle{3,SVector{3,Float64}} => (VTKCellTypes.VTK_TRIANGLE, collect(1:3)),

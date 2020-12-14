@@ -7,12 +7,13 @@ module IO
     using RecipesBase
     using WriteVTK
     
+    using WaveProp.Utils    
     using WaveProp.Geometry    
+    using WaveProp.Integration
     using WaveProp.Mesh
-    using WaveProp.Utils
     using WaveProp.Nystrom
 
-    import WaveProp.Geometry: reference_nodes    
+    import WaveProp.Mesh: reference_nodes    
     
     export read_geo
     export read_msh

@@ -38,8 +38,8 @@ function _auxiliary_quadrature(τ,qrule,cov=Kress(order=5))
     xr  = map(x->b+x*(h*t⃗),x̃)
     wl  = h .* w
     wr  = h .* w
-    νl  = svector(i->Point(t⃗[2],-t⃗[1]),length(ŵ))
-    νr  = svector(i->Point(-t⃗[2],t⃗[1]),length(ŵ))
+    νl  = svector(i->SVector(t⃗[2],-t⃗[1]),length(ŵ))
+    νr  = svector(i->SVector(-t⃗[2],t⃗[1]),length(ŵ))
     vcat(xl,xr,x), vcat(wl,wr,w), vcat(νl,νr,ν)
 end    
 

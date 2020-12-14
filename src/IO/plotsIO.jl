@@ -1,5 +1,5 @@
 # plot a vector of points
-@recipe function f(pts::AbstractVector{<:Point{N}}) where {N}
+@recipe function f(pts::AbstractVector{<:SVector{N}}) where {N}
     if N == 2
         xx = [pt[1] for pt in pts]    
         yy = [pt[2] for pt in pts]    
@@ -14,7 +14,7 @@
     end        
 end    
 
-@recipe function f(pts::AbstractMatrix{<:Point}) 
+@recipe function f(pts::AbstractMatrix{<:SVector}) 
     vec(pts)
 end
 
@@ -47,7 +47,6 @@ end
 # recipe for parametric line
 @recipe function f(ent::ParametricEntity{ReferenceLine};h=0.01)
     par = ent.parametrization
-    legend --> false
     grid   --> false
     aspect_ratio --> :equal
     s       = 0:h:1    
@@ -58,7 +57,6 @@ end
 end
 
 @recipe function f(ents::Vector{ParametricEntity{ReferenceLine}};h=0.01)
-    legend --> false
     grid   --> false
     aspect_ratio --> :equal
     for ent in ents
@@ -70,7 +68,6 @@ end
 
 # recipe for paramatric surface
 @recipe function f(ent::ParametricEntity{ReferenceSquare};h=0.1)
-    legend --> false
     grid   --> false
     aspect_ratio --> :equal
     seriestype := :surface
@@ -85,6 +82,7 @@ end
 
 # recipe for parametric body
 @recipe function f(bdy::AbstractParametricBody)
+    label --> ""    
     aspect_ratio --> :equal    
     for patch in boundary(bdy)
         @series begin
@@ -104,7 +102,7 @@ end
 end
 
 @recipe function f(mesh::NystromMesh)
-    legend --> false
+    label --> ""        
     grid   --> false
     aspect_ratio --> :equal    
     @series begin
@@ -123,7 +121,7 @@ end
 
 @recipe function f(ent::ParametricElement;gridsize=0.01)
     par = ent.parametrization
-    legend --> false
+    label --> ""
     grid   --> false
     aspect_ratio --> :equal
     d = domain(ent)

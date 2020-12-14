@@ -172,20 +172,20 @@ function _source_gen(iop,nsources;kfactor)
     return xs
 end
 
-function _sphere_sources_lebedev(;nsources, radius=10, center=Point(0.,0.,0.))
+function _sphere_sources_lebedev(;nsources, radius=10, center=SVector(0.,0.,0.))
     lpts = lebedev_points(nsources)
-    Xs = Point{3,Float64}[]
+    Xs = SVector{3,Float64}[]
     for pt in lpts
         push!(Xs,radius*pt .+ center)
     end
     return Xs
 end
 
-function _circle_sources(;nsources, radius=10, center=Point(0.,0.))
+function _circle_sources(;nsources, radius=10, center=SVector(0.,0.))
     geo   = Circle(center=center,radius=radius)
     par   = boundary(geo)[1]
     x,_   = Integration._trapezoidalP(nsources)
-    Xs    = Point{2,Float64}[]
+    Xs    = SVector{2,Float64}[]
     for pt in x
         push!(Xs,par(pt))
     end

@@ -56,4 +56,6 @@ struct ReferenceTetrahedron <: AbstractReferenceShape{3}
 end    
 Base.in(x,::ReferenceTetrahedron) = 0 ≤ x[1] ≤ 1 && 0 ≤ x[2] ≤ 1 - x[1] && 0 ≤ x[3] ≤ 1 - x[1] - x[2]
 
-# TODO: generalize structs above to `ReferenceSimplex{N}` and `ReferenceCuboid{N}`
+# TODO: generalize structs above to `ReferenceSimplex{N}` and
+# `ReferenceCuboid{N}`
+

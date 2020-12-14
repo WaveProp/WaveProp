@@ -1,5 +1,5 @@
 # Single Layer
-function (SL::SingleLayerKernel{T,S})(x,y)::T  where {T,S<:Helmholtz}
+function (SL::SingleLayerKernel{T,S})(x::SVector,y::SVector)::T  where {T,S<:Helmholtz}
     N = ambient_dimension(S)
     k = SL.op.k
     r = x - y
@@ -13,7 +13,7 @@ function (SL::SingleLayerKernel{T,S})(x,y)::T  where {T,S<:Helmholtz}
 end
 
 # Double Layer Kernel
-function (DL::DoubleLayerKernel{T,S})(x,y,ny)::T where {T,S<:Helmholtz}
+function (DL::DoubleLayerKernel{T,S})(x::SVector,y::SVector,ny::SVector)::T where {T,S<:Helmholtz}
     N = ambient_dimension(S)
     k = DL.op.k
     r = x - y
@@ -27,7 +27,7 @@ function (DL::DoubleLayerKernel{T,S})(x,y,ny)::T where {T,S<:Helmholtz}
 end
 
 # Adjoint double Layer Kernel
-function (ADL::AdjointDoubleLayerKernel{T,S})(x,y,nx)::T where {T,S<:Helmholtz}
+function (ADL::AdjointDoubleLayerKernel{T,S})(x::SVector,y::SVector,nx::SVector)::T where {T,S<:Helmholtz}
     N = ambient_dimension(S)
     k = ADL.op.k
     r = x - y
@@ -41,7 +41,7 @@ function (ADL::AdjointDoubleLayerKernel{T,S})(x,y,nx)::T where {T,S<:Helmholtz}
 end
 
 # Hypersingular kernel
-function (HS::HyperSingularKernel{T,S})(x,y,nx,ny)::T where {T,S<:Helmholtz}
+function (HS::HyperSingularKernel{T,S})(x::SVector,y::SVector,nx::SVector,ny::SVector)::T where {T,S<:Helmholtz}
     N = ambient_dimension(S)
     k = HS.op.k
     r = x - y

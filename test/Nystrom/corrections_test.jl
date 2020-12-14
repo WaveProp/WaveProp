@@ -3,13 +3,13 @@ using WaveProp
 using WaveProp.Nystrom
 using WaveProp.Geometry
 using WaveProp.Integration
-using WaveProp.SingularIntegration
+using WaveProp.Integration
 using WaveProp.Mesh
 
 @testset "Greens identity test" begin
     # construct interior solution
     pde  = Helmholtz(dim=2,k=1)
-    xout = Point(3,3)
+    xout = SVector(3,3)
     u    = (x)   -> SingleLayerKernel(pde)(xout,x)
     dudn = (x,n) -> DoubleLayerKernel(pde)(xout,x,n)
     Ω,mesh = WaveProp.IO.gmsh_disk(dim=1,h=0.025,order=2)

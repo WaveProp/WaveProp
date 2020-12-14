@@ -3,13 +3,12 @@ using WaveProp
 using WaveProp.Nystrom
 using WaveProp.Geometry
 using WaveProp.Integration
-using WaveProp.SingularIntegration
 using WaveProp.Mesh
 
 @testset "Single scattering" begin
     # construct interior solution
     pde  = Helmholtz(dim=2,k=1)
-    xout = Point(3,3)
+    xout = SVector(3,3)
     u    = (x)   -> SingleLayerKernel(pde)(xout,x)
     dudn = (x,n) -> DoubleLayerKernel(pde)(xout,x,n)
     geo  = Geometry.Kite()
@@ -32,7 +31,7 @@ end
 @testset "Multiple scattering" begin
     # construct interior solution
     pde  = Helmholtz(dim=2,k=1)
-    xout = Point(-10,0)
+    xout = SVector(-10,0)
     u    = (x)   -> SingleLayerKernel(pde)(xout,x)
     dudn = (x,n) -> DoubleLayerKernel(pde)(xout,x,n)
     geo1  = Geometry.Kite()
@@ -56,7 +55,7 @@ end
 @testset "Change of variables" begin
     # construct interior solution
     pde  = Helmholtz(dim=2,k=1)
-    xout = Point(-10,0)
+    xout = SVector(-10,0)
     u    = (x)   -> SingleLayerKernel(pde)(xout,x)
     dudn = (x,n) -> DoubleLayerKernel(pde)(xout,x,n)
     geo  = ParametricEntity(ReferenceLine()) do u
@@ -87,7 +86,7 @@ end
     qstd = TrapezoidalP(10)
     qrule = SingularQuadratureRule(qstd,cov)
     pde  = Helmholtz(dim=2,k=1)
-    xout = Point(-2,0)
+    xout = SVector(-2,0)
     u    = (x)   -> SingleLayerKernel(pde)(xout,x)
     dudn = (x,n) -> DoubleLayerKernel(pde)(xout,x,n)
     bdy  = Circle()

@@ -16,6 +16,6 @@ using WaveProp.Mesh
     @test Nystrom.kernel_type(𝓓) == Nystrom.DoubleLayer()
     σ    = γ₀(x->0.,mesh)
     u(x) = 𝓢[σ](x)
-    x₀ = Point(1.,1.,1.)
+    x₀ = SVector(1.,1.,1.)
     @test u(x₀) ≈ 0
 end

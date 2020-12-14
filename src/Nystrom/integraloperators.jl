@@ -1,5 +1,5 @@
 """
-    IntegralOperator{T,K,S,V} <: AbstractMatrix{T}
+    struct IntegralOperator{T,K,S,V} <: AbstractMatrix{T}
 
 Representation of an integral operator which takes a density ϕ defined on `Y`
 and integrates it with `kernel` for all elements `x ∈ X`.
@@ -55,7 +55,7 @@ HyperSingularOperator(op::AbstractPDE,X,Y=X)      = IntegralOperator(HyperSingul
 
 ambient_dimension(iop::IntegralOperator) = ambient_dimension(iop.kernel)
 
-function SingularIntegration.singular_weights(iop::IntegralOperator,qstd::AbstractQuadratureRule,q::SingularQuadratureRule)
+function Integration.singular_weights(iop::IntegralOperator,qstd::AbstractQuadratureRule,q::SingularQuadratureRule)
     X,Y = iop.X, iop.Y    
     T = eltype(iop)    
     K = iop.kernel
@@ -87,3 +87,19 @@ function SingularIntegration.singular_weights(iop::IntegralOperator,qstd::Abstra
     end  
     return Sp = sparse(Is,Js,Vs,size(iop)...)      
 end    
+
+function Base.in(x::SVector,mesh::NystromMesh)
+    N   = ambient_dimension(mesh)     
+    pde = Laplace(dim=N)
+    K   = DoubleLayerKernel(pde)
+    y   = qnodes(mesh)
+    ν   = qnormals(mesh)   
+    w   = qweights(mesh)  
+    u   = sum(zip(y,ν,w)) do (y,ν,w)
+         K(x,y,ν)*w
+    end  
+    u + 0.5 < 0 
+end
+Base.in(x::Tuple,mesh::NystromMesh) = in(SVector(x),mesh)
+
+qnodes(vec::Array{<:SVector}) = vec

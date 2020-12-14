@@ -15,7 +15,7 @@ export svector, notimplemented, abstractmethod, assert_extension
 """
     svector(f,n)
 
-Just like `ntuple`, but convert output to a `SVector`.
+Just like [`Base.ntuple`](@ref), but convert output to an `SVector`.
 """
 svector(f,n) = ntuple(f,n) |> SVector
 

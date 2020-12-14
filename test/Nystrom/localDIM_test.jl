@@ -3,7 +3,7 @@ using WaveProp.Utils
 using WaveProp.Nystrom
 using WaveProp.Geometry
 using WaveProp.Integration
-using WaveProp.SingularIntegration
+using WaveProp.Integration
 using QuadGK
 using LinearAlgebra
 using Plots
@@ -14,9 +14,9 @@ _auxiliary_integration_matrix, _auxiliary_interpolation_matrix, combined_field_c
 ## test 
 pde   = Laplace(;dim=2)
 h     = 0.1
-τ     = line(Point(0,0),Point(h,0))
+τ     = line(SVector(0,0),SVector(h,0))
 # τ     = ParametricLine() do u
-#     return Point(h*u,(h*u)^2)
+#     return SVector(h*u,(h*u)^2)
 # end    
 k     = SingleLayerKernel(pde)
 n     = 10
@@ -63,7 +63,7 @@ I2 = integrate(y->g(y),xq,w̃)
 # Ω    = extrude(τ,d⃗)
 # Γ    = boundary(Ω)
 
-# Σ    = Geometry.circle(;radius=10*h,center=Point(h/2,0))
+# Σ    = Geometry.circle(;radius=10*h,center=SVector(h/2,0))
 
 # x̂, ŵ = qrule()
 # mesh = GenericQuadrature{2,Float64}()
@@ -99,11 +99,11 @@ I2 = integrate(y->g(y),xq,w̃)
 # # scatter!(x)
 # ##
 
-# # tmp  = Geometry.circle(;radius=h,center=Point(0,0))
-# # tmp2  = Geometry.circle(;radius=h,center=Point(3*h,0))
+# # tmp  = Geometry.circle(;radius=h,center=SVector(0,0))
+# # tmp2  = Geometry.circle(;radius=h,center=SVector(3*h,0))
 # # mesh = GenericQuadrature{2,Float64}((tmp,tmp2),qrule)
 
-# xs = Point(10,10)
+# xs = SVector(10,10)
 
 # G = SingleLayerKernel(pde)
 # dG = DoubleLayerKernel(pde)
@@ -130,7 +130,7 @@ I2 = integrate(y->g(y),xq,w̃)
 # #     h    = 0.01
 # #     k    = SingleLayerKernel(pde)
 # #     Γ    = ParametricLine() do u
-# #         Point(h*u,0.)    
+# #         SVector(h*u,0.)    
 # #     end    
 # #     N = 1
 # #     qrule    = GaussLegendre{2*N}()

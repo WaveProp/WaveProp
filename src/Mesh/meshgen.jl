@@ -47,9 +47,9 @@ end
 
 function _meshgen(p::ParametricEntity;gridsize)
     # mesh the domain of p
-    f    = Geometry.parametrization(p)
+    f    = parametrization(p)
     d    = domain(p)
     grid = CartesianMesh(d;gridsize)
-    els = [Geometry.ParametricElement(f,d) for d in elements(grid)]
+    els = [ParametricElement(f,d) for d in elements(grid)]
     return els
 end

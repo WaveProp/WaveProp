@@ -4,7 +4,7 @@
 Return the lebedev points on the unit sphere.    
 """
 function lebedev_points(n::Int)
-    pts = Vector{Point{3,Float64}}()
+    pts = Vector{SVector{3,Float64}}()
     if n<=6
         push!(pts,_sph_pt(0,90))
         push!(pts,_sph_pt(180,90))
@@ -157,5 +157,5 @@ function _sph_pt(theta,phi,r=1, center=[0 0 0])
     x = center[1] + r*sin(phi)*cos(theta)
     y = center[2] + r*sin(phi)*sin(theta)
     z = center[3] + r*cos(phi)
-    return Point{3,Float64}(x,y,z)
+    return SVector{3,Float64}(x,y,z)
 end

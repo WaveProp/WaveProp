@@ -24,7 +24,7 @@ end
 @testset "Greens identity test" begin
     # construct interior solution
     pde  = Laplace(dim=3)
-    xout = Point(3,3,3)
+    xout = SVector(3,3,3)
     u    = (x)   -> SingleLayerKernel(pde)(xout,x)
     dudn = (x,n) -> DoubleLayerKernel(pde)(xout,x,n)
     Ω,M   = WaveProp.IO.gmsh_sphere(dim=2,h=0.1)
@@ -41,7 +41,7 @@ end
 @testset "Greens identity test in 2d" begin
     # construct interior solution
     pde  = Laplace(dim=2)
-    xout = Point(3,3)
+    xout = SVector(3,3)
     u    = (x)   -> SingleLayerKernel(pde)(xout,x)
     dudn = (x,n) -> DoubleLayerKernel(pde)(xout,x,n)
     Ω,M   = WaveProp.IO.gmsh_disk(dim=1,h=0.01)

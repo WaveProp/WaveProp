@@ -28,7 +28,7 @@ Base.length(mesh::AbstractMesh) = length(nodes(mesh))
 A simple data structure representing a generic mesh in an ambient space of dimension `N`, with data of type `T`. 
 """
 Base.@kwdef struct GenericMesh{N,T} <: AbstractMesh{N,T}
-    nodes::Vector{Point{N,T}} = Vector{Point{N,T}}()
+    nodes::Vector{SVector{N,T}} = Vector{SVector{N,T}}()
     # element types
     etypes::Vector{DataType} = Vector{DataType}()
     # for each element type (key), get the data required to reconstruct the
@@ -74,7 +74,7 @@ ent2tags(m::GenericMesh) = m.ent2tags
 function convert_to_2d(::Type{LagrangeElement{R,N,SVector{3,T}}}) where {R,N,T} 
     LagrangeElement{R,N,SVector{2,T}}
 end
-convert_to_2d(::Type{Point{3,T}}) where {T} = Point{2,T}
+convert_to_2d(::Type{SVector{3,T}}) where {T} = SVector{2,T}
 
 """
     etypes(M::GenericMesh)

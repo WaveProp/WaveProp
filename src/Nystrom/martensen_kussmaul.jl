@@ -51,8 +51,8 @@ function _assemble_mk_self!(out,iop,el::AbstractElement,idxs)
     # compute all quantities needed for mk rule, which includes higher order
     # derivatives of the parametrization. 
     N     = length(idxs)
-    dx    =  [Geometry.derivative(el,u)/(2π)     for u in x̂]
-    d2x   =  [Geometry.derivative2(el,u)/(4*π^2) for u in x̂]
+    dx    =  [derivative(el,u)/(2π)     for u in x̂]
+    d2x   =  [derivative2(el,u)/(4*π^2) for u in x̂]
     τ     = [norm(τ) for τ in dx]
     Δs    = 2π / N
     psi   = -0.577215664901532

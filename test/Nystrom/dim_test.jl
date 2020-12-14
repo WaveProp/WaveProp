@@ -8,7 +8,7 @@ using WaveProp.Mesh
 @testset "Greens interpolant test" begin
     # construct interior solution
     pde  = Helmholtz(dim=3,k=1)
-    xout = Point(3,3,3)
+    xout = SVector(3,3,3)
     u    = (x)   -> SingleLayerKernel(pde)(xout,x)
     dudn = (x,n) -> DoubleLayerKernel(pde)(xout,x,n)
     Ω,M  = WaveProp.IO.gmsh_sphere(dim=2,h=0.2)
@@ -31,7 +31,7 @@ end
 @testset "Multiple obstacles" begin
     # construct interior solution
     pde  = Helmholtz(dim=2,k=1)
-    xout = Point(-10,0)
+    xout = SVector(-10,0)
     u    = (x)   -> SingleLayerKernel(pde)(xout,x)
     dudn = (x,n) -> DoubleLayerKernel(pde)(xout,x,n)
     geo1  = Geometry.Kite()

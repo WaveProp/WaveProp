@@ -9,24 +9,24 @@ A `NystromMesh` can be constructed from an `mesh::AbstractMesh` and a dictionary
 quadrature rule for integration over elements of that type (the value).
 
 The degrees of freedom of a `NystromMesh` are associated to its quadrature nodes
-`qnodes::Vector{Point{N,T}}`. A mapping between the elements and the quadrature
+`qnodes::Vector{SVector{N,T}}`. A mapping between the elements and the quadrature
 nodes is also stored in the form `el2qnodes`. 
 """
 Base.@kwdef struct NystromMesh{N,T} <: AbstractMesh{N,T}
     elements::Dict{DataType,Any} = Dict{DataType,Any}()
     # quadrature info
-    qnodes::Vector{Point{N,T}} = Vector{Point{N,T}}()
+    qnodes::Vector{SVector{N,T}} = Vector{SVector{N,T}}()
     qweights::Vector{T} = Vector{T}()
-    qnormals::Vector{Point{N,T}} = Vector{Point{N,T}}()
+    qnormals::Vector{SVector{N,T}} = Vector{SVector{N,T}}()
     el2qnodes::Dict{DataType,Matrix{Int}} = Dict{DataType,Matrix{Int}}()
     etype2qrule::Dict{DataType,AbstractQuadratureRule}= Dict{DataType,AbstractQuadratureRule}()
     ent2tags::Dict{ElementaryEntity,Dict{DataType,Vector{Int}}} = Dict{ElementaryEntity,Dict{DataType,Vector{Int}}}()
 end
 
 # getters
-Integration.qnodes(m::NystromMesh) = m.qnodes
-Integration.qweights(m::NystromMesh) = m.qweights
-Integration.qnormals(m::NystromMesh) = m.qnormals
+qnodes(m::NystromMesh) = m.qnodes
+qweights(m::NystromMesh) = m.qweights
+qnormals(m::NystromMesh) = m.qnormals
 el2qnodes(m::NystromMesh) = m.el2qnodes
 el2qnodes(m::NystromMesh,E::DataType) = m.el2qnodes[E]
 

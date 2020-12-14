@@ -51,6 +51,7 @@ export
     internal_boundary, 
     external_boundary,
     domain, 
+    parametrization,
     jacobian, 
     normal, 
     ambient_dimension, 
@@ -59,6 +60,8 @@ export
     center, 
     diameter, 
     radius, 
+    low_corner,
+    high_corner,
     measure
     
 end # module

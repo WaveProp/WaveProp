@@ -89,51 +89,6 @@ function singular_weights(k,ui,q::SingularQuadratureRule,s)
 end    
 
 """
-    singular_quadrature(q::SingularQuadratureRule,s)
-
-Return the nodes and weights to integrate a function over `domain(q)`. The
-function can be (weakly) singular at the location `s`.
-"""
-function singular_quadrature(q::SingularQuadratureRule{ReferenceLine},s)
-    @assert 0 < s < 1    
-    # split the domain into two
-    l1    = line(s,0)
-    l2    = line(s,1)
-    # apply the quadrature to each segment
-    x1,w1 = q(l1)
-    x2,w2 = q(l2)
-    # combine the nodes and weights
-    return vcat(x1,x2), vcat(w1,w2)
-end 
-
-function singular_quadrature(q::SingularQuadratureRule{ReferenceTriangle,<:Any,Duffy},s)
-    # split the domain
-    t1    = triangle((0,0),s,(1,0))
-    t2    = triangle((0,0),s,(0,1))
-    t3    = triangle((1,0),s,(0,1))
-    # apply the quadrature
-    x1,w1 = q(t1)
-    x2,w2 = q(t2)
-    x3,w3 = q(t3)
-    return vcat(x1,x2,x3), vcat(w1,w2,w3)
-end 
-
-function singular_quadrature(qrule::SingularQuadratureRule{ReferenceSquare,<:Any,Duffy},s)
-    x,w   = qrule()    
-    # split the domain
-    t1    = triangle((0,0),s,(1,0))
-    t2    = triangle((0,0),s,(0,1))
-    t3    = triangle((1,0),s,(1,1))
-    t4    = triangle((0,1),s,(1,1))
-    # apply the quadrature
-    x1,w1 = qrule(t1)
-    x2,w2 = qrule(t2)
-    x3,w3 = qrule(t3)
-    x4,w4 = qrule(t4)
-    return vcat(x1,x2,x3,x4), vcat(w1,w2,w3,w4)
-end 
-
-"""
     singular_weights(q::SingularQuadratureRule,xi,k,s)
 
 Return the weights to integrate `∫k(x)f(x)dx ≈ sum(f.(xi) .* w)` where a

@@ -9,13 +9,11 @@ include("Utils/Utils.jl")
 
 include("Geometry/Geometry.jl")
 
-include("Integration/Integration.jl")
-
 include("Interpolation/Interpolation.jl")
 
-include("Mesh/Mesh.jl")
+include("Integration/Integration.jl")
 
-include("SingularIntegration/SingularIntegration.jl")
+include("Mesh/Mesh.jl")
 
 include("PhysicalProblem/PhysicalProblem.jl")
 

@@ -110,15 +110,15 @@ ParametricEntity{D}(f) where {D} = ParametricEntity(f,D())
 domain(p::ParametricEntity{D}) where {D<:AbstractReferenceShape} = D()
 parametrization(p::ParametricEntity) = p.parametrization 
 
-function ambient_dimension(p::ParametricEntity)  
-    # to get the ambient_dimension of a parametric entity, just apply it to a
-    # point on the domain and check the dimension of that
+function Base.eltype(p::ParametricEntity)
+    # FIXME: this relies on the brittle promote_op
     d = domain(p)    
     x = center(d)
     f = parametrization(p)
     T = Base.promote_op(f,typeof(x))
-    return length(T)
-end
+end    
+
+ambient_dimension(p::ParametricEntity) = length(eltype(p))
 geometric_dimension(p::ParametricEntity) = geometric_dimension(domain(p))
 
 (par::ParametricEntity)(x) = par.parametrization(x)
@@ -199,7 +199,7 @@ function (par::GmshParametricEntity{N})(x) where {N}
     end
 end
 
-function jacobian(psurf::GmshParametricEntity{N},s::Point) where {N}
+function jacobian(psurf::GmshParametricEntity{N},s::SVector) where {N}
     if N==1
         jac = gmsh.model.getDerivative(N,psurf.tag,s)
         return SMatrix{3,1}(jac)

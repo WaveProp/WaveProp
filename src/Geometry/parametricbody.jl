@@ -15,9 +15,16 @@ boundary(bdy::AbstractParametricBody) = bdy.boundary
 struct ParametricBody{N,M,T} <: AbstractParametricBody{N,M,T}
     boundary::Vector{ParametricEntity}
 end
+ParametricBody{N,M}(args...;kwargs...) where {N,M} = ParametricBody{N,M,Float64}(args...;kwargs...)
+
+function ParametricBody(;boundary::ParametricEntity)
+    N = ambient_dimension(boundary)
+    M = geometric_dimension(boundary)
+    ParametricBody{N,M+1}([boundary])
+end    
 
 struct Circle{T} <: AbstractParametricBody{2,2,T}
-    center::Point{2,T}
+    center::SVector{2,T}
     radius::T
     boundary::Vector{ParametricEntity}
 end
@@ -33,7 +40,7 @@ Circle(args...;kwargs...) = Circle{Float64}(args...;kwargs...)
 Base.in(pt,circ::Circle) = norm(pt .- circ.center) < circ.radius
 
 struct Kite{T} <: AbstractParametricBody{2,2,T}
-    center::Point{2,T}
+    center::SVector{2,T}
     radius::T
     boundary::Vector{ParametricEntity}
 end
@@ -48,7 +55,7 @@ function Kite{T}(;radius=1,center=(0,0)) where {T}
 end
 
 # struct Ellipsoid{T} <: AbstractParametricBody{3,2,T}
-#     center::Point{3,T}
+#     center::SVector{3,T}
 #     paxis::SVector{3,T}
 #     parts::Vector{ParametricEntity{3,2,T}}
 # end
@@ -66,7 +73,7 @@ end
 # Ellipsoid(args...;kwargs...) = Ellipsoid{Float64}(args...;kwargs...)
 
 # struct Sphere{T} <: AbstractParametricBody{3,2,T}
-#     center::Point{3,T}
+#     center::SVector{3,T}
 #     radius::T
 #     parts::Vector{ParametricEntity{3,2,T}}
 # end
@@ -84,7 +91,7 @@ end
 # Sphere(args...;kwargs...) = Sphere{Float64}(args...;kwargs...)
 
 # struct Bean{T} <: AbstractParametricBody{3,2,T}
-#     center::Point{3,T}
+#     center::SVector{3,T}
 #     paxis::SVector{3,T}
 #     parts::Vector{ParametricEntity{3,2,T}}
 # end
@@ -101,7 +108,7 @@ end
 # Bean(args...;kwargs...) = Bean{Float64}(args...;kwargs...)
 
 # struct Acorn{T} <: AbstractParametricBody{3,2,T}
-#     center::Point{3,T}
+#     center::SVector{3,T}
 #     radius::T
 #     rotation::SVector{3,T}
 #     parts::Vector{ParametricEntity{3,2,T}}
@@ -119,7 +126,7 @@ end
 # Acorn(args...;kwargs...) = Acorn{Float64}(args...;kwargs...)
 
 # struct Cushion{T} <: AbstractParametricBody{3,2,T}
-#     center::Point{3,T}
+#     center::SVector{3,T}
 #     radius::T
 #     rotation::SVector{3,T}
 #     parts::Vector{ParametricEntity{3,2,T}}

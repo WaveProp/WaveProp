@@ -32,6 +32,25 @@ qrule(q::SingularQuadratureRule) = q.qrule
 singularity_handler(q::SingularQuadratureRule) = q.singularity_handler
 
 """
+    (qs::SingularQuadratureRule)()
+
+Return the nodes and weights for integrating over `domain(qs)`
+"""
+function (qs::SingularQuadratureRule)()
+    qstd = qs |> qrule
+    x̂,ŵ  = qstd() # reference quadrature
+    cov  = qs |> singularity_handler   
+    # use the change of variables cov to modify reference quadrature
+    x    = map(x->cov(x),x̂)
+    w    = map(zip(x̂,ŵ)) do (x̂,ŵ)
+        jac = jacobian(cov,x̂)    
+        μ   = abs(det(jac))
+        μ*prod(ŵ)
+    end 
+    return x,w
+end
+
+"""
     singular_quadrature(q::SingularQuadratureRule,s)
 
 Use `q` to produce nodes `x` and weigths `w` for integrating a function over
@@ -68,33 +87,6 @@ function singular_weights(k,ui,q::SingularQuadratureRule,s)
     L    = barycentric_lagrange_matrix(ui,x,wlag)
     return transpose(L)*w
 end    
-
-function (qs::SingularQuadratureRule)()
-    qstd = qs |> qrule
-    cov  = qs |> singularity_handler    
-    x,w  = qstd(cov)
-    return x,w
-end
-
-function (q::SingularQuadratureRule)(el::AbstractElement,s)
-    x̂,ŵ   = singular_quadrature(q,s)
-    x   = map(x->el(x),x̂)
-    w   = map(zip(x̂,ŵ)) do (x̂,ŵ)
-        μ = measure(el,x̂)
-        μ*prod(ŵ)
-    end 
-    return x,w
-end    
-
-"""
-    integrate(f,q::SingularQuadratureRule,el,s)
-
-Integrate `f` over `el` assuming a singularity of `f` at `el(s)`.
-"""
-function Integration.integrate(f,q::SingularQuadratureRule,el,s)
-    x,w = q(el,s)
-    integrate(f,x,w)
-end
 
 """
     singular_quadrature(q::SingularQuadratureRule,s)

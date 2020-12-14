@@ -19,40 +19,14 @@ domain(q::AbstractQuadratureRule{D}) where {D} = D()
 
 qnodes(q::AbstractQuadratureRule) = q()[1]
 qweights(q::AbstractQuadratureRule) = q()[2]
-function qnormals end
+qnormals(q::AbstractQuadratureRule) = error("abstract quadrature rule has no normal")
 
 """
     (q::AbstractQuadratureRule)()
 
 Return the quadrature nodes `x` and weights `w` on the `domain(q)`.
 """
-function (q::AbstractQuadratureRule) end
-
-"""
-    (q::AbstractQuadratureRule)(el)
-
-Return the quadrature nodes `x` and weights `w` for integrating over `el`. Here
-`el` can represent an element, or a change of variables, as long as
-`domain(el)==domain(q)`. 
-
-The *lifted* quadrature is computed by mapping the reference quadrature through
-`el`. This requires `el` to support the methods `el(x̂)` and `jacobian(el,x̂)`.
-"""
-function (q::AbstractQuadratureRule)(el)
-    @assert domain(el) == domain(q) "the domains of the `q` and `el` must agree"
-    x̂,ŵ = q()
-    _push_forward_quadrature(el,x̂,ŵ)
-end
-(q::AbstractQuadratureRule)(f::typeof(identity)) = q()
-
-function _push_forward_quadrature(el,x̂,ŵ)
-    x   = map(x->el(x),x̂)
-    w   = map(zip(x̂,ŵ)) do (x̂,ŵ)
-        μ = measure(el,x̂)
-        μ*prod(ŵ)
-    end 
-    return x,w
-end    
+function (q::AbstractQuadratureRule)() end
 
 """
     integrate(f,q::AbstractQuadrature)
@@ -72,11 +46,6 @@ function integrate(f,x,w)
     end
 end    
 
-function integrate(f,q::AbstractQuadratureRule,el::AbstractElement)
-    x,w = q(el)
-    integrate(f,x,w)
-end    
-
 # overload quadgk for integration over reference shapes. Useful for various
 # testing purposes.
 """
@@ -91,20 +60,15 @@ integrate(f,l::AbstractReferenceShape;kwargs...)     = integrate(f,typeof(l);kwa
 
 integrate(f,::Type{ReferenceLine};kwargs...) = quadgk(f,0,1;kwargs...)[1]
 
-function integrate(f,el::AbstractElement{<:ReferenceLine};kwargs...)
-    g = (u) -> f(el(u))*measure(el,u)
-    integrate(g,domain(el);kwargs...)
-end    
-
-
-
 function integrate(f,::Type{ReferenceSquare})
-    I    = x-> quadgk(y->f(Point(x,y)),0,1)[1]
+    I    = x-> quadgk(y->f(SVector(x,y)),0,1)[1]
     out  = quadgk(I,0,1)[1]
 end    
 
+# hacky way to compute integration over reference triangles. Only used for
+# testing purposes to avoid having to compute integrals analyically when testing.
 function integrate(f,::Type{ReferenceTriangle})
-    I    = x -> quadgk(y->f(Point(x,y)),0,1-x)[1]
+    I    = x -> quadgk(y->f(SVector(x,y)),0,1-x)[1]
     out  = quadgk(I,0,1)[1]
 end
 
@@ -224,12 +188,12 @@ Gauss(ref;n) = Gauss{typeof(ref),n}()
 
 function (q::Gauss{ReferenceTriangle,N})() where {N}
     if N == 1
-        x = svector(i->Point(1/3,1/3),1)
+        x = svector(i->SVector(1/3,1/3),1)
         w = svector(i->1/2,1)
     elseif N == 3
-        x = SVector(Point(1/6,1/6),
-                    Point(2/3,1/6),
-                    Point(1/6,2/3))
+        x = SVector(SVector(1/6,1/6),
+                    SVector(2/3,1/6),
+                    SVector(1/6,2/3))
         w = svector(i->1/6,3)
     else
         notimplemented()
@@ -239,15 +203,15 @@ end
 
 function (q::Gauss{ReferenceTetrahedron,N})() where {N}
     if N == 1
-        x = SVector((Point(1/4,1/4,1/4),))
+        x = SVector((SVector(1/4,1/4,1/4),))
         w = SVector(1/6)
     elseif N == 4
         a = (5-√5)/20
         b = (5+3*√5)/20
-        x = SVector(Point(a,a,a),
-                    Point(a,a,b),
-                    Point(a,b,a),
-                    Point(b,a,a)
+        x = SVector(SVector(a,a,a),
+                    SVector(a,a,b),
+                    SVector(a,b,a),
+                    SVector(b,a,a)
                 )
         w = svector(i->1/24,4)
     else
@@ -280,11 +244,12 @@ end
 # FIXME: instead of returning an iterator, the tensor product rule is currently
 # returning the actual matrices. 
 function (q::TensorProductQuadrature)()
+    N       = length(q.quad)    
     nodes   = map(q->q()[1],q.quad)    
     weights = map(q->q()[2],q.quad)    
-    x = Iterators.product(nodes...) 
-    w = Iterators.product(weights...) 
-    return Point.(x), prod.(collect(w))
+    x = SVector.(Iterators.product(nodes...) )
+    w = prod.(Iterators.product(weights...))
+    return SArray(x), w
 end    
 
 # some helper functions

@@ -1,19 +1,19 @@
 """
-    abstract type SingularityHandler{R}
+    abstract type AbstractSingularityHandler{R}
     
 Used for handling localized integrand singularities in `R`.
 """
-abstract type SingularityHandler{T} end
+abstract type AbstractSingularityHandler{T} end
 
 """
-    struct IMT{A,P} <: SingularityHandler{ReferenceLine}
+    struct IMT{A,P} <: AbstractSingularityHandler{ReferenceLine}
     
 One-dimensional change of variables mapping `[0,1] -> [0,1]` with the property that 
 all derivatives vanish at the point `x=0`.
 
 See [Davis and Rabinowitz](https://www.elsevier.com/books/methods-of-numerical-integration/davis/978-0-12-206360-2).
 """
-struct IMT{A,P} <: SingularityHandler{ReferenceLine}
+struct IMT{A,P} <: AbstractSingularityHandler{ReferenceLine}
 end
 IMT(;a=1,p=1) = IMT{a,p}()
 
@@ -29,12 +29,12 @@ derivative(f::IMT{A,P},x) where {A,P} = f(x) * A*P*1 / x^(P+1)
 jacobian(f::IMT,x) = derivative(f,x) |> SMatrix{1,1}
 
 """
-    struct Kress{P} <: SingularityHandler{ReferenceLine}
+    struct Kress{P} <: AbstractSingularityHandler{ReferenceLine}
     
 Change of variables mapping `[0,1]` to `[0,1]` with the property that the first
 `P` derivatives of the transformation vanish at `x=0`.
 """
-struct Kress{P} <: SingularityHandler{ReferenceLine}
+struct Kress{P} <: AbstractSingularityHandler{ReferenceLine}
 end
 Kress(;order=5) = Kress{order}()
 
@@ -65,7 +65,7 @@ jacobian(f::Kress,x) = derivative(f,x) |> SMatrix{1,1}
 Like [`Kress`](@ref), this change of variables maps the interval `[-1,1]` onto
 itself, but derivatives of the transformation vanish at both endpoints. 
 """
-struct KressP{P} <: SingularityHandler{ReferenceLine}
+struct KressP{P} <: AbstractSingularityHandler{ReferenceLine}
 end
 KressP(;order=5) = KressP{order}()
 
@@ -94,7 +94,7 @@ Change of variables mapping `[0,1]` to `[0,1]` with the following properties:
 - all derivatives vanish on both `x=0` and `x=1`
 - derivative of the transoformation is exactly 1 between `A` and `B`
 """
-struct Window{A,B,S} <: SingularityHandler{ReferenceLine}
+struct Window{A,B,S} <: AbstractSingularityHandler{ReferenceLine}
 end
 Window() = Window{1,1,5}()
 
@@ -134,7 +134,7 @@ end
 jacobian(f::Window,x) = derivative(f,x) |> SMatrix{1,1}
 
 """
-    struct Duffy <: SingularityHandler{RefereceTriangle}
+    struct Duffy <: AbstractSingularityHandler{RefereceTriangle}
     
 Change of variables mapping the `ReferenceSquare` to the `RefereceTriangle`
 with the property that the jacobian vanishes at the `(1,0)` vertex of the
@@ -143,10 +143,10 @@ triangle.
 Useful for integrating functions with a singularity on the `(1,0)` edge of the
 reference triangle.
 """
-struct Duffy <: SingularityHandler{ReferenceTriangle} end
+struct Duffy <: AbstractSingularityHandler{ReferenceTriangle} end
 
 domain(::Duffy) = ReferenceSquare()
-range(::Duffy)  = RefereceTriangle()
+range(::Duffy)  = ReferenceTriangle()
 
 function (::Duffy)(u)
     SVector(u[1],(1-u[1])*u[2])
@@ -156,7 +156,7 @@ function jacobian(::Duffy,u)
     SMatrix{2,2,Float64}(1,0,-u[2],(1-u[1]))
 end    
 
-struct TensorProductSingularityHandler{S} <: SingularityHandler{ReferenceSquare} 
+struct TensorProductSingularityHandler{S} <: AbstractSingularityHandler{ReferenceSquare} 
     shandler::S
 end
 

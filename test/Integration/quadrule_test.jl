@@ -3,10 +3,22 @@ using LinearAlgebra
 using WaveProp
 using WaveProp.Geometry
 using WaveProp.Integration
-using WaveProp.IO
 
 @testset "Trapezoidal quadrature" begin
     q = Trapezoidal{10}()
+    D = domain(q)
+    @test D == ReferenceLine()
+    x,w = q()
+    @test sum(w) ≈ 1
+    # integrate a periodic function. Should be very accurate.
+    @test isapprox(integrate(x->cos(2π*x[1]),q),0,atol=1e-10)
+    @test integrate(x->sin(2π*x[1])^2,q) ≈ 0.5
+end
+
+@testset "TrapezoidalP quadrature" begin
+    q = TrapezoidalP{10}()
+    D = domain(q)
+    @test D == ReferenceLine()
     x,w = q()
     @test sum(w) ≈ 1
     # integrate a periodic function. Should be very accurate.
@@ -43,7 +55,7 @@ end
         x,w = q()
         @test sum(w) ≈ 1/2
     end
-    # FIXME: check that we integrate all monomials up to `order`
+    # FIXME: check that we integrate all monomials up to `order` on the triangle
 end
 
 @testset "Gauss quad on tetrahedron" begin
@@ -67,43 +79,4 @@ end
     @test integrate(x->x[1]^a*x[2]^b,q) ≈ 1/(a+1)*1/(b+1)
 end
 
-@testset "Line quadrature" begin
-    el     = LagrangeLine((1.,1.),(5.,4.))
-    qrule  = GaussLegendre{1}()
-    x,w   = qrule(el)
-    @test sum(w) ≈ 5
-end
 
-@testset "Triangle quadrature" begin
-    qrule = Gauss{ReferenceTriangle,1}()
-    F     = LagrangeTriangle((0.,0.),(1.,0),(0.,1.))
-    x,w   = qrule(F)
-    @test sum(w) ≈ 1/2
-    ## equilateral triangle
-    F   = LagrangeTriangle((-1.,0),(1.,0),(0.,1.))
-    x,w = qrule(F)
-    @test sum(w) ≈ 1 
-end
-
-@testset "Triangle surface quadrature" begin
-    qrule = Gauss{ReferenceTriangle,1}()
-    F   = LagrangeTriangle((0.,0.,0.),(1.,0.,0.),(0.,1.,0.))
-    x,w = qrule(F)
-    @test sum(w) ≈ 1/2
-    ## equilateral triangle
-    F   = LagrangeTriangle((-1.,0.,1.),(1.,0.,1.),(0.,1.,1.))
-    x,w = qrule(F)
-    @test sum(w) ≈ 1 
-end
-
-@testset "Tetrahedron quadrature" begin
-    D     = ReferenceTetrahedron
-    qrule = Gauss{D,1}()
-    F   = LagrangeTetrahedron((0,0,0.),(1.,0,0),(0,1,0),(0.,0.,1.))
-    x,w = qrule(F)
-    @test sum(w) ≈ 1/6
-    # dilate by 2x and translate by 1 along  the tetrahedron
-    F   = LagrangeTetrahedron((1,0,0),(3,0,0),(1,2,0),(1,0,2))
-    x,w = qrule(F)
-    @test sum(w) ≈ 1/6*2^3 
-end

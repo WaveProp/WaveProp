@@ -293,4 +293,3 @@ Given an element type `E`, return an appropriate quadrature of order `p`.
 function _qrule_for_element(E,order)
     _qrule_for_reference_shape(domain(E),order)
 end    
-

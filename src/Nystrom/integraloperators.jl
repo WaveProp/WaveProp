@@ -88,7 +88,7 @@ function Integration.singular_weights(iop::IntegralOperator,qstd::AbstractQuadra
     return Sp = sparse(Is,Js,Vs,size(iop)...)      
 end    
 
-function Base.in(x::SVector,mesh::NystromMesh)
+function isinside(x::SVector,mesh::NystromMesh)
     N   = ambient_dimension(mesh)     
     pde = Laplace(dim=N)
     K   = DoubleLayerKernel(pde)
@@ -100,6 +100,6 @@ function Base.in(x::SVector,mesh::NystromMesh)
     end  
     u + 0.5 < 0 
 end
-Base.in(x::Tuple,mesh::NystromMesh) = in(SVector(x),mesh)
+isinside(x::Tuple,mesh::NystromMesh) = in(SVector(x),mesh)
 
 qnodes(vec::Array{<:SVector}) = vec

@@ -2,6 +2,7 @@ struct Monomial{N}
     θ::SVector{N,Int}
 end 
 Monomial(p::Int) = Monomial(SVector(p))
+Monomial(p::Tuple) = Monomial(SVector(p))
 
 dimension(m::Monomial{N}) where {N} = N
 
@@ -11,5 +12,4 @@ function (m::Monomial)(x::SVector)
     @assert length(x) == dimension(m)
     x .^ exponent(m) |> prod
 end
-(m::Monomial)(x::Number)  = m(SVector(x))
-(m::Monomial)(x::Vector)  = m(SVector(x))
+(m::Monomial)(x)  = m(SVector(x))

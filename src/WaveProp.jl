@@ -17,6 +17,8 @@ include("Mesh/Mesh.jl")
 
 include("PhysicalProblem/PhysicalProblem.jl")
 
+include("FEM/FEM.jl")
+
 include("Nystrom/Nystrom.jl")
 
 include("IO/IO.jl")

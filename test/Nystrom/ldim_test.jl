@@ -8,17 +8,29 @@ using WaveProp.Mesh
 @testset "Single element" begin
     pde  = op = Helmholtz(dim=2,k=1)
     el          = LagrangeLine((1,0),(1.1,0))
-    q   = GaussLegendre(10)
+    q   = GaussLegendre(20)
     x̂,ŵ = q()
     yi  = map(el,x̂)
     νi  = map(x->normal(el,x),x̂)
-    # x   = el(0.51)
-    x  = SVector(0.5,-0.1)
     nb = 3*length(yi)
     G   = SingleLayerKernel(op)
     dG  = DoubleLayerKernel(op) 
-    w  = Nystrom.singular_weights_ldim(G,el,yi,νi,x,:offsurface)
-    ϕ  = y->cos(y[1])    
+    ## 
+    ϕ  = y->cos(y[1])  # regular density
+    x  = el(0.51)
+    ν  = normal(el,0.51)
+    w  = Nystrom.singular_weights_ldim(G,el,yi,νi,x,:onsurface)
+    I  = integrate(y->G(x,y)*ϕ(y),el)
+    Ia = w*ϕ.(yi)
+    @test norm(I - Ia,Inf) < 1e-5
+    y₀  = el(0.51)
+    x   = x + 1e-2*ν # outside
+    w  = Nystrom.singular_weights_ldim(G,el,yi,νi,x,:outside)
+    I  = integrate(y->G(x,y)*ϕ(y),el)
+    Ia = w*ϕ.(yi)
+    @test norm(I - Ia,Inf) < 1e-5
+    x   = x - 1e-2*ν # inside
+    w  = Nystrom.singular_weights_ldim(G,el,yi,νi,x,:inside)
     I  = integrate(y->G(x,y)*ϕ(y),el)
     Ia = w*ϕ.(yi)
     @test norm(I - Ia,Inf) < 1e-5
@@ -54,8 +66,8 @@ end
     xout = SVector(-10,0)
     u    = (x)   -> SingleLayerKernel(pde)(xout,x)
     dudn = (x,n) -> DoubleLayerKernel(pde)(xout,x,n)
-    geo  = Circle()
-    Ω,M   = meshgen(geo,gridsize=0.1)
+    geo  = Kite()
+    Ω,M   = meshgen(geo,gridsize=0.05)
     Γ     = boundary(Ω)
     # generate a Nystrom mesh with Gauss-Legendre quadrature
     qrule   = GaussLegendre(5)

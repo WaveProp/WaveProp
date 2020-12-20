@@ -44,8 +44,11 @@ end
         for (iglob,jloc) in list_near[nel]
             x   = X.qnodes[iglob]
             y₀  = yi[jloc]
-            d   = norm(x-y₀)
-            location = d == 0 ? :onsurface : :offsurface
+            ν₀  = νi[jloc]
+            r   = x-y₀
+            d   = norm(r)
+            side = dot(r,ν₀)
+            location = d == 0 ? :onsurface : side > 0 ? :outside : :inside
             w   = singular_weights_ldim(k,el,yi,νi,x,location)
             v   = transpose(w) - iop[iglob,tags] # remove the "naive" approximation
             @assert length(w) == length(yi)
@@ -64,44 +67,68 @@ Given a kernel `k`, generate quadrature weights `w` such that
 \\int_\\tau k(x,y) \\varphi(y) ds\\_y \\approx \\sum_q \\varphi(y_q) w_q
 ```
 """
-@inline function singular_weights_ldim(k::AbstractKernel,el,yi,νi,x,location=:onsurface)    
+@inline function singular_weights_ldim(k::AbstractKernel,el,yi,νi,x,side=:onsurface)    
+    # pre-compute things which do not depend on x
+    op  = k.op
+    T   = return_type(k)
+    K0  = SingleLayerKernel(op)
+    K1  = DoubleLayerKernel(op)
+    Γ,σ,γ₀B,γ₁B,F = _auxiliary_quantities_ldim(k,el,yi,νi,side)
+    # compute things which depend on target point x
+    nb  = length(γ₀B)
+    I   = zeros(T,nb)
+    _integrate_basis_ldim!(I,Γ,K0,K1,γ₀B,γ₁B,x,σ) # modify r
+    α,β = combined_field_coefficients(k)
+    D   = [diagm(α*ones(length(yi))) ; diagm(β*ones(length(yi)))]
+    w   = ((transpose(I)/F.R)*adjoint(F.Q))*D
+    return w
+end 
+
+function _auxiliary_quantities_ldim(k::AbstractKernel,el,yi,νi,side)
     T = return_type(k)
     h  = 0.1
     nb = 3*length(yi)
     op =  k.op
     # interpolation surface
-    Γ = auxiliary_domain_ldim(el,-h)
-    # find appropriate source points xₛ given the points xq
-    γ₀B, γ₁B    = basis_ldim(op,el,h,nb)
-    G   = SingleLayerKernel(op)
-    dG  = DoubleLayerKernel(op)
-    r   = zeros(T,nb)
-    for n in 1:nb
-        r[n] = sum(Γ) do b
-            integrate(ReferenceLine) do v
-                y  = b(v)    
-                νy = normal(b,v)    
-                μ  = measure(b,v)
-                (G(x,y)*γ₁B[n](y,νy) - dG(x,y,νy)*γ₀B[n](y))*μ
-            end    
-        end    
-        if location == :onsurface
-            r[n] = r[n] - γ₀B[n](x)/2    
-        end
+    if side == :onsurface
+        Γ = auxiliary_domain_ldim(el,-h)
+        σ = -0.5
+    elseif side == :outside
+        Γ = auxiliary_domain_ldim(el,-h)
+        σ = 0.0
+    elseif side == :inside
+        Γ = auxiliary_domain_ldim(el,h)
+        σ = 0.0
     end    
-    T    = return_type(G)
+    # find a "basis" for the interpolation
+    γ₀B, γ₁B    = basis_ldim(op,el,h,nb)
+    # build and factor interpolation matrix
     M    = Matrix{T}(undef,2*length(yi),nb)
     for j in 1:nb
         for i in 1:length(yi)
             M[i,j]            = γ₀B[j](yi[i])
             M[length(yi)+i,j] = γ₁B[j](yi[i],νi[i])
         end
+    end   
+    F   = qr(M)
+    return Γ,σ,γ₀B,γ₁B,F
+end    
+
+function _integrate_basis_ldim!(r,Γ,K0,K1,γ₀B,γ₁B,x,σ)
+    nb = length(r)
+    for n in 1:nb
+        r[n] = sum(Γ) do b
+            integrate(ReferenceLine) do v
+                y  = b(v)    
+                νy = normal(b,v)    
+                μ  = measure(b,v)
+                (K0(x,y)*γ₁B[n](y,νy) - K1(x,y,νy)*γ₀B[n](y))*μ
+            end    
+        end    
+        r[n] = r[n] + σ*γ₀B[n](x)
     end    
-    α,β = combined_field_coefficients(k)
-    D  = [diagm(α*ones(length(yi))) ; diagm(β*ones(length(yi)))]
-    w  = (transpose(r)/M)*D
-    return w
-end 
+    return r
+end
 
 function basis_ldim(pde,el,h,nb)
     ν  = normal(el,0.5)    

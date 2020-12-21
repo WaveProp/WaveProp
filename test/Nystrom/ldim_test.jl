@@ -28,7 +28,7 @@ using WaveProp.Mesh
     w  = Nystrom.singular_weights_ldim(G,el,yi,νi,x,:outside)
     I  = integrate(y->G(x,y)*ϕ(y),el)
     Ia = w*ϕ.(yi)
-    @test norm(I - Ia,Inf) < 1e-5
+    @test norm(I - Ia,Inf)/norm(I) < 1e-5
     x   = x - 1e-2*ν # inside
     w  = Nystrom.singular_weights_ldim(G,el,yi,νi,x,:inside)
     I  = integrate(y->G(x,y)*ϕ(y),el)

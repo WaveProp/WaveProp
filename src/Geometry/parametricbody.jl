@@ -1,58 +1,102 @@
 """
-    abstract type AbstractParametricBody{N,M,T} <: AbstractEntity
+    abstract type AbstractParametricBody <: AbstractEntity
     
-A closed geometrical entity of dimension `M` embedded in `ℜᴺ` defined through its
-boundary. 
+An `AbstractEntity` for which a parametric representation of the boundary is
+available. 
 """
-abstract type AbstractParametricBody{N,M,T} <: AbstractEntity end
+abstract type AbstractParametricBody <: AbstractEntity end
 
-ambient_dimension(bdy::AbstractParametricBody{N}) where {N} = N
-geometric_dimension(bdy::AbstractParametricBody{N,M}) where {N,M} = M
+boundary(ent::AbstractParametricBody) = ent.boundary
 
-boundary(bdy::AbstractParametricBody) = bdy.boundary
-
-# generic case, given simply by its parts
-struct ParametricBody{N,M,T} <: AbstractParametricBody{N,M,T}
-    boundary::Vector{ParametricEntity}
-end
-ParametricBody{N,M}(args...;kwargs...) where {N,M} = ParametricBody{N,M,Float64}(args...;kwargs...)
-
-function ParametricBody(;boundary::ParametricEntity)
-    N = ambient_dimension(boundary)
-    M = geometric_dimension(boundary)
-    ParametricBody{N,M+1}([boundary])
+function ambient_dimension(ent::AbstractParametricBody)
+    bnd = boundary(ent)    
+    d   = ambient_dimension(first(bnd))
+    msg = "all entities on the boundary of a body must 
+            have the same ambient dimension"
+    @assert all(b->ambient_dimension(b)==d,bnd) msg
+    return d
 end    
 
-struct Circle{T} <: AbstractParametricBody{2,2,T}
-    center::SVector{2,T}
-    radius::T
+"""
+    ParametricBody <: AbstractParametricBody
+
+A geometric entity whose boundary is defined parametrically.
+"""
+struct ParametricBody <: AbstractParametricBody
+    dim::UInt8
+    tag::Int
     boundary::Vector{ParametricEntity}
+    function ParametricBody(d, t, bnd)
+        ent = new(d, t, bnd)
+        _global_add_entity!(ent)
+        return ent
+    end        
 end
 
-function Circle{T}(;center=(0,0),radius=1) where {T}
-    f          = (s) -> center .+ radius.*SVector(cospi(2*s[1]),sinpi(2*s[1]))
+function ParametricBody(boundary::Vector{<:ParametricEntity})
+    dims = geometric_dimension.(boundary) 
+    d    = dims[1]
+    @assert all(i->i==d,dims)
+    d = d+1 # dimension of body is one greater than dimension of its boundary
+    t = _new_tag(d)
+    ParametricBody(d, t, boundary)
+end    
+ParametricBody(boundary::ParametricEntity) = ParametricBody([boundary,])
+ParametricBody(;boundary::Vector{<:ParametricEntity}) = ParametricBody(boundary)
+
+
+key(ent::ParametricBody) = (ent.dim,ent.tag)
+geometric_dimension(ent::ParametricBody) = ent.dim
+
+struct Circle <: AbstractParametricBody
+    # dim = 2
+    tag::Int
+    center::SVector{2,Float64}
+    radius::Float64
+    boundary::Vector{ParametricEntity}
+    function Circle(t,c,r,bnd)
+        d = 2
+        ent = new(t,c,r,bnd)    
+        _global_add_entity!(ent)
+        return ent
+    end    
+end
+
+function Circle(;center=(0, 0),radius=1)
+    f          = (s) -> center .+ radius .* SVector(cospi(2 * s[1]), sinpi(2 * s[1]))
     domain     = ReferenceLine()
-    ent        = ParametricEntity(f,domain)
-    return Circle{T}(center,radius, [ent])
+    ent        = ParametricEntity(f, domain)
+    tag        = _new_tag(2) # generate a unique tag for entities of dimension 2
+    return Circle(tag,center, radius, [ent])
 end
-Circle(args...;kwargs...) = Circle{Float64}(args...;kwargs...)
-
 Base.in(pt,circ::Circle) = norm(pt .- circ.center) < circ.radius
+key(ent::Circle) = (2,ent.tag)
+geometric_dimension(ent::Circle) = 2
 
-struct Kite{T} <: AbstractParametricBody{2,2,T}
-    center::SVector{2,T}
-    radius::T
+struct Kite <: AbstractParametricBody
+    # dim = 2
+    tag::Int    
+    center::SVector{2,Float64}
+    radius::Float64
     boundary::Vector{ParametricEntity}
+    function Kite(t,c,r,bnd)
+        d   = 2
+        ent = new(t,c,r,bnd)    
+        _global_add_entity!(ent)
+        return ent
+    end    
 end
-Kite(args...;kwargs...) = Kite{Float64}(args...;kwargs...)
 
-function Kite{T}(;radius=1,center=(0,0)) where {T}
-    f = (s) -> center .+ radius.*SVector(cospi(2*s[1]) + 0.65*cospi(4*s[1]) - 0.65,
-                              1.5*sinpi(2*s[1]))
+function Kite(;radius=1,center=(0, 0))
+    f = (s) -> center .+ radius .* SVector(cospi(2 * s[1]) + 0.65 * cospi(4 * s[1]) - 0.65,
+                              1.5 * sinpi(2 * s[1]))
     domain = ReferenceLine()
-    surf   = ParametricEntity(f,domain)
-    return Kite{T}(center,radius,[surf])
+    surf   = ParametricEntity(f, domain)
+    t      = _new_tag(2)
+    return Kite(t,center, radius, [surf])
 end
+key(ent::Kite) = (2,ent.tag)
+geometric_dimension(ent::Kite) = 2
 
 # struct Ellipsoid{T} <: AbstractParametricBody{3,2,T}
 #     center::SVector{3,T}

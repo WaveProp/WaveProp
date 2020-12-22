@@ -8,7 +8,7 @@ abstract type AbstractEntity end
 """
     struct ElementaryEntity <: AbstractEntity
     
-The most basic `AbstractEntity`
+The most basic representation of an `AbstractEntity`. 
 
 # Fields:
 - `dim::UInt8`: the geometrical dimension of the entity (e.g. line has `dim=1`, surface has `dim=2`, etc)
@@ -20,14 +20,16 @@ struct ElementaryEntity <: AbstractEntity
     tag::Int64
     boundary::Vector{ElementaryEntity}
     function ElementaryEntity(d::Integer, t::Integer, boundary::Vector{ElementaryEntity})
-        msg = "an elementary entities in the boundary has a wrong dimension"
+        msg = "an elementary entities in the boundary has the wrong dimension"
         for b in boundary
             @assert geometric_dimension(b) == d-1 msg
         end
-        # modify global variable TAGS by adding the new (d,t) for the
-        # entity. 
-        _add_tag!(d,t) 
-        new(d, t, boundary)
+        ent = new(d, t, boundary)
+        # every entity gets added to a global variable ENTITIES so that we can
+        # ensure the (d,t) pair is a UUID for an entity, and to easily retrieve
+        # different entities. 
+        _global_add_entity!(ent)
+        return ent
     end
 end
 
@@ -48,7 +50,7 @@ geometric_dimension(ω::ElementaryEntity) = ω.dim
 
 Return the unique tag (for a given dimension) of the elementary entity.
 """
-tag(ω::ElementaryEntity) = (geometric_dimension(ω), ω.tag)
+key(ω::ElementaryEntity) = (geometric_dimension(ω), ω.tag)
 
 """
     boundary(ω::ElementaryEntity)
@@ -65,12 +67,12 @@ match.
 
 Notice that this implies `dim` and `tag` of an elementary entity should uniquely
 define it, and therefore global variables like [`TAGS`](@ref) are needed to make
-sure newly created elementary entities have a new `(dim,tag)` identifier. 
+sure newly created `AbstractEntities` have a new `(dim,tag)` identifier. 
 """
 function Base.:(==)(Ω1::ElementaryEntity, Ω2::ElementaryEntity)
-    Ω1.dim == Ω2.dim || return false
-    Ω1.tag == Ω2.tag || return false
-    Ω1.boundary == Ω2.boundary || return false
+    Ω1.dim       == Ω2.dim || return false
+    Ω1.tag       == Ω2.tag || return false
+    Ω1.boundary  == Ω2.boundary || return false
     return true
 end
 
@@ -79,26 +81,29 @@ end
 
 A geometric entity given by an explicit `parametrization::F` with domain given
 by a singleton type `D`.
+
+This differs from an `ElementaryEntity` in that the underlying representation of
+the geometric entity is available. 
 """
 struct ParametricEntity{D,F} <: AbstractEntity
     dim::UInt8
     tag::Int 
     parametrization::F
-    # inner constructors to guarantee (dim,tag) remains unique
-    function ParametricEntity{D,F}(f::F) where {D,F}
-        dim = geometric_dimension(D)
-        tag = _new_tag(dim)
-        _add_tag!(dim,tag) 
-        new{D,F}(dim,tag,f)
-    end       
     function ParametricEntity{D,F}(dim,tag,f::F) where {D,F}
-        msg  = "entity of dimension $dim and tag $tag already exists in TAGS. 
-                Creating a possibly duplicate entity."        
-        is_new_tag(dim,tag) || (@debug msg)
-        _add_tag!(dim,tag) 
-        new{D,F}(dim,tag,F)
+        ent = new{D,F}(dim,tag,f)
+        # every entity gets added to a global variable ENTITIES so that we can
+        # ensure the (d,t) pair is a UUID for an entity, and to easily retrieve
+        # different entities. 
+        _global_add_entity!(ent)        
+        return ent
     end    
 end
+
+function ParametricEntity{D,F}(f::F) where {D,F}
+    d = geometric_dimension(D)
+    t = _new_tag(d) # automatically generate a new (valid) tag
+    ParametricEntity{D,F}(d,t,f)
+end       
 
 function ParametricEntity(f,d::AbstractReferenceShape)
     F = typeof(f)
@@ -110,26 +115,31 @@ ParametricEntity{D}(f) where {D} = ParametricEntity(f,D())
 domain(p::ParametricEntity{D}) where {D<:AbstractReferenceShape} = D()
 parametrization(p::ParametricEntity) = p.parametrization 
 
+key(ent::ParametricEntity) = (ent.dim,ent.tag)
+
+# FIXME: what should this be?
+boundary(ent::ParametricEntity) = ElementaryEntity[]
+
 function Base.eltype(p::ParametricEntity)
-    # FIXME: this relies on the brittle promote_op
+    # NOTE: this relies on the brittle promote_op
     d = domain(p)    
     x = center(d)
     f = parametrization(p)
     T = Base.promote_op(f,typeof(x))
 end    
 
-ambient_dimension(p::ParametricEntity) = length(eltype(p))
+ambient_dimension(p::ParametricEntity)   = length(eltype(p))
 geometric_dimension(p::ParametricEntity) = geometric_dimension(domain(p))
 
 (par::ParametricEntity)(x) = par.parametrization(x)
 
-jacobian(psurf::ParametricEntity,s::SVector) = ForwardDiff.jacobian(psurf.parametrization,s::SVector)
-jacobian(psurf::ParametricEntity,s) = jacobian(psurf,SVector(s))
+jacobian(psurf::ParametricEntity,s::SVector)  = ForwardDiff.jacobian(psurf.parametrization,s::SVector)
+jacobian(psurf::ParametricEntity,s)           = jacobian(psurf,SVector(s))
 
 function normal(ent::AbstractEntity,u)
-    N = ambient_dimension(ent)
-    M = geometric_dimension(ent)
-    msg = "computing the normal vector requires the entity to be of co-dimension one."
+    N    = ambient_dimension(ent)
+    M    = geometric_dimension(ent)
+    msg  = "computing the normal vector requires the entity to be of co-dimension one."
     @assert N-M == 1 msg
     if M == 1 # a line in 2d
         t = jacobian(ent,u)
@@ -165,21 +175,21 @@ Some important points to keep in mind (which makes this *hacky*):
   sphere may be parametrized using spherical coordinates, for which a geometric
   singularity exists at the poles. For complex surfaces, it is typically much
   better to simply mesh the surface using `gmsh` and then import the file. 
+
+Conclusion: although I expect this functionality to become more useful in the
+future for e.g. doing isogeometric analysis, for the moment **it should be used
+with extreme caution**.  
 """
 struct GmshParametricEntity{M} <: AbstractEntity
-    # dim=M
     tag::Int
     domain::HyperRectangle{M,Float64}
-    # make sure a unique tag is created
     function GmshParametricEntity{M}(tag,domain) where {M}
         dim = M    
-        msg  = "entity of dimension $dim and tag $tag already exists in TAGS. 
-                Creating a possibly duplicate entity."        
-        is_new_tag(dim,tag) || (@debug msg)
-        _add_tag!(dim,tag) 
-        new{M}(dim,domain)
+        ent = new{M}(dim,domain)
+        _global_add_entity!(ent)
+        return ent
+    # TODO: throw a warning if the surface is trimmed
     end    
-    # TODO: check that the surface is untrimmed in the inner constructor
 end
 
 function GmshParametricEntity(dim::Int,tag::Int,model=gmsh.model.getCurrent())
@@ -211,8 +221,11 @@ function jacobian(psurf::GmshParametricEntity{N},s::SVector) where {N}
     end
 end
 
+#####################################################################
 
-# variables and functions to globally keep track of entities
+# Variables and functions to globally keep track of entities
+
+#####################################################################
 
 """
     const TAGS::Dict{Int,Vector{Int}}
@@ -231,11 +244,12 @@ Global dictionary storing the used entity tags (the value) for a given dimension
 const ENTITIES = Dict{Tuple{Int,Int},AbstractEntity}()
 
 function _global_add_entity!(ent::AbstractEntity)
-    dim = geometric_dimension(ent)
-    tag = _new_tag(dim) # generate a new (unique) tag
-    _add_tag!(dim,tag) # add this tag to global list to make sure it is not used again
-    ENTITIES[(dim,tag)] = ent
-    return dim,tag
+    d,t = key(ent)
+    _add_tag!(d,t) # add this tag to global list to make sure it is not used again
+    msg = "overwriting ENTITIES: value in key ($d,$t) will be replaced"
+    haskey(ENTITIES,(d,t)) && (@warn msg)
+    ENTITIES[(d,t)] = ent
+    return d,t
 end    
 
 function _new_tag(dim)
@@ -248,16 +262,19 @@ function _new_tag(dim)
 end
 
 function _add_tag!(dim,tag)
-    # check for possible duplicate    
-    msg  = "entity of dimension $dim and tag $tag already exists in TAGS. 
-    Creating a possibly duplicate entity."    
-    is_new_tag(dim,tag) || (@debug msg)
-    # now add key
-    if haskey(TAGS,dim)   
-        push!(TAGS[dim],tag)
+    if is_new_tag(dim,tag)
+        # now add key
+        if haskey(TAGS,dim)   
+            push!(TAGS[dim],tag)
+        else
+            TAGS[dim] = [tag,]
+        end
     else
-        TAGS[dim] = [tag,]
-    end
+        # print warning but don't add duplicate tag
+        msg  = "entity of dimension $dim and tag $tag already exists in TAGS. 
+        Creating a possibly duplicate entity."        
+        @warn msg
+    end    
     return TAGS    
 end 
 
@@ -272,3 +289,9 @@ function is_new_tag(dim,tag)
 end  
 
 clear_tags!() = empty!(TAGS)
+clear_entities!() = empty!(ENTITIES)
+function clear!()
+    clear_tags!()
+    clear_entities!()
+    nothing
+end

@@ -68,7 +68,9 @@ end
 struct LagrangeBasis{D,P} <: PolynomialBasis{D,P} 
 end    
 
-length(b::LagrangeBasis{ReferenceTriangle,P}) where {P} = (P+1)*(P+2)/2 |> Int
+Base.length(::LagrangeBasis{ReferenceLine,P}) where {P} = P+1 |> Int
+Base.length(::LagrangeBasis{ReferenceTriangle,P}) where {P} = (P+1)*(P+2)/2 |> Int
+Base.length(::LagrangeBasis{ReferenceTetrahedron,P}) where {P} = (P+1)*(P+2)*(P+3)/6 |> Int
 
 """
     (b::LagrangeBasis)(x)
@@ -76,18 +78,63 @@ length(b::LagrangeBasis{ReferenceTriangle,P}) where {P} = (P+1)*(P+2)/2 |> Int
 Evaluate all base elements in `b` at the point `x`. Return a `StaticVector` of
 length `length(b)`.
 """
-function (b::LagrangeBasis{ReferenceTriangle,1})(x)
-    SVector(1 - x[1] - x[2], x[1], x[2])
-end    
-
-function (b::LagrangeBasis{ReferenceTriangle,0})(x)
+function (b::LagrangeBasis{D,0})(x::SVector{<:Any,<:Number}) where {D}
     SVector(1)
 end    
 
-function (b::LagrangeBasis{ReferenceTriangle,0})(x̂::SVector{<:Any,<:SVector})
+function (b::LagrangeBasis{ReferenceLine,1})(x::SVector{<:Any,<:Number})
+    SVector(1 - x[1], x[1])
+end    
+
+function (b::LagrangeBasis{ReferenceTriangle,1})(x::SVector{<:Any,<:Number})
+    SVector(1 - x[1] - x[2], x[1], x[2])
+end    
+
+function (b::LagrangeBasis{ReferenceTetrahedron,1})(x::SVector{<:Any,<:Number})
+    SVector(1 - x[1] - x[2] - x[3], x[1], x[2], x[3])
+end    
+
+function (b::LagrangeBasis{D,p})(x̂::SVector{<:Any,<:SVector}) where {D,p}
     mapreduce(x->b(x),hcat,x̂)    
 end    
 
-function (b::LagrangeBasis{ReferenceTriangle,1})(x̂::SVector{<:Any,<:SVector})
+trace(::LagrangeBasis{ReferenceTriangle,p}) where {p} = LagrangeBasis{ReferenceLine,p}()
+trace(::LagrangeBasis{ReferenceTetrahedron,p}) where {p} = LagrangeBasis{ReferenceTriangle,p}()
+
+struct gradLagrangeBasis{D,P} <: PolynomialBasis{D,P} 
+end    
+
+Base.length(::gradLagrangeBasis{ReferenceLine,P}) where {P} = P+1 |> Int
+Base.length(::gradLagrangeBasis{ReferenceTriangle,P}) where {P} = (P+1)*(P+2)/2 |> Int
+Base.length(::gradLagrangeBasis{ReferenceTetrahedron,P}) where {P} = (P+1)*(P+2)*(P+3)/6 |> Int
+
+"""
+    (b::LagrangeBasis)(x)
+
+Evaluate all base elements in `b` at the point `x`. Return a `StaticVector` of
+length `length(b)`.
+"""
+function (b::gradLagrangeBasis{ReferenceLine,1})(x::SVector{<:Any,<:Number})
+    SVector(SVector(-1),
+            SVector(1))
+end    
+
+function (b::gradLagrangeBasis{ReferenceTriangle,1})(x::SVector{<:Any,<:Number})
+    SVector(SVector(-1, -1),
+            SVector(1, 0),
+            SVector(0, 1))
+end    
+
+function (b::gradLagrangeBasis{ReferenceTetrahedron,1})(x::SVector{<:Any,<:Number})
+    SVector(SVector(-1, -1, -1),
+            SVector(1, 0, 0),
+            SVector(0, 1, 0),
+            SVector(0, 0, 1))
+end    
+
+function (b::gradLagrangeBasis{D,p})(x̂::SVector{<:Any,<:SVector}) where {D,p}
     mapreduce(x->b(x),hcat,x̂)    
 end    
+
+
+grad(::LagrangeBasis{D,p}) where {D,p} = gradLagrangeBasis{D,p}()

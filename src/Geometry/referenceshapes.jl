@@ -26,6 +26,8 @@ end
 Base.in(x,::ReferenceLine) = 0 ≤ x[1] ≤ 1
 center(::Type{ReferenceLine}) = 0.5
 center(::ReferenceLine)       = 0.5
+number_of_nodes(::Type{ReferenceLine}) = 2
+number_of_nodes(::ReferenceLine)       = 2
 
 """
     struct ReferenceTriangle
@@ -35,6 +37,8 @@ Singleton type representing the triangle with vertices `(0,0),(0,1),(1,0)`
 struct ReferenceTriangle <: AbstractReferenceShape{2} 
 end    
 Base.in(x,::ReferenceTriangle) = 0 ≤ x[1] ≤ 1 && 0 ≤ x[2] ≤ 1 - x[1]
+number_of_nodes(::Type{ReferenceTriangle}) = 3
+number_of_nodes(::ReferenceTriangle)       = 3
 
 """
     struct ReferenceSquare
@@ -46,6 +50,8 @@ end
 Base.in(x,::ReferenceSquare) = 0 ≤ x[1] ≤ 1 && 0 ≤ x[2] ≤ 1
 center(::Type{ReferenceSquare}) = SVector(0.5,0.5)
 center(::ReferenceSquare)       = SVector(0.5,0.5)
+number_of_nodes(::Type{ReferenceSquare}) = 4
+number_of_nodes(::ReferenceSquare)       = 4
 
 """
     struct ReferenceTetrahedron
@@ -55,6 +61,8 @@ Singleton type representing the tetrahedron with vertices `(0,0,0),(0,0,1),(0,1,
 struct ReferenceTetrahedron <: AbstractReferenceShape{3} 
 end    
 Base.in(x,::ReferenceTetrahedron) = 0 ≤ x[1] ≤ 1 && 0 ≤ x[2] ≤ 1 - x[1] && 0 ≤ x[3] ≤ 1 - x[1] - x[2]
+number_of_nodes(::Type{ReferenceTetrahedron}) = 4
+number_of_nodes(::ReferenceTetrahedron)       = 4
 
 # TODO: generalize structs above to `ReferenceSimplex{N}` and
 # `ReferenceCuboid{N}`

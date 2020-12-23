@@ -66,7 +66,7 @@ function integrate(f,::Type{ReferenceSquare})
 end    
 
 # hacky way to compute integration over reference triangles. Only used for
-# testing purposes to avoid having to compute integrals analyically when testing.
+# testing purposes to avoid having to compute integrals analytically when testing.
 function integrate(f,::Type{ReferenceTriangle})
     I    = x -> quadgk(y->f(SVector(x,y)),0,1-x)[1]
     out  = quadgk(I,0,1)[1]
@@ -169,7 +169,7 @@ GaussLegendre(n::Int) = GaussLegendre{n}()
 
 function (q::GaussLegendre{N})() where {N}
     x,w  = gauss(N) # This is a quadgk function. Gives integral in [-1,1]. Converted to [0,1] below
-    xs   = svector(i->(0.5*(x[i]+1)),N) 
+    xs   = svector(i->SVector(0.5*(x[i]+1)),N) 
     ws   = svector(i->w[i]/2,N)
     return xs,ws
 end

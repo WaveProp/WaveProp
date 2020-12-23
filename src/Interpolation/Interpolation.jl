@@ -13,7 +13,9 @@ module Interpolation
         MonomialBasis,
         vandermond,
         lagrange_basis,
-        LagrangeBasis
+        PolynomialBasis,
+        LagrangeBasis, gradLagrangeBasis,
+        trace, grad
 
     include("lagrange.jl")
     include("monomial.jl")

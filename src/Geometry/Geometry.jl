@@ -62,6 +62,7 @@ export
     radius, 
     low_corner,
     high_corner,
-    measure
+    measure,
+    number_of_nodes
     
 end # module

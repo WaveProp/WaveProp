@@ -187,21 +187,22 @@ end
 
 Use `gmsh` API to generate an axis aligned box. Return `Ω::Domain` and `M::GenericMesh`.
 """
-function gmsh_box(;origin=(0., 0., 0.),widths=(1., 1., 1.))
-    gmsh.initialize()
-    gmsh.model.occ.addBox(origin..., widths...)
-    gmsh.model.occ.synchronize()
-    gmsh.model.mesh.generate()
-    Ω = _initialize_domain(3)
-    M = _initialize_mesh(Ω)
-    gmsh.finalize()
+function gmsh_box(;origin=(0., 0., 0.),widths=(1., 1., 1.),h=0.1)
+    @gmsh begin
+        _gmsh_set_meshsize(h)
+        gmsh.model.occ.addBox(origin..., widths...)
+        gmsh.model.occ.synchronize()
+        gmsh.model.mesh.generate()
+        Ω = _initialize_domain(3)
+        M = _initialize_mesh(Ω)
+    end
     return Ω, M
 end    
 
 """ 
     gmsh_rectangle(;origin,widths)
 """
-function gmsh_rectangle(;origin,dx,dy,dim,h)
+function gmsh_rectangle(;origin=(0.,0.,0.),dx=1,dy=1,dim=2,h=0.1)
     @gmsh begin
         _gmsh_set_meshsize(h)
         gmsh.model.occ.addRectangle(origin...,dx,dy)

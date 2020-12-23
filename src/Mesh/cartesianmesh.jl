@@ -90,7 +90,7 @@ meshsize(g::CartesianMesh)      = step.(grid1d(g))
 meshsize(g::CartesianMesh,dim)  = step(grid1d(g,dim))
 
 Base.size(g::CartesianMesh) = length.(g.grid1d)
-Base.length(g) = prod(size(g))
+Base.length(g::CartesianMesh) = prod(size(g))
 
 function Base.getindex(g::CartesianMesh,I) 
     N = dimension(g)    

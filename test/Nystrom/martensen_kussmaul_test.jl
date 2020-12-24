@@ -61,7 +61,7 @@ end
     geo  = ParametricEntity(ReferenceLine()) do u
         SVector(cos(2π*u[1]),sin(2π*u[1]))
     end  
-    bdy  = ParametricBody{2,1,Float64}([geo])
+    bdy  = ParametricBody([geo])
     Ω,M  = meshgen(bdy)
     Γ    = boundary(Ω)
     # generate a Nystrom mesh with trapezoidal quadrature

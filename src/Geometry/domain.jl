@@ -1,13 +1,13 @@
 """
     struct Domain
 
-Represent a physical domain as a union of elementary entities.
+Represent a physical domain as a union of entities.
 """
 struct Domain
-    entities::Vector{ElementaryEntity}
+    entities::Vector{AbstractEntity}
 end
-Domain(ω::ElementaryEntity) = Domain([ω,])
-Domain() = Domain(ElementaryEntity[])
+Domain(ω::AbstractEntity) = Domain([ω,])
+Domain() = Domain(AbstractEntity[])
 
 """
     entities(Ω::Domain)
@@ -47,10 +47,10 @@ skeleton(Ω::Domain) = union(Domain.(boundary.(entities(Ω)))...)
 """
     ===(Ω1::Domain,Ω2::Domain)
 
-Two `Domain`s are equal if all their entities are equal.
+Two `Domain`s are equal if all their entities are equal (regardless of order). 
 """
 function Base.:(==)(Ω1::Domain, Ω2::Domain)
-    return entities(Ω1) == entities(Ω2)
+    return Set(entities(Ω1)) == Set(entities(Ω2))
 end
 
 
@@ -96,14 +96,15 @@ end
 """
     union(Ωs::Domain...)
 
-Union of domains. This done perform a union on the true geometric objects in
+Union of domains. This does not perform a union on the true geometric objects in
 `entities(Ω)`, but simply on their identification through `(dim,tag)`. 
 """
 function Base.union(Ω1::Domain,Ωs::Domain...)
-    Domain(Vector{ElementaryEntity}(union(entities(Ω1),entities.(Ωs)...)))
+    Domain(Vector{AbstractEntity}(unique(vcat(entities(Ω1),entities.(Ωs)...))))
 end    
 Base.union(Ω::Domain) = Domain(unique(entities(Ω)))
 
+# NOTE: this version was replaced due to type piracy
 # function Base.union(Ωs::Domain...)
 #     Domain(Vector{ElementaryEntity}(unique(vcat(entities.(Ωs)...))))
 # end
@@ -162,7 +163,7 @@ end
 """Return the internal boundaries inside a domain."""
 function internal_boundary(Ω::Domain)
     Ω1 = Domain(Ω[1])
-    γ = Domain()
+    γ  = Domain()
     for ω2 in Ω[2:end]
         Ω2 = Domain(ω2)
         γ1 = Domain(vcat(boundary.(entities(Ω1))...))
@@ -185,31 +186,31 @@ Return a domain comprising the external boundary of Ω.
 
 See also: [`external_boundary`](@ref)
 """
-boundary(Ω) = external_boundary(Ω)
+boundary(Ω::Domain) = external_boundary(Ω::Domain)
 
 """
 Return all tags of the elementary entities in the domain `Ω` corresponding to the dimension `d`.
 """
-function tags(Ω::Domain, d::Integer)
+function keys(Ω::Domain, d::Integer)
     if isempty(Ω)
         return Tuple{Int64,Int64}[]
     elseif d == geometric_dimension(Ω)
-        return Vector{Tuple{Int64,Int64}}(vcat(tag.(entities(Ω))))
+        return Vector{Tuple{Int64,Int64}}(vcat(key.(entities(Ω))))
     elseif d < geometric_dimension(Ω)
-        return unique(tags(skeleton(Ω),d))
+        return unique(keys(skeleton(Ω),d))
     else
         error("Asking for tags with dimension > dimension of domain")
     end
 end
-function tags(Ω::Domain)
-    isempty(Ω) ? Tuple{Int64, Int64}[] : tags(Ω, geometric_dimension(Ω))
+function keys(Ω::Domain)
+    isempty(Ω) ? Tuple{Int64, Int64}[] : keys(Ω, geometric_dimension(Ω))
 end
 
 """
 Return all tags of the elementary entities in the domain `Ω` corresponding to the dimensions contained in `dims`.
 """
-function tags(Ω::Domain, dims::Vector{T}) where T <: Integer
+function keys(Ω::Domain, dims::Vector{T}) where T <: Integer
     tgs = Vector{Tuple{Int64, Int64}}(undef, 0)
-    for d in dims push!(tgs, tags(Ω, d)...) end
+    for d in dims push!(tgs, keys(Ω, d)...) end
     return tgs
 end

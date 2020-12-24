@@ -2,26 +2,27 @@ using Test
 using WaveProp.Utils
 using WaveProp.Nystrom
 using WaveProp.Geometry
-using WaveProp.Integration
+using WaveProp.Mesh
 using WaveProp.Integration
 using QuadGK
 using LinearAlgebra
 using Plots
 
-using WaveProp.Nystrom: _auxiliary_quadrature, _auxiliary_expansion_surface,
-_auxiliary_integration_matrix, _auxiliary_interpolation_matrix, combined_field_coefficients
-
 ## test 
 pde   = Laplace(;dim=2)
 h     = 0.1
-τ     = line(SVector(0,0),SVector(h,0))
-# τ     = ParametricLine() do u
-#     return SVector(h*u,(h*u)^2)
-# end    
+τ     = LagrangeLine((0,0),(h,0))
+plot(τ)
+Γᶜ    = Nystrom.auxiliary_domain_ldim(τ,0.1)
+[plot!(Γ) for Γ in Γᶜ]
+plot!()
+# plot!(size = (2000,2000))
+
+
 k     = SingleLayerKernel(pde)
 n     = 10
-qrule  = GaussLegendre{n}()
-qinner = GaussLegendre{n}()
+qrule  = GaussLegendre(n)
+qinner = GaussLegendre(n)
 s     = 0.53
 x     = τ(s)
 

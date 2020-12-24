@@ -64,8 +64,21 @@ jacobian(f::Kress,x) = derivative(f,x) |> SMatrix{1,1}
 """
     struct KressP{P} <: SingularityHandler{ReferenceLine}
     
-Like [`Kress`](@ref), this change of variables maps the interval `[-1,1]` onto
-itself, but derivatives of the transformation vanish at both endpoints. 
+Like [`Kress`](@ref), this change of variables maps the interval `[0,1]` onto
+itself, but the first `P` derivatives of the transformation vanish at **both**
+endpoints. 
+
+This change of variables can be used to *periodize* integrals in the following
+sense. Suppose we wish to compute the integral of `f(x)` from `0` to `1` where
+`f is not a `1-periodic function. If `ϕ` is an object of type `KressP`, then
+using it as a change of variables in the integration yields a similar integral
+from `0` to `1` (the interval `0≤0≤1` is mappend onto itself), but with
+integrand given by `g(x) = f(ϕ(x))ϕ'(x)`. Since `ϕ'` vanishes (together with `P`
+of its derivatives), the function `g(x)` is now periodic (up to derivatives of
+order up to `P`) at the endpoints. Thus quadrature rules designed for periodic
+functions like the [`TrapezoidalP`](@ref) can be used to obtain high order
+convergence of `g`, which in turn yields a modified quadrature rule when viewed
+as a quadrature rule for `f`. 
 """
 struct KressP{P} <: AbstractSingularityHandler{ReferenceLine}
 end
@@ -90,60 +103,14 @@ end
 
 jacobian(f::KressP,x) = derivative(f,x) |> SMatrix{1,1}
 
-"""
-    Window{A,B,S}
 
-Change of variables mapping `[0,1]` to `[0,1]` with the following properties:
-- smooth (infinitely differentiable) on `[0,1]`
-- all derivatives vanish on both `x=0` and `x=1`
-- derivative of the transoformation is exactly 1 between `A` and `B`
-"""
-struct Window{A,B,S} <: AbstractSingularityHandler{ReferenceLine}
-end
-Window() = Window{1,1,5}()
-
-domain(::Window) = ReferenceLine()
-range(::Window)  = ReferenceLine()
-
-normalization(w::Window) = quadgk(t->_derivative(w,t),0,1,rtol=1e-16)[1]
-
-function (f::Window{A,B,S})(x) where {A,B,S}
-    x == 0 && return 0.0
-    I,_ = quadgk(t->derivative(f,t),0,x)  
-    return I  
-    # FIXME: the current way of computing the values of the `Window` change of
-    # variables is very innefficient. Could use a e.g. `cumsum`. 
-end    
-
-function derivative(f::Window,x)
-    x==0 && (return 0.0) 
-    x==1 && (return 0.0)
-    _derivative(f,x) / normalization(f)
-end    
-
-function _derivative(f::Window{A,B,S},x) where {A,B,S}
-    if  A ≤ x ≤ B
-        return 1
-    elseif 0 ≤ x < A
-        u = (A - x) / (A)
-        return exp(S*exp(-1/u)/(u-1))
-    elseif B < x ≤ 1
-        u = (x - B) / (1 - B)
-        return exp(S*exp(-1/u)/(u-1))
-    else
-        return 0
-    end
-end    
-
-jacobian(f::Window,x) = derivative(f,x) |> SMatrix{1,1}
 
 """
     struct Duffy <: AbstractSingularityHandler{RefereceTriangle}
-    
-Change of variables mapping the `ReferenceSquare` to the `RefereceTriangle`
-with the property that the jacobian vanishes at the `(1,0)` vertex of the
-triangle.
-≤
+
+Change of variables mapping the `ReferenceSquare` to the `RefereceTriangle` with
+the property that the jacobian vanishes at the `(1,0)` vertex of the triangle.
+
 Useful for integrating functions with a singularity on the `(1,0)` edge of the
 reference triangle.
 """
@@ -160,6 +127,14 @@ function jacobian(::Duffy,u)
     SMatrix{2,2,Float64}(1,0,-u[2][1],(1-u[1][1]))
 end    
 
+# TODO: generalize to `N` dimensions
+"""
+    struct TensorProductSingularityHandler{S} <:
+    AbstractSingularityHandler{ReferenceSquare}
+        
+A tensor product of two one-dimensional `SingularityHandler`s for performing
+integration over the `ReferenceSquare`.
+"""
 struct TensorProductSingularityHandler{S} <: AbstractSingularityHandler{ReferenceSquare} 
     shandler::S
 end
@@ -198,3 +173,50 @@ end
 #         f(xi)*dxi
 #     end
 # end
+
+# """
+#     Window{A,B,S}
+
+# Change of variables mapping `[0,1]` to `[0,1]` with the following properties:
+# - smooth (infinitely differentiable) on `[0,1]`
+# - all derivatives vanish on both `x=0` and `x=1`
+# - derivative of the transoformation is exactly 1 between `A` and `B`
+# """
+# struct Window{A,B,S} <: AbstractSingularityHandler{ReferenceLine}
+# end
+# Window() = Window{1,1,5}()
+
+# domain(::Window) = ReferenceLine()
+# range(::Window)  = ReferenceLine()
+
+# normalization(w::Window) = quadgk(t->_derivative(w,t),0,1,rtol=1e-16)[1]
+
+# function (f::Window{A,B,S})(x) where {A,B,S}
+#     x == 0 && return 0.0
+#     I,_ = quadgk(t->derivative(f,t),0,x)  
+#     return I  
+#     # FIXME: the current way of computing the values of the `Window` change of
+#     # variables is very innefficient. Could use a e.g. `cumsum`. 
+# end    
+
+# function derivative(f::Window,x)
+#     x==0 && (return 0.0) 
+#     x==1 && (return 0.0)
+#     _derivative(f,x) / normalization(f)
+# end    
+
+# function _derivative(f::Window{A,B,S},x) where {A,B,S}
+#     if  A ≤ x ≤ B
+#         return 1
+#     elseif 0 ≤ x < A
+#         u = (A - x) / (A)
+#         return exp(S*exp(-1/u)/(u-1))
+#     elseif B < x ≤ 1
+#         u = (x - B) / (1 - B)
+#         return exp(S*exp(-1/u)/(u-1))
+#     else
+#         return 0
+#     end
+# end    
+
+# jacobian(f::Window,x) = derivative(f,x) |> SMatrix{1,1}

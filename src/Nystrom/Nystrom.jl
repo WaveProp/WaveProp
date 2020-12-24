@@ -30,6 +30,7 @@ include("density.jl")
 include("potential.jl")
 include("integraloperators.jl")
 include("dim.jl")
+include("ldim.jl")
 include("assemble.jl")
 include("martensen_kussmaul.jl")
 

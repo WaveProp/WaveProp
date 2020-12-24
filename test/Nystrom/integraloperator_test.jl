@@ -45,7 +45,7 @@ end
     u    = (x)   -> SingleLayerKernel(pde)(xout,x)
     dudn = (x,n) -> DoubleLayerKernel(pde)(xout,x,n)
     Ω,M   = WaveProp.IO.gmsh_disk(dim=1,h=0.01)
-    M    = GenericMesh{2}(M)
+    M    = convert_to_2d(M)
     Γ     = boundary(Ω)
     mesh = NystromMesh(view(M,Γ);order=1)
     γ₀u   = γ₀(u,mesh)

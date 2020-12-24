@@ -167,11 +167,11 @@ struct GaussLegendre{N} <: AbstractQuadratureRule{ReferenceLine} end
 
 GaussLegendre(n::Int) = GaussLegendre{n}()
 
-function (q::GaussLegendre{N})() where {N}
+@generated function (q::GaussLegendre{N})() where {N}
     x,w  = gauss(N) # This is a quadgk function. Gives integral in [-1,1]. Converted to [0,1] below
     xs   = svector(i->SVector(0.5*(x[i]+1)),N) 
     ws   = svector(i->w[i]/2,N)
-    return xs,ws
+    return :($xs,$ws)
 end
  
 """

@@ -391,9 +391,9 @@ jacobian(psurf::ParametricElement,s) = jacobian(psurf,SVector(s))
 const ParametricLine  = ParametricElement{HyperRectangle{1,Float64}}
 
 # higher order derivatives
-derivative(l::ParametricLine,s)  = ForwardDiff.derivative(l,s)
-derivative2(l::ParametricLine,s) = ForwardDiff.derivative(s -> derivative(l,s),s)
-derivative3(l::ParametricLine,s) = ForwardDiff.derivative(s -> derivative2(l,s),s)
+derivative(l::ParametricLine,s)  = ForwardDiff.derivative(l,s[1])
+derivative2(l::ParametricLine,s) = ForwardDiff.derivative(s -> derivative(l,s[1]),s[1])
+derivative3(l::ParametricLine,s) = ForwardDiff.derivative(s -> derivative2(l,s[1]),s[1])
 
 function Integration.integrate(f,q::AbstractQuadratureRule,el::AbstractElement)
     x,w = q(el)
@@ -401,7 +401,7 @@ function Integration.integrate(f,q::AbstractQuadratureRule,el::AbstractElement)
 end 
 
 function Integration.integrate(f,el::AbstractElement{<:ReferenceLine};kwargs...)
-    g = (u) -> f(el(u))*measure(el,u)
+    g = (u) -> f(el(u)...)*measure(el,u)
     integrate(g,domain(el);kwargs...)
 end    
 

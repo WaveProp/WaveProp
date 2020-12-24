@@ -21,10 +21,10 @@ domain(::IMT) = ReferenceLine()
 range(::IMT)  = ReferenceLine()
 
 function (f::IMT{A,P})(x) where {A,P}
-    exp(A*(1-1/x^P))
+    exp(A*(1-1/x[1]^P))
 end
 
-derivative(f::IMT{A,P},x) where {A,P} = f(x) * A*P*1 / x^(P+1)
+derivative(f::IMT{A,P},x) where {A,P} = f(x) * A*P*1 / x[1]^(P+1)
 
 jacobian(f::IMT,x) = derivative(f,x) |> SMatrix{1,1}
 
@@ -44,12 +44,14 @@ range(k::Kress)  = ReferenceLine()
 # NOTE: fastmath is needed here to allow for various algebraic simplifications
 # which are not exact in floating arithmetic. Maybe reorder the operations *by
 # hand* to avoid having to use fastmath? In any case, benchmark first.
-@fastmath function (f::Kress{P})(x) where {P}
+@fastmath function (f::Kress{P})(y) where {P}
+    x = y[1]
     v = (x) -> (1/P - 1/2)*((1-x))^3 + 1/P*((x-1)) + 1/2
     return 2v(x)^P / (v(x)^P + v(2-x)^P)
 end
 
-@fastmath function derivative(f::Kress{P},x) where {P}
+@fastmath function derivative(f::Kress{P},y) where {P}
+    x = y[1]
     v = (x) -> (1/P - 1/2)*((1-x))^3 + 1/P*((x-1)) + 1/2
     vp = (x) -> -3*(1/P - 1/2)*((1-x))^2 + 1/P
     return 2 * (P*v(x)^(P-1)*vp(x) * (v(x)^P + v(2-x)^P) - (P*v(x)^(P-1)*vp(x) - P*v(2-x)^(P-1)*vp(2-x) ) * v(x)^P ) /
@@ -72,12 +74,14 @@ KressP(;order=5) = KressP{order}()
 domain(k::KressP) = ReferenceLine()
 range(k::KressP)  = ReferenceLine()
 
-@fastmath function (f::KressP{P})(x) where {P}
+@fastmath function (f::KressP{P})(y) where {P}
+    x = y[1]
     v = (x) -> (1/P - 1/2)*((1-2x))^3 + 1/P*((2x-1)) + 1/2
     return v(x)^P / (v(x)^P + v(1-x)^P)
 end
 
-@fastmath function derivative(f::KressP{P},x) where {P}
+@fastmath function derivative(f::KressP{P},y) where {P}
+    x = y[1]
     v =  (x) -> (1/P - 1/2)*((1-2x))^3 + 1/P*((2x-1)) + 1/2    
     vp = (x) -> -6*(1/P - 1/2)*((1-2x))^2 + 2/P
     return (P*v(x)^(P-1)*vp(x) * (v(x)^P + v(1-x)^P) - (P*v(x)^(P-1)*vp(x) - P*v(1-x)^(P-1)*vp(1-x) ) * v(x)^P ) /
@@ -149,11 +153,11 @@ domain(::Duffy) = ReferenceSquare()
 range(::Duffy)  = ReferenceTriangle()
 
 function (::Duffy)(u)
-    SVector(u[1],(1-u[1])*u[2])
+    SVector(u[1][1],(1-u[1][1])*u[2][1])
 end    
 
 function jacobian(::Duffy,u)
-    SMatrix{2,2,Float64}(1,0,-u[2],(1-u[1]))
+    SMatrix{2,2,Float64}(1,0,-u[2][1],(1-u[1][1]))
 end    
 
 struct TensorProductSingularityHandler{S} <: AbstractSingularityHandler{ReferenceSquare} 

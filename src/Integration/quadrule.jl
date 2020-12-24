@@ -42,7 +42,7 @@ end
 
 function integrate(f,x,w)
     sum(zip(x,w)) do (x,w)
-        f(x)*prod(w)
+        f(x...)*prod(w)
     end
 end    
 
@@ -56,19 +56,19 @@ Use `quadgk` to (adaptively) integrate a function over the reference shape `s`.
 This is used mostly for testing purposes. It returns only the value of the
 integral (i.e. without the error estimate).
 """
-integrate(f,l::AbstractReferenceShape;kwargs...)     = integrate(f,typeof(l);kwargs...)
+integrate(f,l::AbstractReferenceShape;kwargs...) = integrate(f,typeof(l);kwargs...)
 
 integrate(f,::Type{ReferenceLine};kwargs...) = quadgk(f,0,1;kwargs...)[1]
 
 function integrate(f,::Type{ReferenceSquare})
-    I    = x-> quadgk(y->f(SVector(x,y)),0,1)[1]
+    I    = x-> quadgk(y->f(x,y),0,1)[1]
     out  = quadgk(I,0,1)[1]
 end    
 
 # hacky way to compute integration over reference triangles. Only used for
 # testing purposes to avoid having to compute integrals analytically when testing.
 function integrate(f,::Type{ReferenceTriangle})
-    I    = x -> quadgk(y->f(SVector(x,y)),0,1-x)[1]
+    I    = x -> quadgk(y->f(x,y),0,1-x)[1]
     out  = quadgk(I,0,1)[1]
 end
 
@@ -100,7 +100,7 @@ function (q::Trapezoidal{N})() where {N}
     w[1]   = h/2
     w[end] = h/2
     # convert to static arrays
-    xs = svector(i->(0.5*(x[i]+1)),N) 
+    xs = svector(i->SVector(0.5*(x[i]+1)),N) 
     ws = svector(i->w[i]/2,N)
     return xs,ws
 end   
@@ -118,8 +118,8 @@ TrapezoidalP(n::Int) = TrapezoidalP{n}()
 # open periodic trapezoidal rule on [0,1]
 function _trapezoidalP(n)    
     h = 1/n
-    x = [(k-0.5)*h for k in 1:n]
-    w = [h   for k in 1:n]
+    x = [SVector((k-0.5)*h) for k in 1:n]
+    w = [h for k in 1:n]
     return x,w
 end    
 
@@ -152,7 +152,7 @@ function (q::Fejer{N})() where {N}
         end
         w[j] = 2/N * (1 - 2*tmp)
     end
-    xs = svector(i->(0.5*(x[i]+1)),N) 
+    xs = svector(i->SVector(0.5*(x[i]+1)),N) 
     ws = svector(i->w[i]/2,N)
     return xs,ws
 end

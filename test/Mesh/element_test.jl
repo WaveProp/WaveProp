@@ -86,7 +86,7 @@ end
     qstd = GaussLegendre(20)    
     el   = LagrangeLine((0,0),(1,1),(1/2,1/4))
     # simple test on smooth integrand
-    f     = x->cos(x[1])
+    f     = (x,y)->cos(x)
     I     = integrate(f,el)
     for shand in [IMT(), Kress()]
         q     = SingularQuadratureRule(qstd,shand)
@@ -95,7 +95,7 @@ end
         @test isapprox(Ia,I,rtol=1e-6)
     end
     # non-smooth integrand
-    f     = x->log(abs(x[1])*cos(x[1]))
+    f     = (x,y)->log(abs(x)*cos(x))
     I     = integrate(f,el)
     for shand in [IMT(), Kress()]
         q     = SingularQuadratureRule(qstd,shand)    
@@ -114,7 +114,7 @@ end
     el   = LagrangeLine((0,0),(1,1),(1/2,1/4))
     vs   = 1/3
     xs   = el(vs)
-    f    = x -> x==xs ? 0.0 : log(norm(x-xs)*cos(x[1]))
+    f    = (x,y) -> SVector(x,y)==xs ? 0.0 : log(norm(SVector(x,y)-xs)*cos(x))
     I    = integrate(f,el)
     for shand in [IMT(), Kress()]
         q     = SingularQuadratureRule(qstd,shand)    

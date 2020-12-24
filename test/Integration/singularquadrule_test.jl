@@ -31,19 +31,19 @@ end
     qsin  = SingularQuadratureRule(qstd,duffy)
     x,w  = qsin()
     # regular kernel
-    k    = (x) -> cos(x[1])*sin(x[2])
+    k    = (x,y) -> cos(x)*sin(y)
     I    = integrate(k,ReferenceTriangle)
     Ia   = integrate(k,qsin)
     @test isapprox(I,Ia,rtol=1e-5)
     # singular kernel at right vertex
     s    = SVector(1,0) 
-    k    = (x) -> 1/norm(x-s)
+    k    = (x,y) -> 1/norm(SVector(x, y)-s)
     Ia   = integrate(k,qsin) 
     I    = integrate(k,ReferenceTriangle) # uses quadgk
     @test isapprox(I,Ia,rtol=1e-5)
     # singular kernel at wrong vertex (should not be accurate, see test below)
     s    = SVector(0,1) 
-    k    = (x) -> 1/norm(x-s)
+    k    = (x,y) -> 1/norm(SVector(x, y)-s)
     I    = integrate(k,ReferenceTriangle)
     Ia   = integrate(k,qsin)
     @test !isapprox(I,Ia,rtol=1e-5)

@@ -75,8 +75,8 @@ end
     qy  = Fejer{M}()
     q   = TensorProductQuadrature(qx,qy)
     a,b = 2*N-1,M-1 # maximum integration order of monomials
-    @test integrate(x->1,q) ≈ 1
-    @test integrate(x->x[1]^a*x[2]^b,q) ≈ 1/(a+1)*1/(b+1)
+    @test integrate((x,y)->1,q) ≈ 1
+    @test integrate((x,y)->x[1]^a*y[1]^b,q) ≈ 1/(a+1)*1/(b+1)
 end
 
 

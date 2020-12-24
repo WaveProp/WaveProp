@@ -6,7 +6,7 @@ Abstract shape given by the image of a parametrization with domain
 
 The type parameter `T` represents how points are represented (e.g.
 SVector{3,Float64} for a typical point in three dimensions). Note that the
-`ambient_dimension` must inferrable from the type `T` alone. 
+`ambient_dimension` must be inferrable from the type `T` alone. 
 
 The geometric dimension of the element can be obtained from the geometric
 dimension of its domain `D`. 
@@ -278,7 +278,7 @@ function jacobian(el::LagrangeElement{ReferenceLine,2}, u)
     @assert length(u) == 1
     @assert u ∈ ReferenceLine()    
     x = nodes(el)
-    return SMatrix{N,1}((x[2] - x[1])...)
+    return SMatrix{N,1}(x[2] - x[1])
 end    
 
 function jacobian(el::LagrangeElement{ReferenceTriangle,3}, u) 
@@ -362,7 +362,7 @@ function (el::ParametricElement)(u)
     rec = preimage(el)
     lc  = low_corner(rec)
     hc  = high_corner(rec)
-    N = geometric_dimension(el)
+    N   = geometric_dimension(el)
     # map from reference domain to domain of element (confusing...)
     v = svector(N) do dim
         lc[dim] + (hc[dim]-lc[dim])*u[dim]
@@ -395,14 +395,24 @@ derivative(l::ParametricLine,s)  = ForwardDiff.derivative(l,s)
 derivative2(l::ParametricLine,s) = ForwardDiff.derivative(s -> derivative(l,s),s)
 derivative3(l::ParametricLine,s) = ForwardDiff.derivative(s -> derivative2(l,s),s)
 
-function Integration.integrate(f,q::AbstractQuadratureRule,el::AbstractElement)
+derivative(l::LagrangeLine,s)  = ForwardDiff.derivative(l,s)
+derivative2(l::LagrangeLine,s) = ForwardDiff.derivative(s -> derivative(l,s),s)
+derivative3(l::LagrangeLine,s) = ForwardDiff.derivative(s -> derivative2(l,s),s)
+
+function integrate(f,q::AbstractQuadratureRule,el::AbstractElement)
     x,w = q(el)
     integrate(f,x,w)
 end 
 
-function Integration.integrate(f,el::AbstractElement{<:ReferenceLine};kwargs...)
+function integrate(f,el::AbstractElement{<:ReferenceLine};kwargs...)
     g = (u) -> f(el(u))*measure(el,u)
     integrate(g,domain(el);kwargs...)
+end    
+
+function integrate(f,els::NTuple;kwargs...)
+    sum(els) do el
+        integrate(f,el)    
+    end
 end    
 
 function (q::SingularQuadratureRule)(el::AbstractElement,s)

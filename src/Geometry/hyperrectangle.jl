@@ -1,7 +1,8 @@
 """
     HyperRectangle{N,T}
 
-Hyperrectangle in `N` dimensions given by `low_corner::SVector{N,T}` and `high_corner::SVector{N,T}`
+Hyperrectangle in `N` dimensions given by `low_corner::SVector{N,T}` and
+`high_corner::SVector{N,T}`
 """
 struct HyperRectangle{N,T}
     low_corner::SVector{N,T}

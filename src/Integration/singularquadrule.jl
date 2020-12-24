@@ -8,14 +8,17 @@ A singular quadrature is rule is composed of a *regular* quadrature rule (e.g.
 `GaussLegendre`) and a [`SingularityHandler`](@ref) to transform the regular
 quadrature. The regular quadrature rule generates nodes and weights on the
 `domain(sing_handler)`, and those are mapped into an appropriate quadrature over
-the `D = range(sing_handler)` using the singularity handler. 
+`D = range(sing_handler)` using the singularity handler. 
 
-Besides the methods `(q::AbstractQuadratureRule)()` and `(q::AbstractQuadratureRule)(el::AbstractElement)` described in
-[`AbstractQuadratureRule`](@ref), 
-singular quadrature objects also support
-`(q::SingularQuadratureRule)(el::AbstractElement,s)`, which returns nodes `x` and
-weights `w` for integrating a function over `el` with a possible (integrable)
-singularity at parametric location `s ∈ D`. 
+Besides the methods `(q::AbstractQuadratureRule)()` and
+`(q::AbstractQuadratureRule)(el::AbstractElement)` described in
+[`AbstractQuadratureRule`](@ref), singular quadrature objects also support
+`(q::SingularQuadratureRule)(el::AbstractElement,s)`, which returns nodes `x`
+and weights `w` for integrating a function over `el` with a possible
+(integrable) singularity at parametric location `s ∈ D`. In practice this
+typically means that the generated singular quadrature will accumulate points
+near `s`, and the exact distribution of how the points are accumulated depends
+on the `singularity_handler` employed. 
 """
 struct SingularQuadratureRule{D,Q,S} <: AbstractQuadratureRule{D}
     qrule::Q
@@ -56,7 +59,7 @@ end
 Use `q` to produce nodes `x` and weigths `w` for integrating a function over
 `domain(q)` with a possible singularity at `s ∈ domain(q)`.
 
-The actual implementation depends closely on the type of `q`.
+The actual implementation depends on the type of `q`.
 """
 function singular_quadrature end
 

@@ -21,6 +21,7 @@ end
 @testset "Mesh quadrature" begin
     @testset "Cube" begin
         # generate a mesh
+        Geometry.clear!()
         (lx,ly,lz) = widths = (1.,1.,2.)
         Ω, M  = WaveProp.IO.gmsh_box(;widths=widths)
         ∂Ω = boundary(Ω)
@@ -41,6 +42,7 @@ end
     end
     @testset "Sphere" begin
         r = 0.5
+        Geometry.clear!()
         Ω, M = WaveProp.IO.gmsh_sphere(;radius=r)
         Γ = boundary(Ω)
         A = 4π*r^2
@@ -56,8 +58,9 @@ end
     end
     @testset "Disk" begin
         r = rx = ry = 0.5
+        Geometry.clear!()
         Ω, M = WaveProp.IO.gmsh_disk(;rx,ry)
-        M    = GenericMesh{2}(M) # project gmsh mesh into 2d
+        M    = convert_to_2d(M) # project gmsh mesh into 2d
         Γ = boundary(Ω)
         mesh = NystromMesh(view(M,Ω),order=2,compute_normal=false)
         A = π*r^2

@@ -59,7 +59,7 @@ function Integration.singular_weights(iop::IntegralOperator,qstd::AbstractQuadra
     X,Y = iop.X, iop.Y    
     T = eltype(iop)    
     K = iop.kernel
-    dict_near = near_interaction_list(X,Y;dim=ambient_dimension(Y)-1,atol=0.1)
+    dict_near = near_interaction_list(qnodes(X),Y;dim=ambient_dimension(Y)-1,atol=0.1)
     Is    = Int[]
     Js    = Int[]
     Vs    = T[]

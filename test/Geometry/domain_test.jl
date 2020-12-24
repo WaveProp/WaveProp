@@ -1,4 +1,5 @@
 using Test
+using WaveProp
 using WaveProp.Geometry
 
 # Two points
@@ -16,7 +17,7 @@ s2 = ElementaryEntity(2, 2, ElementaryEntity[l2, l3])
 surfaces = [s1, s2]
 
 @testset "ElementaryEntity" begin
-    @test tag(p1) == (0,1)
+    @test key(p1) == (0,1)
     @test geometric_dimension(p1) == 0
     @test boundary(l1) == points
     for e in vcat(points, lines, surfaces)
@@ -52,6 +53,7 @@ end
     @test union(Domain.(lines)...) == skeleton(Ω)
     @test Domain(l2) == internal_boundary(Ω)
     @test union(Domain(l1), Domain(l3)) == external_boundary(Ω)
-    @test tags(Ω, 1) == [(1,1), (1,2), (1,3)]
-    @test tags(Ω) == [(2,1), (2,2)]
+    @test keys(Ω, 1) == [(1,1), (1,2), (1,3)]
+    @test keys(Ω) == [(2,1), (2,2)]
+    @test Domain([s1,s2]) == Domain([s2,s1])
 end

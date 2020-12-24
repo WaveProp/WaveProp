@@ -13,7 +13,7 @@ using WaveProp.Mesh
     u    = (x)   -> SingleLayerKernel(pde)(xout,x)
     dudn = (x,n) -> DoubleLayerKernel(pde)(xout,x,n)
     Ω,mesh = WaveProp.IO.gmsh_disk(dim=1,h=0.025,order=2)
-    mesh   = GenericMesh{2}(mesh)
+    mesh   = convert_to_2d(mesh)
     compute_quadrature!(mesh,dim=1,order=3,need_normal=true)
     sum(mesh.qweights)
     γ₀u   = γ₀(u,mesh)

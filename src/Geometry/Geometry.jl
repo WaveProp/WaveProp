@@ -1,11 +1,11 @@
 """
-    Geometry
+    module Geometry
 
-This module defines the basic geometrical objects manipulated in `WaveProp`.
+This module defines basic geometrical objects.
 """
 module Geometry 
 
-import Base: ==, length, in, iterate, getindex, lastindex, isempty, eltype
+import Base: ==, length, in, iterate, getindex, lastindex, isempty, eltype, keys
 import Base: union, setdiff, intersect, issubset
 
 using DocStringExtensions
@@ -42,8 +42,7 @@ export
     SVector, 
     # functions
     entities, 
-    tag, 
-    tags, 
+    key, 
     remove, 
     assertequaldim,
     boundary, 
@@ -62,6 +61,8 @@ export
     radius, 
     low_corner,
     high_corner,
-    measure
-    
+    # global variables
+    TAGS,
+    ENTITIES
+        
 end # module

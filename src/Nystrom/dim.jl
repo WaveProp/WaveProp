@@ -116,7 +116,7 @@ function _singular_weights_dim(iop::IntegralOperator,γ₀B,γ₁B,R)
     num_basis = size(γ₀B,2)
     a,b = combined_field_coefficients(iop)
     # we now have the residue R. For the correction we need the coefficients.
-    dict_near = near_interaction_list(X,Y;dim=ambient_dimension(Y)-1,atol=1e-16)
+    dict_near = near_interaction_list(qnodes(X),Y;atol=0)
     Is = Int[]
     Js = Int[]
     Vs = T[]
@@ -126,9 +126,9 @@ function _singular_weights_dim(iop::IntegralOperator,γ₀B,γ₁B,R)
         M                     = Matrix{T}(undef,2*num_qnodes,num_basis)
         @assert length(list_near) == num_els
         for n in 1:num_els
-            j_glob                = el2qnodes[:,n]
-            M[1:num_qnodes,:]     = γ₀B[j_glob,:]
-            M[num_qnodes+1:end,:] = γ₁B[j_glob,:]
+            j_glob                = @view el2qnodes[:,n]
+            M[1:num_qnodes,:]     = @view γ₀B[j_glob,:]
+            M[num_qnodes+1:end,:] = @view γ₁B[j_glob,:]
             F                     = qr(M)
             for (i,_) in list_near[n]
                 tmp  = (R[i:i,:]/F.R)*adjoint(F.Q)

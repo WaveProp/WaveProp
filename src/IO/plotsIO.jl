@@ -117,24 +117,58 @@ end
             end
         end        
     end    
+end   
+
+@recipe function f(mesh::GenericMesh,Ω::Domain)
+    view(mesh,Ω)    
+end
+    
+@recipe function f(mesh::SubMesh)
+    label --> ""        
+    grid   --> false
+    aspect_ratio --> :equal    
+    for E in etypes(mesh)
+        for el in elements(mesh,E)
+            @series begin 
+                el
+            end
+        end    
+    end
+end   
+
+# FIXME: write better recipes
+@recipe function f(el::LagrangeTriangle)
+    vtx = nodes(el)
+    for n in 1:3
+        is = n
+        ie = 1 + (n%3)
+        @series begin
+            [vtx[is],vtx[ie]]
+        end
+    end
 end    
 
-@recipe function f(ent::ParametricElement;gridsize=0.01)
-    par = ent.parametrization
+@recipe function f(el::LagrangeLine)
+    vtx = nodes(el)
+    [vtx[1],vtx[2]]
+end    
+
+@recipe function f(el::AbstractElement{ReferenceLine};npts=10)
     label --> ""
     grid   --> false
-    aspect_ratio --> :equal
-    d = domain(ent)
-    if d === ReferenceLine()
-        h       =  gridsize[1]
-        a       = ent.preimage.low_corner[1]
-        b       = ent.preimage.high_corner[1]
-        s       =  a:h:b
-        pts     = [par(v) for v in s]
-        x       = [pt[1] for pt in pts]
-        y       = [pt[2] for pt in pts]
-        return x,y
-    else
-        notimplemented()    
-    end
+    s       =  LinRange(0,1,npts)
+    pts     = [el(v) for v in s]
+    x       = [pt[1] for pt in pts]
+    y       = [pt[2] for pt in pts]
+    return x,y
+end
+
+@recipe function f(els::NTuple{<:Any,<:AbstractElement{ReferenceLine}};npts=10)
+    label --> ""
+    grid   --> false
+    for el in els
+        @series begin
+            el    
+        end
+    end    
 end

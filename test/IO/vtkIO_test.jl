@@ -6,8 +6,8 @@ using WriteVTK
 
 @testset "VTK export" begin
     # This test should simply not throw an error
-    fname = joinpath(@__DIR__,"sphere.msh")
-    Ω, M = read_msh(fname)
+    Geometry.clear!()
+    Ω, M = WaveProp.IO.gmsh_sphere()
     vtk_mesh_file(M, joinpath(@__DIR__,"ball")) |> vtk_save
     rm(joinpath(@__DIR__,"ball.vtu"))
     vtk_mesh_file(M, Ω, joinpath(@__DIR__,"ball")) |> vtk_save

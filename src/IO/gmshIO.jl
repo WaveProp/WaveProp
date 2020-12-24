@@ -17,13 +17,20 @@ end
 
 Read a `.geo` file and generate a domain [`Ω::Domain`](@ref) of dimension `d`.
 """
-function read_geo(fname, dim=3)
+function read_geo(fname;dim=3,h=nothing,order=nothing)
     assert_extension(fname, ".geo")    
     gmsh.initialize()
     gmsh.open(fname)    
+    h     === nothing || _gmsh_set_meshsize(h)
+    order === nothing || _gmsh_set_meshorder(order)
+    gmsh.model.mesh.generate(dim)
     Ω = _initialize_domain(dim)
+    M = _initialize_mesh(Ω)
+    if dim == 2 
+        M = convert_to_2d(M)
+    end
     gmsh.finalize()
-    return Ω
+    return Ω,M
 end
 
 """
@@ -52,8 +59,12 @@ function _initialize_domain(dim)
     Ω = Domain() # Create empty domain
     dim_tags = gmsh.model.getEntities(dim)
     for (_, tag) in dim_tags
-        ent = ElementaryEntity(dim, tag)
-        _fill_entity_boundary!(ent)
+        if haskey(ENTITIES,(dim,tag))
+            ent = ENTITIES[(dim,tag)]
+        else    
+            ent = ElementaryEntity(dim, tag)
+            _fill_entity_boundary!(ent)
+        end
         push!(Ω, ent)
     end        
     return Ω
@@ -67,11 +78,16 @@ Use the `gmsh` API to add the boundary of an `ElementaryEntity`.
 This is a helper function, and should not be called by itself since it assumes that `gmsh` has been initialized.
 """
 function _fill_entity_boundary!(ent)
-    combine = true # FIXME: what should we use here?
-    dim_tags = gmsh.model.getBoundary((ent.dim, ent.tag), combine)
+    combine  = true # FIXME: what should we use here?
+    oriented = false
+    dim_tags = gmsh.model.getBoundary((ent.dim, ent.tag),combine,oriented)
     for (d, t) in dim_tags
-        bnd = ElementaryEntity(d, t)
-        _fill_entity_boundary!(bnd)
+        if haskey(ENTITIES,(d,t))
+            bnd = ENTITIES[(d,t)]
+        else
+            bnd = ElementaryEntity(d, t)
+            _fill_entity_boundary!(bnd)    
+        end    
         push!(ent.boundary, bnd)
     end    
     return ent
@@ -90,7 +106,7 @@ function _initialize_mesh(Ω::Domain)
     etypes = [_type_tag_to_etype(e) for e in gmsh.model.mesh.getElementTypes()]
     # Recursively populating the dictionaries
     elements = Dict{DataType,Matrix{Int}}()
-    ent2tags = Dict{ElementaryEntity,Dict{DataType,Vector{Int}}}()
+    ent2tags = Dict{AbstractEntity,Dict{DataType,Vector{Int}}}()
     elements, ent2tag = _domain_to_mesh!(elements, ent2tags, Ω)
     return GenericMesh{3,Float64}(;nodes, etypes, elements, ent2tags)
 end
@@ -127,7 +143,7 @@ function _ent_to_mesh!(elements, ent2tag, ω::ElementaryEntity)
     ω in keys(ent2tag) && (return elements, ent2tag)
     etypes_to_etags = Dict{DataType,Vector{Int}}()
     # Loop on GMSH element types (integer)
-    type_tags, _, ntagss = gmsh.model.mesh.getElements(tag(ω)...)
+    type_tags, _, ntagss = gmsh.model.mesh.getElements(key(ω)...)
     for (type_tag, ntags) in zip(type_tags, ntagss)
         _, _, _, Np, _ = gmsh.model.mesh.getElementProperties(type_tag)
         ntags = reshape(ntags, Int(Np), :)

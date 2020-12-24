@@ -35,12 +35,12 @@ Base.@kwdef struct GenericMesh{N,T} <: AbstractMesh{N,T}
     # elements (value)
     elements::Dict{DataType,Any} = Dict{DataType,Any}()
     # mapping from elementary entity to (etype,tags)
-    ent2tags::Dict{ElementaryEntity,Dict{DataType,Vector{Int}}} = Dict{ElementaryEntity,Dict{DataType,Vector{Int}}}()
+    ent2tags::Dict{AbstractEntity,Dict{DataType,Vector{Int}}} = Dict{AbstractEntity,Dict{DataType,Vector{Int}}}()
 end
 
 # convert a mesh to 2d by ignoring third component. Note that this also requires
 # converting various element types to their 2d counterpart.
-function GenericMesh{2}(mesh::GenericMesh{3})
+function convert_to_2d(mesh::GenericMesh{3})
     @assert all(x -> geometric_dimension(x) < 3, etypes(mesh)) 
     T = eltype(mesh)
     # create new dictionaries for elements and ent2tags with 2d elements as keys
@@ -90,7 +90,7 @@ struct SubMesh{N,T} <: AbstractMesh{N,T}
 end
 
 Base.view(m::GenericMesh,Ω::Domain) = SubMesh(m,Ω)
-Base.view(m::GenericMesh,ent::ElementaryEntity) = SubMesh(m,Domain(ent))
+Base.view(m::GenericMesh,ent::AbstractEntity) = SubMesh(m,Domain(ent))
 
 function etypes(submesh::SubMesh)
     Ω, M = submesh.domain, submesh.mesh    
@@ -209,7 +209,7 @@ end
 
 # helper iterator which dispatches based on the type of E. A type stable method
 # is obtained by *tagging* the mesh.elements[E] metadata with its expected type
-function _iterate(mesh::GenericMesh,E::Type{<:LagrangeElement},ent::ElementaryEntity,i::Int=1)
+function _iterate(mesh::GenericMesh,E::Type{<:LagrangeElement},ent::AbstractEntity,i::Int=1)
     # if ent has not elements of type `E`, stop inner iteration
     haskey(mesh.ent2tags[ent],E) || (return nothing)
     # get tag for i-th elements in ent of type E
@@ -226,7 +226,7 @@ function _iterate(mesh::GenericMesh,E::Type{<:LagrangeElement},ent::ElementaryEn
     end
 end 
 
-function _iterate(mesh::GenericMesh,E::Type{<:ParametricElement},ent::ElementaryEntity,i::Int=1)
+function _iterate(mesh::GenericMesh,E::Type{<:ParametricElement},ent::AbstractEntity,i::Int=1)
     # if ent has not elements of type `E`, stop inner iteration
     haskey(mesh.ent2tags[ent],E) || (return nothing)
     # get tag for i-th elements in ent of type E

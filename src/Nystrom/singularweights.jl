@@ -9,7 +9,7 @@ end
 function singular_weights(op::IntegralOperator,method=:kress)
     X,Y = op.X, op.Y
     dim = geometric_dimension(Y)
-    near_list = near_interaction_list(X,Y;dim=dim)
+    near_list = near_interaction_list(qnodes(X),Y;dim=dim)
     _singular_weights_kress(op::IntegralOperator,near_list)
 end 
 

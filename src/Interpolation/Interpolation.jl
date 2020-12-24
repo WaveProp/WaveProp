@@ -18,7 +18,5 @@ module Interpolation
     include("lagrange.jl")
     include("monomial.jl")
     include("polynomialbasis.jl")
-
-
-    
+     
 end

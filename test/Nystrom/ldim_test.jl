@@ -43,7 +43,7 @@ end
     dudn = (x,n) -> DoubleLayerKernel(pde)(xout,x,n)
     # geo  = Circle()
     Ω,M   = WaveProp.IO.gmsh_disk()
-    M = GenericMesh{2}(M)
+    M = convert_to_2d(M)
     Γ     = boundary(Ω)
     # generate a Nystrom mesh with Gauss-Legendre quadrature
     qrule   = GaussLegendre(10)

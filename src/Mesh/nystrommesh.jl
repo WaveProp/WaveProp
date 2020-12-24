@@ -20,7 +20,7 @@ Base.@kwdef struct NystromMesh{N,T} <: AbstractMesh{N,T}
     qnormals::Vector{SVector{N,T}} = Vector{SVector{N,T}}()
     el2qnodes::Dict{DataType,Matrix{Int}} = Dict{DataType,Matrix{Int}}()
     etype2qrule::Dict{DataType,AbstractQuadratureRule}= Dict{DataType,AbstractQuadratureRule}()
-    ent2tags::Dict{ElementaryEntity,Dict{DataType,Vector{Int}}} = Dict{ElementaryEntity,Dict{DataType,Vector{Int}}}()
+    ent2tags::Dict{AbstractEntity,Dict{DataType,Vector{Int}}} = Dict{AbstractEntity,Dict{DataType,Vector{Int}}}()
 end
 
 # getters
@@ -42,7 +42,7 @@ function dof(mesh::NystromMesh,domain::Domain)
     end    
     return idxs
 end    
-dof(mesh,ent::ElementaryEntity) = dof(mesh,Domain(ent))
+dof(mesh,ent::AbstractEntity) = dof(mesh,Domain(ent))
 
 Base.length(m::NystromMesh) = length(qnodes(m))
 
@@ -116,8 +116,16 @@ end
 # interface methods
 etypes(m::NystromMesh) = keys(m.elements) |> collect
 
+struct NystromSubMesh{N,T} <: AbstractMesh{N,T}
+    mesh::NystromMesh{N,T}
+    domain::Domain
+end
+
+Base.view(m::NystromMesh,Ω::Domain)           = NystromSubMesh(m,Ω)
+Base.view(m::NystromMesh,ent::AbstractEntity) = NystromSubMesh(m,Domain(ent))
+
 """
-    near_interaction_list(X,Y;dim,atol)
+    near_interaction_list(pts,Y;dim,atol)
 
 Given a target mesh `X` and a source mesh `Y`, return a dictionary with keys
 given by element types of the source mesh `Y`. To each key, which represents an
@@ -125,31 +133,30 @@ element type, we associate a vector whose `i`-th entry encodes
 information about the points in `X` which are close to a given element of
 the key type. 
 """
-function near_interaction_list(X,Y;dim,atol)
+function near_interaction_list(pts,Y;atol)
     dict = Dict{DataType,Vector{Vector{Tuple{Int,Int}}}}()    
     for E in etypes(Y)
-        geometric_dimension(E) == dim || continue
-        ilist = _etype_near_interaction_list(X,Y,E,atol)
+        ilist = _etype_near_interaction_list(pts,Y,E,atol)
         push!(dict,E=>ilist)
     end
     return dict
 end    
 
-function _etype_near_interaction_list(X,Y,E,atol)
+function _etype_near_interaction_list(pts,Y,E,atol)
     ilist = Vector{Vector{Tuple{Int,Int}}}()
     e2n   = el2qnodes(Y,E)
     npts,nel = size(e2n)
     for n in 1:nel
         ynodes = qnodes(Y)[e2n[:,n]]
-        inear  = _near_interaction_list(X,ynodes,atol)
+        inear  = _near_interaction_list(pts,ynodes,atol)
         push!(ilist,inear)
     end 
     ilist       
 end    
 
-function _near_interaction_list(X,ynodes,atol)
+function _near_interaction_list(pts,ynodes,atol)
     ilist    = Tuple{Int,Int}[]
-    for (i,x) in enumerate(qnodes(X))            
+    for (i,x) in enumerate(pts)            
         d,j = findmin([norm(x-y) for y in ynodes])        
         if d ≤ atol
             push!(ilist,(i,j))    
@@ -157,3 +164,6 @@ function _near_interaction_list(X,ynodes,atol)
     end            
     return ilist
 end   
+
+
+elements(m::NystromMesh,E::DataType) = m.elements[E]

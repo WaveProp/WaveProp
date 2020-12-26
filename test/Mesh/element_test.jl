@@ -86,26 +86,26 @@ end
     qstd = GaussLegendre(20)    
     el   = LagrangeLine((0,0),(1,1),(1/2,1/4))
     # simple test on smooth integrand
-    f     = (x,y)->cos(x)
-    I     = integrate(f,el)
+    f     = x->cos(x[1])
+    Ie     = integrate(f,el)
     for shand in [IMT(), Kress()]
         q     = SingularQuadratureRule(qstd,shand)
         Ia    = integrate(f,q,el)
-        @debug Ia - I
-        @test isapprox(Ia,I,rtol=1e-6)
+        @debug Ia - Ie
+        @test isapprox(Ia,Ie,rtol=1e-6)
     end
     # non-smooth integrand
-    f     = (x,y)->log(abs(x)*cos(x))
-    I     = integrate(f,el)
+    f     = x -> log(abs(x[1])*cos(x[1]))
+    Ie     = integrate(f,el)
     for shand in [IMT(), Kress()]
         q     = SingularQuadratureRule(qstd,shand)    
         Ia    = integrate(f,q,el)
-        @debug Ia - I
-        @test isapprox(Ia,I,rtol=1e-5)
+        @debug Ia - Ie
+        @test isapprox(Ia,Ie,rtol=1e-5)
         # check that the `naive` integration woudl have failed the test
         Istd    = integrate(f,qstd,el)
-        @debug Istd - I
-        @test !isapprox(Istd,I,rtol=1e-5)
+        @debug Istd - Ie
+        @test !isapprox(Istd,Ie,rtol=1e-5)
     end
 end
 
@@ -114,18 +114,18 @@ end
     el   = LagrangeLine((0,0),(1,1),(1/2,1/4))
     vs   = 1/3
     xs   = el(vs)
-    f    = (x,y) -> SVector(x,y)==xs ? 0.0 : log(norm(SVector(x,y)-xs)*cos(x))
-    I    = integrate(f,el)
+    f    = x -> x == xs ? 0.0 : log(norm(x-xs)*cos(x[1]))
+    Ie    = integrate(f,el)
     for shand in [IMT(), Kress()]
         q     = SingularQuadratureRule(qstd,shand)    
         x,w   = q(el,vs)
         Ia    = integrate(f,x,w)
-        @debug I-Ia
-        @test isapprox(I,Ia;rtol=1e-5)
+        @debug Ie-Ia
+        @test isapprox(Ie,Ia;rtol=1e-5)
         Ia    = integrate(f,q,el,vs)
-        @test isapprox(I,Ia;rtol=1e-5)
+        @test isapprox(Ie,Ia;rtol=1e-5)
         # check that the `naive` integration woudl have failed the test
         Istd    = integrate(f,qstd,el)
-        @test !isapprox(Istd,I,rtol=1e-5)
+        @test !isapprox(Istd,Ie,rtol=1e-5)
     end
 end

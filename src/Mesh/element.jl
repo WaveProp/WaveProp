@@ -405,7 +405,7 @@ function integrate(f,q::AbstractQuadratureRule,el::AbstractElement)
 end 
 
 function integrate(f,el::AbstractElement{<:ReferenceLine};kwargs...)
-    g = (u) -> f(el(u)...)*measure(el,u)
+    g = (u) -> f(el(u))*measure(el,u)
     integrate(g,domain(el);kwargs...)
 end    
 

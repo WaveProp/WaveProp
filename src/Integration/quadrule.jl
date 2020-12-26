@@ -37,12 +37,16 @@ Integrate the function `f` using the quadrature rule `q`. This is simply
 """
 function integrate(f,q::AbstractQuadratureRule)
     x,w = q()
-    integrate(f,x,w)
+    if domain(q) == ReferenceLine()
+        return integrate(x->f(x[1]),x,w)
+    else
+        return integrate(f,x,w)
+    end    
 end    
 
 function integrate(f,x,w)
     sum(zip(x,w)) do (x,w)
-        f(x...)*prod(w)
+        f(x)*prod(w)
     end
 end    
 
@@ -56,19 +60,19 @@ Use `quadgk` to (adaptively) integrate a function over the reference shape `s`.
 This is used mostly for testing purposes. It returns only the value of the
 integral (i.e. without the error estimate).
 """
-integrate(f,l::AbstractReferenceShape;kwargs...) = integrate(f,typeof(l);kwargs...)
+integrate(f,l::AbstractReferenceShape;kwargs...)     = integrate(f,typeof(l);kwargs...)
 
 integrate(f,::Type{ReferenceLine};kwargs...) = quadgk(f,0,1;kwargs...)[1]
 
 function integrate(f,::Type{ReferenceSquare})
-    I    = x-> quadgk(y->f(x,y),0,1)[1]
+    I    = x-> quadgk(y->f(SVector(x,y)),0,1)[1]
     out  = quadgk(I,0,1)[1]
 end    
 
 # hacky way to compute integration over reference triangles. Only used for
-# testing purposes to avoid having to compute integrals analytically when testing.
+# testing purposes to avoid having to compute integrals analyically when testing.
 function integrate(f,::Type{ReferenceTriangle})
-    I    = x -> quadgk(y->f(x,y),0,1-x)[1]
+    I    = x -> quadgk(y->f(SVector(x,y)),0,1-x)[1]
     out  = quadgk(I,0,1)[1]
 end
 
@@ -118,15 +122,15 @@ TrapezoidalP(n::Int) = TrapezoidalP{n}()
 # open periodic trapezoidal rule on [0,1]
 function _trapezoidalP(n)    
     h = 1/n
-    x = [SVector((k-0.5)*h) for k in 1:n]
-    w = [h for k in 1:n]
+    x = [(k-0.5)*h for k in 1:n]
+    w = [h   for k in 1:n]
     return x,w
 end    
 
 function (q::TrapezoidalP{N})() where {N}
     x,w = _trapezoidalP(N)
     # convert to static arrays
-    xs = SVector{N}(x)
+    xs = SVector{N}(SVector{1}.(x))
     ws = SVector{N}(w)
     return xs,ws
 end    
@@ -241,14 +245,16 @@ function TensorProductQuadrature(q...)
     TensorProductQuadrature(q)
 end    
 
-# FIXME: instead of returning an iterator, the tensor product rule is currently
-# returning the actual matrices. 
+# FIXME: the current implementation is rather obscure. How should we handle the
+# product quadrature rules in general?
 function (q::TensorProductQuadrature)()
     N       = length(q.quad)    
     nodes   = map(q->q()[1],q.quad)    
-    weights = map(q->q()[2],q.quad)    
-    x = SVector.(Iterators.product(nodes...) )
-    w = prod.(Iterators.product(weights...))
+    weights = map(q->q()[2],q.quad)  
+    nodes_iter   = Iterators.product(nodes...)
+    weights_iter = Iterators.product(weights...)
+    x = map(x->vcat(x...),nodes_iter)
+    w = map(w->prod(w),weights_iter)
     return SArray(x), w
 end    
 

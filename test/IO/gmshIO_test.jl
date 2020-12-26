@@ -43,9 +43,6 @@ end
     # Test internal creation of disk
     Geometry.clear!()
     Ω, M = WaveProp.IO.gmsh_disk()    
-    T = SVector{3,Float64}
-    @test etypes(M) == [LagrangeLine{2,T},LagrangeTriangle{3,T},T] # mesh composed of gmsh simplices
-    M = convert_to_2d(M)
     T = SVector{2,Float64}
     @test etypes(M) == [LagrangeLine{2,T},LagrangeTriangle{3,T},T] # mesh composed of gmsh simplices
 end

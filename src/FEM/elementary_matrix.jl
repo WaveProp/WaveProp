@@ -75,12 +75,14 @@ function mass_matrix_unrolled!(A,el::AbstractElement,u::PolynomialBasis,v::Polyn
     x̂,ŵ = q()
     U = u(q)
     V = v(q)
+    U *= diagm(ŵ) # put precomputed weights here. Should be computed only once.
     for k in 1:length(ŵ)
-        J = jacobian(el,x̂[k])
-        μ = abs(det(J))*ŵ[k]
-        for i in 1:size(V,2)
-            for j in 1:size(U,2)    
-                A[i,j] += U[j,k]*V[i,k]*μ
+        J = @inbounds jacobian(el,x̂[k])
+        μ = abs(det(J))
+        for j in 1:size(U,2)
+            @inbounds uj = U[j,k]*μ    
+            for i in 1:size(V,2)
+                @inbounds A[i,j] += uj*V[i,k]
             end    
         end
     end    
@@ -96,10 +98,11 @@ function stiffness_matrix_unrolled!(A,el::AbstractElement,u::PolynomialBasis,v::
     x̂,ŵ = q()
     ∇U = grad(u)(q)
     ∇V = grad(v)(q)
+    ∇U *= diagm(ŵ) # put the reference weights in one of the precomputed matrices
     for k in 1:length(ŵ)
         J  = jacobian(el,x̂[k])
         iJ = inv(J)
-        μ  = abs(det(J))*ŵ[k]
+        μ  = abs(det(J))
         Σ  = iJ*transpose(iJ)*μ
         for i in 1:size(∇V,2)
             for j in 1:size(∇U,2)    

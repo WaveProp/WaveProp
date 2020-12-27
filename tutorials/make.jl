@@ -1,6 +1,7 @@
 using Pkg
 
 Pkg.activate(@__DIR__)
+Pkg.update()
 Pkg.instantiate()
 
 using Literate
@@ -13,6 +14,6 @@ end
 
 for file in flist
     fname =  joinpath(@__DIR__,file)
-    Literate.markdown(fname,@__DIR__)    
-    # Literate.notebook(fname,@__DIR__)    
+    Literate.markdown(fname,@__DIR__,documenter=true)    
+    # Literate.notebook(fname,@__DIR__;documenter=true,execute=false)    
 end    

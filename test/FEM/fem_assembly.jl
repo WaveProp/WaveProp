@@ -126,7 +126,7 @@ end
 # Solution
 u = factorize(A) \ b;
 # Export
-vtkfile = vtk_mesh_file(mesh3d, Ω, joinpath(@__DIR__,"poisson"))
+vtkfile = vtk_mesh_file(mesh2d, Ω, joinpath(@__DIR__,"poisson"))
 vtkfile["u", VTKPointData()] = u;
 vtkfile |> vtk_save
 # Test

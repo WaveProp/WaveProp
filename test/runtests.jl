@@ -7,6 +7,8 @@ using SafeTestsets
 
 @safetestset "Mesh" begin include("Mesh/runtests.jl") end
 
+# @safetestset "FEM" begin include("FEM/runtests.jl") end
+
 @safetestset "Nystrom" begin include("Nystrom/runtests.jl") end
 
 @safetestset "IO" begin include("IO/runtests.jl") end

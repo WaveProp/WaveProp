@@ -8,6 +8,8 @@ abstract type PolynomialBasis{D,P} end
 struct MonomialBasis{D,P} <: PolynomialBasis{D,P} end
 MonomialBasis(d::AbstractReferenceShape,p::Int) = MonomialBasis{typeof(d),p}()
 
+Base.getindex(b::MonomialBasis,::Colon) = SVector{length(b)}(collect(b))
+
 # monomial basis over reference segment
 Base.length(::MonomialBasis{ReferenceLine,P}) where {P} = P+1
 Base.eltype(::MonomialBasis{ReferenceLine}) = Monomial{1}
@@ -68,6 +70,8 @@ end
 struct LagrangeBasis{D,P} <: PolynomialBasis{D,P} 
 end    
 
+Base.getindex(b::LagrangeBasis,I) = b[:][I]
+
 Base.length(::LagrangeBasis{ReferenceLine,P}) where {P} = P+1 |> Int
 Base.length(::LagrangeBasis{ReferenceTriangle,P}) where {P} = (P+1)*(P+2)/2 |> Int
 Base.length(::LagrangeBasis{ReferenceTetrahedron,P}) where {P} = (P+1)*(P+2)*(P+3)/6 |> Int
@@ -81,18 +85,23 @@ length `length(b)`.
 function (b::LagrangeBasis{D,0})(x::SVector{<:Any,<:Number}) where {D}
     SVector(1)
 end    
+Base.getindex(b::LagrangeBasis{D,0},::Colon) where {D} = (x->SVector{1},)
 
 function (b::LagrangeBasis{ReferenceLine,1})(x::SVector{<:Any,<:Number})
-    SVector(1 - x[1], x[1])
+    map(f->f(x),b[:])
 end    
+Base.getindex(b::LagrangeBasis{ReferenceLine,1},::Colon) = (x->1-x[1],x->x[1])
 
 function (b::LagrangeBasis{ReferenceTriangle,1})(x::SVector{<:Any,<:Number})
     SVector(1 - x[1] - x[2], x[1], x[2])
 end    
+(b::LagrangeBasis{ReferenceTriangle,1})()              = (x -> 1 - x[1] - x[2], x -> x[1], x -> x[2])
+Base.getindex(b::LagrangeBasis{ReferenceTriangle,1},I) = b()[I]
 
 function (b::LagrangeBasis{ReferenceTetrahedron,1})(x::SVector{<:Any,<:Number})
     SVector(1 - x[1] - x[2] - x[3], x[1], x[2], x[3])
 end    
+Base.getindex(b::LagrangeBasis{ReferenceTetrahedron,1},::Colon) = (x -> 1 - x[1] - x[2] - x[3], x -> x[1], x -> x[2], x -> x[3])
 
 function (b::LagrangeBasis{D,p})(x̂::SVector{<:Any,<:SVector}) where {D,p}
     mapreduce(x->b(x),hcat,x̂)    
@@ -108,12 +117,6 @@ Base.length(::gradLagrangeBasis{ReferenceLine,P}) where {P} = P+1 |> Int
 Base.length(::gradLagrangeBasis{ReferenceTriangle,P}) where {P} = (P+1)*(P+2)/2 |> Int
 Base.length(::gradLagrangeBasis{ReferenceTetrahedron,P}) where {P} = (P+1)*(P+2)*(P+3)/6 |> Int
 
-"""
-    (b::LagrangeBasis)(x)
-
-Evaluate all base elements in `b` at the point `x`. Return a `StaticVector` of
-length `length(b)`.
-"""
 function (b::gradLagrangeBasis{ReferenceLine,1})(x::SVector{<:Any,<:Number})
     SVector(SVector(-1),
             SVector(1))
@@ -123,7 +126,12 @@ function (b::gradLagrangeBasis{ReferenceTriangle,1})(x::SVector{<:Any,<:Number})
     SVector(SVector(-1, -1),
             SVector(1, 0),
             SVector(0, 1))
-end    
+end
+(b::gradLagrangeBasis{ReferenceTriangle,1})()               = ( x -> SVector(-1, -1), 
+                                                                x -> SVector(1, 0),
+                                                                x-> SVector(0, 1)
+                                                                )
+Base.getindex(b::gradLagrangeBasis{ReferenceTriangle,1},I)  = b()[I]
 
 function (b::gradLagrangeBasis{ReferenceTetrahedron,1})(x::SVector{<:Any,<:Number})
     SVector(SVector(-1, -1, -1),
@@ -138,3 +146,13 @@ end
 
 
 grad(::LagrangeBasis{D,p}) where {D,p} = gradLagrangeBasis{D,p}()
+
+
+# FIXME: need a better way to related grad to functions in a basis
+blist = (LagrangeBasis{ReferenceTriangle,1}(),)
+for b in blist
+    for i in 1:length(b)
+        f = b[i]
+        @eval grad(::typeof($f)) = grad($b)[$i]
+    end    
+end

@@ -98,10 +98,11 @@ function assembly(mesh, Ω, u, v; order=1,
     Is = Int64[]
     Js = Int64[]
     Vs = Float64[]
+    M  = zeros(Float64,length(v),length(u))
     for (iel, el) in enumerate(elements(submesh, E))
         utags = elt2dof(udofnb)[iel]
         vtags = elt2dof(vdofnb)[iel]
-        M = elementary_matrix(el, u, v, qrule; f=f)
+        elementary_matrix!(M,el, u, v, qrule; f=f)
         for (iloc, iglob) in enumerate(vtags)
             for (jloc, jglob) in enumerate(utags)
                 push!(Is, iglob)
@@ -109,6 +110,7 @@ function assembly(mesh, Ω, u, v; order=1,
                 push!(Vs, M[iloc,jloc])
             end
         end    
+        fill!(M,0)
     end    
     A = sparse(Is,Js,Vs,m,n)
     return A

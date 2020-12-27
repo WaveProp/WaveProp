@@ -190,7 +190,7 @@ struct Gauss{D,N} <: AbstractQuadratureRule{D} end
 Gauss(ref,n) = Gauss{typeof(ref),n}()
 Gauss(ref;n) = Gauss{typeof(ref),n}()
 
-function (q::Gauss{ReferenceTriangle,N})() where {N}
+@generated function (q::Gauss{ReferenceTriangle,N})() where {N}
     if N == 1
         x = svector(i->SVector(1/3,1/3),1)
         w = svector(i->1/2,1)
@@ -202,10 +202,10 @@ function (q::Gauss{ReferenceTriangle,N})() where {N}
     else
         notimplemented()
     end            
-    return x,w
+    return :($x,$w)
 end
 
-function (q::Gauss{ReferenceTetrahedron,N})() where {N}
+@generated function (q::Gauss{ReferenceTetrahedron,N})() where {N}
     if N == 1
         x = SVector((SVector(1/4,1/4,1/4),))
         w = SVector(1/6)
@@ -221,7 +221,7 @@ function (q::Gauss{ReferenceTetrahedron,N})() where {N}
     else
         notimplemented()
     end            
-    return x,w
+    return :($x,$w)
 end
 
 """

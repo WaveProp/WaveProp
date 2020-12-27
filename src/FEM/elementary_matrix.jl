@@ -12,7 +12,23 @@ function elementary_matrix!(A,el::AbstractElement, u::PolynomialBasis,
         end
     end
     return A
-end    
+end   
+
+function elementary_matrix_new!(A,el::AbstractElement, u::PolynomialBasis,
+                           v::PolynomialBasis, q::AbstractQuadratureRule;
+                           f=(u,v)->(i,j,x̂,_,_)->u(x̂)[j]*v(x̂)[i])
+    x̂,ŵ = q()
+    x,w = q(el)
+    m, n = length(v), length(u)
+    for k in 1:length(w)
+        for i in 1:m
+            for j in 1:n
+                A[i,j] += f(u, v)(i, j, x̂[k], el, x[k]) * w[k]
+            end
+        end
+    end
+    return A
+end  
 
 function elementary_matrix(el::AbstractElement, u::PolynomialBasis,
     v::PolynomialBasis, q::AbstractQuadratureRule;
@@ -43,7 +59,7 @@ end
 # specific elementary matrix kernel
 function (u::LagrangeBasis)(q::AbstractQuadratureRule)
     x̂,_ = q()
-    mapreduce(x->u(x),hcat,x̂) |> transpose
+    mapreduce(x->u(x),hcat,x̂)
 end    
 
 function mass_matrix(el::AbstractElement,u::PolynomialBasis,v::PolynomialBasis,q::AbstractQuadratureRule)
@@ -52,9 +68,44 @@ function mass_matrix(el::AbstractElement,u::PolynomialBasis,v::PolynomialBasis,q
     V = v(q)
     μ = map(u->measure(el,u),x̂)
     Σ = diagm(μ)*diagm(ŵ)
-    return transpose(V)*Σ*U
+    return V*Σ*transpose(U)
 end    
 
-function stiffness_matrix!(A,el::AbstractElement,u::PolynomialBasis,v::PolynomialBasis,q::AbstractQuadratureRule)
+function mass_matrix_unrolled!(A,el::AbstractElement,u::PolynomialBasis,v::PolynomialBasis,q::AbstractQuadratureRule)
+    x̂,ŵ = q()
+    U = u(q)
+    V = v(q)
+    for k in 1:length(ŵ)
+        J = jacobian(el,x̂[k])
+        μ = abs(det(J))*ŵ[k]
+        for i in 1:size(V,2)
+            for j in 1:size(U,2)    
+                A[i,j] += U[j,k]*V[i,k]*μ
+            end    
+        end
+    end    
+    return A
+end    
 
+function (gu::gradLagrangeBasis)(q::AbstractQuadratureRule)
+    x̂,_ = q()
+    mapreduce(x->gu(x),hcat,x̂) 
+end    
+
+function stiffness_matrix_unrolled!(A,el::AbstractElement,u::PolynomialBasis,v::PolynomialBasis,q::AbstractQuadratureRule)
+    x̂,ŵ = q()
+    ∇U = grad(u)(q)
+    ∇V = grad(v)(q)
+    for k in 1:length(ŵ)
+        J  = jacobian(el,x̂[k])
+        iJ = inv(J)
+        μ  = abs(det(J))*ŵ[k]
+        Σ  = iJ*transpose(iJ)*μ
+        for i in 1:size(∇V,2)
+            for j in 1:size(∇U,2)    
+                A[i,j] += transpose(∇V[i,k]) * Σ * ∇U[j,k]
+            end    
+        end
+    end    
+    return A
 end    

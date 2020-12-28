@@ -1,11 +1,9 @@
 """
-    Mesh
+    module Mesh
 
-This module defines various meshes used, as well as the interface expected from
-an `AbstractMesh`.
+Mesh data structures and the interface expected from an `AbstractMesh`.
 
-Exports:
-$(EXPORTS)
+Exports: $(EXPORTS)
 """
 
 module Mesh 
@@ -27,6 +25,7 @@ compute_quadrature!,SubMesh, AbstractMesh, CartesianMesh, meshgen, NystromMesh, 
 
 include("element.jl")
 include("meshes.jl")
+include("submesh.jl")
 include("cartesianmesh.jl")
 include("nystrommesh.jl")
 include("meshgen.jl")

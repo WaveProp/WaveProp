@@ -10,7 +10,12 @@ using StaticArrays
 
 using WaveProp
 
-export svector, notimplemented, abstractmethod, assert_extension
+export 
+    svector, 
+    notimplemented, 
+    abstractmethod, 
+    assert_extension,
+    assert_concrete_type
 
 """
     svector(f,n)
@@ -48,8 +53,17 @@ function assert_extension(fname::String,ext::String,msg="file extension must be 
     @assert occursin(r,fname) msg
 end
 
+function assert_concrete_type(T::DataType)
+    isconcretetype(T) || throw(ConcreteInferenceError(T)) 
+end
+
 function debug(mod="WaveProp")
     @eval ENV["JULIA_DEBUG"] = $(mod)
 end
+
+struct ConcreteInferenceError <: Exception
+    T
+end
+Base.showerror(io::IO, e::ConcreteInferenceError) = print(io, "unable to infer concrete type from function signature: T=$(e.T)" )
 
 end # module

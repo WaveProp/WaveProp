@@ -1,6 +1,6 @@
 # # Singular Integrals
 
-# This example shows how to use the `SingularIntegration` module for computing
+# This example shows how to use the `Integration` module for computing
 # quadrature rules for functions with point singularities (such as those
 # appearing in the numerical discretization of boundary integral equations).
 
@@ -15,7 +15,7 @@
 
 using WaveProp.Geometry
 using WaveProp.Integration
-using WaveProp.SingularIntegration
+using WaveProp.Integration
 using QuadGK
 
 f        = (x) -> x==0 ? 0.0 : log(abs(x))*cos(x)

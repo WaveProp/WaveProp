@@ -13,8 +13,8 @@ using WaveProp.IO
 ## Assembly test
 @testset "Mass matrix 1-2-3D Lagrange P0 P1" begin
     ## 2D
-    Ω, mesh3d = WaveProp.IO.gmsh_rectangle(;h=0.1);
-    mesh2d = GenericMesh{2}(mesh3d);
+    Geometry.clear!()
+    Ω, mesh2d = WaveProp.IO.gmsh_rectangle(;h=0.1);
     for ord in [1,2,]
         ## matrix assembly
         for (pu, pv) in [(1, 1), (1, 1), (0, 1), (1, 0),]
@@ -35,6 +35,7 @@ using WaveProp.IO
         end
     end
     ## 3D
+    Geometry.clear!()
     Ω, mesh3d = WaveProp.IO.gmsh_box(;h=0.5);
     for ord in [1,2,]
         ## matrix assembly
@@ -71,8 +72,8 @@ k = 1
 a_helmholtz(u, v) = (i,j,x̂,el,x) -> (inv(transpose(jacobian(el,x̂))) * grad(u)(x̂)[j]) ⋅ (inv(transpose(jacobian(el,x̂))) *  grad(v)(x̂)[i]) - k^2 * u(x̂)[j] * v(x̂)[i]
 @testset "Helmholtz matrix 1-2-3D Lagrange P1" begin
     ## 2D
-    Ω, mesh3d = WaveProp.IO.gmsh_rectangle(;h=0.1);
-    mesh2d = GenericMesh{2}(mesh3d);
+    Geometry.clear!()
+    Ω, mesh2d = WaveProp.IO.gmsh_rectangle(;h=0.1);
     for ord in [1,2,]
         ## matrix assembly
         for (pu, pv) in [(1, 1),]
@@ -105,8 +106,8 @@ f(x,y) = (p^2 + q^2) * π^2 * sol(x,y)
 am(u, v) = (i,j,x̂,el,x) -> u(x̂)[j] * v(x̂)[i]
 a_poisson(u, v) = (i,j,x̂,el,x) -> (inv(transpose(jacobian(el,x̂))) * grad(u)(x̂)[j]) ⋅ (inv(transpose(jacobian(el,x̂))) *  grad(v)(x̂)[i])
 l_poisson(v) = (i,x̂,el,x) -> f(x...) * v(x̂)[i]
-Ω, mesh3d = WaveProp.IO.gmsh_rectangle(;h=0.05);
-mesh2d = GenericMesh{2}(mesh3d);
+Geometry.clear!()
+Ω, mesh2d = WaveProp.IO.gmsh_rectangle(;h=0.05);
 u = LagrangeBasis{ReferenceTriangle,1}()
 v = LagrangeBasis{ReferenceTriangle,1}()
 M = assembly(mesh2d, Ω, u, v; order=2, f=am);
@@ -125,7 +126,7 @@ end
 # Solution
 u = factorize(A) \ b;
 # Export
-vtkfile = vtk_mesh_file(mesh3d, Ω, joinpath(@__DIR__,"poisson"))
+vtkfile = vtk_mesh_file(mesh2d, Ω, joinpath(@__DIR__,"poisson"))
 vtkfile["u", VTKPointData()] = u;
 vtkfile |> vtk_save
 # Test
@@ -143,6 +144,7 @@ f(x,y,z) = (p^2 + q^2 + r^2) * π^2 * sol(x,y,z)
 am(u, v) = (i,j,x̂,el,x) -> u(x̂)[j] * v(x̂)[i]
 a_poisson(u, v) = (i,j,x̂,el,x) -> (inv(transpose(jacobian(el,x̂))) * grad(u)(x̂)[j]) ⋅ (inv(transpose(jacobian(el,x̂))) *  grad(v)(x̂)[i])
 l_poisson(v) = (i,x̂,el,x) -> f(x...) * v(x̂)[i]
+
 Ω, mesh3d = WaveProp.IO.gmsh_box(;h=0.05);
 u = LagrangeBasis{ReferenceTetrahedron,1}()
 v = LagrangeBasis{ReferenceTetrahedron,1}()
@@ -174,61 +176,61 @@ err = sqrt(transpose(e) * (M * e)) / sqrt(transpose(uref) * (M * uref))
 @test err < 4e-2 # for h = 0.05
 
 
-## Modes for 2D Neumann Laplacian
-ak(u, v) = (i,j,x̂,el,x) -> (inv(transpose(jacobian(el,x̂))) * grad(u)(x̂)[j]) ⋅ (inv(transpose(jacobian(el,x̂))) *  grad(v)(x̂)[i])
-am(u, v) = (i,j,x̂,el,x) -> u(x̂)[j] * v(x̂)[i]
-Ω, mesh3d = WaveProp.IO.gmsh_disk(;h=0.01);
-mesh2d = GenericMesh{2}(mesh3d);
-u = LagrangeBasis{ReferenceTriangle,1}()
-v = LagrangeBasis{ReferenceTriangle,1}()
-K = assembly(mesh2d, Ω, u, v; order=2, f=ak);
-M = assembly(mesh2d, Ω, u, v; order=2, f=am);
-F = eigen(Matrix(K), Matrix(M))
-@show F.values |> length
-for km in 1:min(100,length(F.values))
-    vtkfile = vtk_mesh_file(mesh3d, Ω, joinpath(@__DIR__,"modes_$(km)"))
-    vtkfile["u", VTKPointData()] = F.vectors[:,km];
-    vtkfile |> vtk_save
-end
+# ## Modes for 2D Neumann Laplacian
+# ak(u, v) = (i,j,x̂,el,x) -> (inv(transpose(jacobian(el,x̂))) * grad(u)(x̂)[j]) ⋅ (inv(transpose(jacobian(el,x̂))) *  grad(v)(x̂)[i])
+# am(u, v) = (i,j,x̂,el,x) -> u(x̂)[j] * v(x̂)[i]
+# Geometry.clear!()
+# Ω, mesh2d = WaveProp.IO.gmsh_disk(;h=0.01)
+# u = LagrangeBasis{ReferenceTriangle,1}()
+# v = LagrangeBasis{ReferenceTriangle,1}()
+# K = assembly(mesh2d, Ω, u, v; order=2, f=ak);
+# M = assembly(mesh2d, Ω, u, v; order=2, f=am);
+# F = eigen(Matrix(K), Matrix(M))
+# @show F.values |> length
+# for km in 1:min(100,length(F.values))
+#     vtkfile = vtk_mesh_file(mesh3d, Ω, joinpath(@__DIR__,"modes_$(km)"))
+#     vtkfile["u", VTKPointData()] = F.vectors[:,km];
+#     vtkfile |> vtk_save
+# end
 
-## Modes for 3D Neumann Laplacian
-ak(u, v) = (i,j,x̂,el,x) -> (inv(transpose(jacobian(el,x̂))) * grad(u)(x̂)[j]) ⋅ (inv(transpose(jacobian(el,x̂))) *  grad(v)(x̂)[i])
-am(u, v) = (i,j,x̂,el,x) -> u(x̂)[j] * v(x̂)[i]
-Ω, mesh3d = WaveProp.IO.gmsh_sphere(;h=0.05);
-u = LagrangeBasis{ReferenceTetrahedron,1}()
-v = LagrangeBasis{ReferenceTetrahedron,1}()
-K = assembly(mesh3d, Ω, u, v; order=2, f=ak);
-M = assembly(mesh3d, Ω, u, v; order=2, f=am);
-F = eigen(Matrix(K), Matrix(M))
-@show F.values |> length
-for km in 1:min(100,length(F.values))
-    vtkfile = vtk_mesh_file(mesh3d, Ω, joinpath(@__DIR__,"modes_$(km)"))
-    vtkfile["u", VTKPointData()] = F.vectors[:,km];
-    vtkfile |> vtk_save
-end
+# ## Modes for 3D Neumann Laplacian
+# ak(u, v) = (i,j,x̂,el,x) -> (inv(transpose(jacobian(el,x̂))) * grad(u)(x̂)[j]) ⋅ (inv(transpose(jacobian(el,x̂))) *  grad(v)(x̂)[i])
+# am(u, v) = (i,j,x̂,el,x) -> u(x̂)[j] * v(x̂)[i]
+# Ω, mesh3d = WaveProp.IO.gmsh_sphere(;h=0.05);
+# u = LagrangeBasis{ReferenceTetrahedron,1}()
+# v = LagrangeBasis{ReferenceTetrahedron,1}()
+# K = assembly(mesh3d, Ω, u, v; order=2, f=ak);
+# M = assembly(mesh3d, Ω, u, v; order=2, f=am);
+# F = eigen(Matrix(K), Matrix(M))
+# @show F.values |> length
+# for km in 1:min(100,length(F.values))
+#     vtkfile = vtk_mesh_file(mesh3d, Ω, joinpath(@__DIR__,"modes_$(km)"))
+#     vtkfile["u", VTKPointData()] = F.vectors[:,km];
+#     vtkfile |> vtk_save
+# end
 
-## Modes for 2D Neumann Laplacian on 3D sphere
-# WARNING: I am not sure that it is what I meant it to be though
-ak(u, v) = (i,j,x̂,el,x) -> (inv(transpose(jacobian(el,x̂))[1:2,1:2]) * grad(u)(x̂)[j]) ⋅ (inv(transpose(jacobian(el,x̂))[1:2,1:2]) *  grad(v)(x̂)[i])
-am(u, v) = (i,j,x̂,el,x) -> u(x̂)[j] * v(x̂)[i]
-Ω, mesh3d = WaveProp.IO.gmsh_sphere(;h=0.05);
-u = LagrangeBasis{ReferenceTriangle,1}()
-v = LagrangeBasis{ReferenceTriangle,1}()
-Γ = boundary(Ω)
-K = assembly(mesh3d, Γ, u, v; order=2, f=ak);
-M = assembly(mesh3d, Γ, u, v; order=2, f=am);
-F = eigen(Matrix(K), Matrix(M))
-@show F.values |> length
-for km in 1:min(100,length(F.values))
-    vtkfile = vtk_mesh_file(mesh3d, Γ, joinpath(@__DIR__,"modes_sphere_$(km)"))
-    vΩdofnb = local_dof_numbering(mesh3d, Ω, LagrangeBasis{ReferenceTetrahedron,1}());
-    vΓdofnb = local_dof_numbering(mesh3d, Γ, v);
-    glob2loc = SparseVector(length(nodes(mesh3d)),dofs(vΩdofnb),collect(1:length(dofs(vΩdofnb))));
-    Fkm = zeros(length(nodes(mesh3d)))
-    for dof in dofs(vΓdofnb)
-        i = glob2loc[dof]
-        Fkm[i] = F.vectors[:,km][i]
-    end
-    vtkfile["u", VTKPointData()] = Fkm;
-    vtkfile |> vtk_save
-end
+# ## Modes for 2D Neumann Laplacian on 3D sphere
+# # WARNING: I am not sure that it is what I meant it to be though
+# ak(u, v) = (i,j,x̂,el,x) -> (inv(transpose(jacobian(el,x̂))[1:2,1:2]) * grad(u)(x̂)[j]) ⋅ (inv(transpose(jacobian(el,x̂))[1:2,1:2]) *  grad(v)(x̂)[i])
+# am(u, v) = (i,j,x̂,el,x) -> u(x̂)[j] * v(x̂)[i]
+# Ω, mesh3d = WaveProp.IO.gmsh_sphere(;h=0.05);
+# u = LagrangeBasis{ReferenceTriangle,1}()
+# v = LagrangeBasis{ReferenceTriangle,1}()
+# Γ = boundary(Ω)
+# K = assembly(mesh3d, Γ, u, v; order=2, f=ak);
+# M = assembly(mesh3d, Γ, u, v; order=2, f=am);
+# F = eigen(Matrix(K), Matrix(M))
+# @show F.values |> length
+# for km in 1:min(100,length(F.values))
+#     vtkfile = vtk_mesh_file(mesh3d, Γ, joinpath(@__DIR__,"modes_sphere_$(km)"))
+#     vΩdofnb = local_dof_numbering(mesh3d, Ω, LagrangeBasis{ReferenceTetrahedron,1}());
+#     vΓdofnb = local_dof_numbering(mesh3d, Γ, v);
+#     glob2loc = SparseVector(length(nodes(mesh3d)),dofs(vΩdofnb),collect(1:length(dofs(vΩdofnb))));
+#     Fkm = zeros(length(nodes(mesh3d)))
+#     for dof in dofs(vΓdofnb)
+#         i = glob2loc[dof]
+#         Fkm[i] = F.vectors[:,km][i]
+#     end
+#     vtkfile["u", VTKPointData()] = Fkm;
+#     vtkfile |> vtk_save
+# end

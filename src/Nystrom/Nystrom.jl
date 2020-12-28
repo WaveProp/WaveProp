@@ -16,11 +16,12 @@ using WaveProp.Mesh
 using WaveProp.PhysicalProblem
 
 import WaveProp.Geometry: geometric_dimension, ambient_dimension, domain, range
-import WaveProp.Integration: singular_weights, qnodes
+import WaveProp.Integration: singular_weights, qnodes, qweights, qnormals
 import WaveProp.Mesh: etypes, elements
 
-export Laplace, Helmholtz, SingleLayerKernel, DoubleLayerKernel, IntegralOperator, NystromMesh, Density, γ₀, γ₁, SingleLayerPotential, DoubleLayerPotential, SingleLayerOperator, DoubleLayerOperator, GreensCorrection, singular_weights_dim, single_double_layer, isinside
+export Laplace, Helmholtz, SingleLayerKernel, DoubleLayerKernel, IntegralOperator, NystromMesh, Density, γ₀, γ₁, SingleLayerPotential, DoubleLayerPotential, SingleLayerOperator, DoubleLayerOperator, GreensCorrection, singular_weights_dim, single_double_layer, isinside, NystromSpace
 
+include("nystromspace.jl")
 include("greensformulae.jl")
 include("lebedev.jl")
 include("kernels.jl")

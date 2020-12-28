@@ -5,4 +5,5 @@
 tutorials/*.md
 tutorials/*.ipynb
 docs/src/*.html
+tutorials/**
 **.DS_Store

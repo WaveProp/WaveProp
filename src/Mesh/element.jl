@@ -244,7 +244,7 @@ function jacobian(el::LagrangeLine{3},u)
     @assert length(u) == 1
     @assert u ∈ ReferenceLine()    
     x = nodes(el)
-    SMatrix{N,1}((4*x[3] - 3*x[1] - x[2] + 4*(x[2]+x[1]-2*x[3])*u[1])...)
+    hcat((4*x[3] - 3*x[1] - x[2] + 4*(x[2]+x[1]-2*x[3])*u[1]))
 end    
 
 function (el::LagrangeElement{ReferenceTriangle,3})(u)
@@ -286,9 +286,9 @@ function jacobian(el::LagrangeElement{ReferenceTriangle,3}, u)
     @assert length(u) == 2    
     @assert u ∈ ReferenceTriangle()
     x = nodes(el)
-    SMatrix{N,2}(
-        (x[2] - x[1])..., 
-        (x[3] - x[1])...
+    hcat(
+        (x[2] - x[1]), 
+        (x[3] - x[1])
     )
 end 
 
@@ -308,10 +308,10 @@ function jacobian(el::LagrangeElement{ReferenceTetrahedron,4}, u)
     @assert length(u) == 3   
     @assert u ∈ ReferenceTriangle()
     x = nodes(el)
-    SMatrix{N,3}( 
-        (x[2] - x[1])...,
-        (x[3] - x[1])...,
-        (x[4] - x[1])...
+    hcat( 
+        (x[2] - x[1]),
+        (x[3] - x[1]),
+        (x[4] - x[1])
     )
 end 
 
@@ -405,7 +405,7 @@ function integrate(f,q::AbstractQuadratureRule,el::AbstractElement)
 end 
 
 function integrate(f,el::AbstractElement{<:ReferenceLine};kwargs...)
-    g = (u) -> f(el(u)...)*measure(el,u)
+    g = (u) -> f(el(u))*measure(el,u)
     integrate(g,domain(el);kwargs...)
 end    
 
@@ -454,7 +454,7 @@ end
 
 function _push_forward_quadrature(el,x̂,ŵ)
     x   = map(x->el(x),x̂)
-    w   = map(zip(x̂,ŵ)) do (x̂,ŵ)
+    w   = map(x̂,ŵ) do x̂,ŵ
         μ = measure(el,x̂)
         μ*prod(ŵ)
     end 

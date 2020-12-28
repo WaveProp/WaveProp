@@ -60,7 +60,6 @@ end
         r = rx = ry = 0.5
         Geometry.clear!()
         Ω, M = WaveProp.IO.gmsh_disk(;rx,ry)
-        M    = convert_to_2d(M) # project gmsh mesh into 2d
         Γ = boundary(Ω)
         mesh = NystromMesh(view(M,Ω),order=2,compute_normal=false)
         A = π*r^2

@@ -20,20 +20,20 @@ using WaveProp.Mesh
     x  = el(0.51)
     ν  = normal(el,0.51)
     w  = Nystrom.singular_weights_ldim(G,el,yi,νi,x,:onsurface)
-    I  = integrate((y1,y2)->G(x,SVector(y1,y2))*ϕ(SVector(y1,y2)),el)
+    Ie  = integrate(y->G(x,y)*ϕ(y),el)
     Ia = w*ϕ.(yi)
-    @test norm(I - Ia,Inf) < 1e-5
+    @test norm(Ie - Ia,Inf)/norm(Ie) < 1e-5
     y₀  = el(0.51)
     x   = x + 1e-2*ν # outside
     w  = Nystrom.singular_weights_ldim(G,el,yi,νi,x,:outside)
-    I  = integrate((y1,y2)->G(x,SVector(y1,y2))*ϕ(SVector(y1,y2)),el)
+    Ie  = integrate(y->G(x,y)*ϕ(y),el)
     Ia = w*ϕ.(yi)
-    @test norm(I - Ia,Inf)/norm(I) < 1e-5
+    @test norm(Ie - Ia,Inf)/norm(Ie) < 1e-5
     x   = x - 1e-2*ν # inside
     w  = Nystrom.singular_weights_ldim(G,el,yi,νi,x,:inside)
-    I  = integrate((y1,y2)->G(x,SVector(y1,y2))*ϕ(SVector(y1,y2)),el)
+    Ie  = integrate(y->G(x,y)*ϕ(y),el)
     Ia = w*ϕ.(yi)
-    @test norm(I - Ia,Inf) < 1e-5
+    @test norm(Ie - Ia,Inf)/norm(Ie) < 1e-5
 end
 
 @testset "Single obstacle" begin
@@ -43,7 +43,6 @@ end
     dudn = (x,n) -> DoubleLayerKernel(pde)(xout,x,n)
     # geo  = Circle()
     Ω,M   = WaveProp.IO.gmsh_disk()
-    M = convert_to_2d(M)
     Γ     = boundary(Ω)
     # generate a Nystrom mesh with Gauss-Legendre quadrature
     qrule   = GaussLegendre(10)

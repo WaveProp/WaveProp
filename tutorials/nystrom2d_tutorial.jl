@@ -14,9 +14,17 @@ pyplot()
 =#
 k   = 20
 pde = Helmholtz(dim=2,k=k)
-geo = Kite()
+# geo = Kite()
+δ = 1e-4
+ref = ReferenceLine() # the [0,1] segment
+bnd = ParametricEntity(ref) do u
+     x = cos(2π*u[1])
+     y = (δ+x^2)*sin(2π*u[1])
+     SVector(x,y)
+end     
+geo = ParametricBody(boundary=bnd)
 G   = SingleLayerKernel(pde)
-xₛ  = (0,0)
+xₛ  = (0.5,0)
 u   = (x) -> G(xₛ,x)
 xₒ  = (3,-1)
 subfig = plot(geo,label="Γ")
@@ -46,6 +54,40 @@ for i in 1:niter
      er[i] = abs(u(xx) - uₙ(xx))/abs(u(xx))
 end
 fig = plot(nn,er,m=:x,yscale=:log10,ylabel="log₁₀(error)",xlabel="n",label="(uₙ - u)/u")
+
+niter = 9
+er_dim    = []
+er_ldim    = []
+nn    = []
+quad_rule = GaussLegendre(6)
+for i in 1:niter
+     Ω,M   = meshgen(geo;gridsize=(1/2)^i)
+     Γ     = boundary(Ω)     
+     mesh      = NystromMesh(M,Γ;quad_rule)
+     S = SingleLayerOperator(pde,mesh)
+     D = DoubleLayerOperator(pde,mesh)
+     Sdim = Nystrom.assemble_dim(S)
+     Ddim = Nystrom.assemble_dim(D)
+     Sldim = Nystrom.assemble_ldim(S)
+     Dldim = Nystrom.assemble_ldim(D)
+     Ldim     = I/2 + Ddim - im*η*Sdim # create a dense matrix
+     Lldim     = I/2 + Dldim - im*η*Sldim # create a dense matrix
+     rhs = γ₀(u,mesh)
+     σdim    = Ldim\rhs
+     σldim   = Lldim\rhs
+     𝒮 = SingleLayerPotential(pde,mesh)
+     𝒟 = DoubleLayerPotential(pde,mesh)
+     xx = (5,5)
+     uₙ = (x) -> 𝒟[σdim](x) - im*η*𝒮[σdim](x)
+     push!(er_dim,abs(u(xx) - uₙ(xx))/abs(u(xx)))
+     uₙ = (x) -> 𝒟[σldim](x) - im*η*𝒮[σldim](x)
+     push!(er_ldim,abs(u(xx) - uₙ(xx))/abs(u(xx)))
+     push!(nn,length(mesh))
+end
+fig = plot(nn,er_dim,m=:x,xscale=:log2,yscale=:log10,ylabel="log₁₀(error)",xlabel="n",label="gdim")
+plot!(fig,nn,er_ldim,m=:x,xscale=:log2,yscale=:log10,ylabel="log₁₀(error)",xlabel="n",label="ldim")
+
+
 plot(fig,subfig,layout=(2,1))
 
 #===============================================
@@ -68,11 +110,11 @@ $u^{\rm inc}(x_1,x_2) = \exp(ik(x_1\cos\theta+x_2\sin\theta))$ where
 $\theta$ is the angle of incidence and $k>0$ is the wavenumber, that impinges on 
 $\Gamma$ giving rise to a scattered field $u$ which satisfies:
 ```math
-\begin{align}
+\begin{aligned}
 \Delta u+k^2 u &=0\quad\text{in}\quad\mathbb R^2\setminus\overline\Omega,\\
 u &=-u^{\rm inc}\quad\text{on}\quad\Gamma,\\
 \lim_{|x|\to\infty}|x|^{1/2}\left\{\frac{\partial u}{\partial |x|}-iku\right\} &= 0
-\end{align}
+\end{aligned}
 ```
 
 We proceed to define the partial differential equation (**PDE**) that we wish so solve,
@@ -235,3 +277,26 @@ U  = [(x,y) ∈ mesh ? NaN+im*NaN : u(SVector(x,y)) for y in ygrid, x in xgrid]
 heatmap(xgrid,ygrid,real.(U),clims=(-2,2))
 plot!(mesh,lw=4,lc=:white)
 plot!(size=(2000,2000))
+
+# # Composite quadrature rules 
+k = 40
+pde = Helmholtz(k=k,dim=2)
+Ω,M   = meshgen(geo;gridsize=0.01)
+Γ     = boundary(Ω)
+mesh  = NystromMesh(M,Γ;quad_rule=TrapezoidalP(20))
+S     = SingleLayerOperator(pde,mesh)
+D     = DoubleLayerOperator(pde,mesh)
+Smk   = Nystrom.assemble_dim(S)
+Dmk   = Nystrom.assemble_dim(D)
+L     = I/2 + Dmk - im*k*Smk # create a dense matrix
+rhs   = -γ₀(uᵢ,mesh)
+σ     = L\rhs
+## now output the solution. 
+𝒮     = SingleLayerPotential(pde,mesh)
+𝒟     = DoubleLayerPotential(pde,mesh)
+uₛ = (x) -> 𝒟[σ](x) - im*k*𝒮[σ](x)
+u  = x -> uᵢ(x) .+ uₛ(x) # the total field
+xgrid = ygrid = -3:(2π/k/10):3
+U  = [(x,y) ∈ mesh ? NaN+im*NaN : u(SVector(x,y)) for y in ygrid, x in xgrid]
+heatmap(xgrid,ygrid,real.(U),clims=(-2,2))
+plot!(mesh,lw=1,lc=:white)

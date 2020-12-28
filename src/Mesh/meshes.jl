@@ -4,11 +4,12 @@
 An abstract mesh structure in dimension `N` with primite data of type `T`. By
 default `T=Float64`, and `N=3`.
 
-Subtypes of `AbstractMesh` are expected to implement the following methods:
+The `AbstractMesh` interface expects the following methods to be implemented:
+
 - `etypes(msh)` : return a `Vector{AbstractElement}` representing the element
   types composing the mesh.
-- `elements(msh,etype)`: return an iterator over the mesh elements of type `etype::AbstractElement`
-- `nodes(msh)` : return the nodes of the mesh associated with its DOF.
+- `elements(msh,etype)` : return an iterator over the mesh elements of type `etype::AbstractElement`
+- `msh[E][i]` : return the *i-th* element of type `E`.
 """
 abstract type AbstractMesh{N,T} end
 
@@ -25,7 +26,7 @@ Base.length(mesh::AbstractMesh) = length(nodes(mesh))
 """
     struct GenericMesh{N,T} <: AbstractMesh{N,T}
 
-A simple data structure representing a generic mesh in an ambient space of dimension `N`, with data of type `T`. 
+Data structure representing a generic mesh in an ambient space of dimension `N`, with data of type `T`. 
 """
 Base.@kwdef struct GenericMesh{N,T} <: AbstractMesh{N,T}
     nodes::Vector{SVector{N,T}} = Vector{SVector{N,T}}()
@@ -84,29 +85,7 @@ Return the element types contained in the mesh.
 etypes(mesh::GenericMesh) = mesh.etypes
 
 # submesh structure
-struct SubMesh{N,T} <: AbstractMesh{N,T}
-    mesh::GenericMesh{N,T}
-    domain::Domain
-end
 
-Base.view(m::GenericMesh,Ω::Domain) = SubMesh(m,Ω)
-Base.view(m::GenericMesh,ent::AbstractEntity) = SubMesh(m,Domain(ent))
-
-function etypes(submesh::SubMesh)
-    Ω, M = submesh.domain, submesh.mesh    
-    ee = DataType[]
-    for ent in entities(Ω)
-        dict = M.ent2tags[ent]
-        append!(ee, keys(dict))
-    end    
-    return unique!(ee)
-end   
-
-struct ElementIterator{E,M}
-    mesh::M
-end    
-ElementIterator{E}(mesh::M) where {E,M <: AbstractMesh} = ElementIterator{E,M}(mesh)
-ElementIterator(mesh,E) = ElementIterator{E}(mesh)
 
 """
     elements(mesh::AbstractMesh,E::Type)
@@ -115,131 +94,88 @@ Return an iterator for iterating over all elements of `mesh` of type `E`.
 """
 elements(mesh::AbstractMesh, E::Type)   = ElementIterator(mesh,E)
 
-Base.eltype(::Type{ElementIterator{E,M}}) where {E,M} = E
+# utilities for iterating over elements of a mesh
 
-# iterator for generic mesh (not associated with a domain)
+struct ElementIterator{E,M} <: AbstractVector{E}
+    mesh::M
+end  
+ElementIterator{E}(mesh::M) where {E,M <: AbstractMesh} = ElementIterator{E,M}(mesh)
+ElementIterator(mesh,E) = ElementIterator{E}(mesh)
+
+Base.getindex(m::GenericMesh,E::Type{<:AbstractElement}) = ElementIterator(m,E)
+
+Base.size(iter::ElementIterator) = (length(iter),)
+
+mesh(iter::ElementIterator) = iter.mesh
+
+function Base.getindex(iter::ElementIterator,I)
+    @assert eltype(I) <: Integer
+    map(i->iter[i],I)    
+end    
+
 function Base.length(iter::ElementIterator{<:LagrangeElement,<:GenericMesh})
+    msh               = mesh(iter)    
     E                 = eltype(iter)    
-    tags::Matrix{Int} = iter.mesh.elements[E]
+    tags::Matrix{Int} = msh.elements[E]
     Np, Nel           = size(tags)
     return Nel
 end    
 
+function Base.getindex(iter::ElementIterator{<:LagrangeElement,<:GenericMesh},i::Int)
+    E                   = eltype(iter)    
+    mesh                = iter.mesh    
+    tags::Matrix{Int}   = mesh.elements[E]
+    node_tags           = view(tags,:,i)
+    vtx                 = view(mesh.nodes,node_tags)
+    el                  = E(vtx)    
+    return el
+end    
+
 function Base.length(iter::ElementIterator{<:ParametricElement,<:GenericMesh})
-    E        = eltype(iter)
-    mesh     = iter.mesh    
+    E               = eltype(iter)
+    mesh            = iter.mesh    
     tags::Vector{E} = mesh.elements[E]    
     return length(iter.mesh.elements[E])
 end    
 
-Base.iterate(iter::ElementIterator{<:LagrangeElement,<:GenericMesh}) = iterate(iter,1)
-function Base.iterate(iter::ElementIterator{<:LagrangeElement,<:GenericMesh},state)
-    E                   = eltype(iter)    
-    mesh                = iter.mesh    
-    tags::Matrix{Int}   = mesh.elements[E]
-    if state > length(iter)
-        return nothing
-    else    
-        node_tags   = view(tags,:,state)
-        vtx         = view(mesh.nodes,node_tags)
-        el          = E(vtx)    
-        return el, state + 1
-    end
+function Base.getindex(iter::ElementIterator{<:ParametricElement,<:GenericMesh},i::Int)
+    E               = eltype(iter)
+    mesh            = iter.mesh    
+    els::Vector{E} = mesh.elements[E]    
+    return els[i]
 end    
 
-Base.iterate(iter::ElementIterator{<:ParametricElement,<:GenericMesh}) = iterate(iter,1)
-function Base.iterate(iter::ElementIterator{<:ParametricElement,<:GenericMesh}, state)
-    E        = eltype(iter)
-    mesh     = iter.mesh    
-    tags::Vector{E} = mesh.elements[E]    
-    iterate(tags,state)
-end    
+"""
+    eltindices(m::GenericMesh,Ω,E)
 
-# iterator for submesh. Filter elements based on domain
-function Base.length(iter::ElementIterator{<:LagrangeElement,<:SubMesh})
-    submesh    = iter.mesh
-    Ω, M        = submesh.domain, submesh.mesh
-    E          = eltype(iter)    
-    # loop over all entities and count the number of elements of type E
-    Nel        = 0
+Compute the element indices `idxs` of the elements of type `E` composing `Ω`, so that `m[E][idxs]` gives all
+the elements of type `E` meshing `Ω`.
+"""
+function eltindices(m::GenericMesh,Ω,E::DataType)
+    idxs = Int[]    
     for ent in entities(Ω)
-        dict   = M.ent2tags[ent] 
-        v      = dict[E] # get element tags for type E
-        Nel += length(v)    
-    end
-    return Nel
-end    
-
-function Base.length(iter::ElementIterator{<:ParametricElement,<:SubMesh})
-    submesh    = iter.mesh
-    Ω, M        = submesh.domain, submesh.mesh
-    E          = eltype(iter)    
-    # loop over all entities and count the number of elements of type E
-    Nel        = 0
-    for ent in entities(Ω)
-        dict   = M.ent2tags[ent] 
-        v      = dict[E] # get element tags for type E
-        Nel += length(v)    
-    end
-    return Nel
-end    
-
-Base.iterate(iter::ElementIterator{<:AbstractElement,<:SubMesh}) = iterate(iter,(1, 1))
-function Base.iterate(iter::ElementIterator{<:AbstractElement,<:SubMesh}, state)
-    # extract some constant fields for convenience
-    submesh   = iter.mesh    
-    Ω, M      = submesh.domain, submesh.mesh
-    E         = eltype(iter)    
-    ents      = entities(Ω)
-    # inner iteration over ent
-    n, i          = state
-    ent          = ents[n]
-    inner_state  = _iterate(M, E, ent, i)
-    if inner_state === nothing
-        if n == length(ents)
-            return nothing
-        else
-            return iterate(iter, (n + 1, 1))
-        end
-    else 
-        el, i = inner_state
-        return el, (n, i)
+        tags = get(m.ent2tags[ent],E,Int[])
+        append!(idxs,tags)
     end    
-end  
+    return idxs
+end    
 
-# helper iterator which dispatches based on the type of E. A type stable method
-# is obtained by *tagging* the mesh.elements[E] metadata with its expected type
-function _iterate(mesh::GenericMesh,E::Type{<:LagrangeElement},ent::AbstractEntity,i::Int=1)
-    # if ent has not elements of type `E`, stop inner iteration
-    haskey(mesh.ent2tags[ent],E) || (return nothing)
-    # get tag for i-th elements in ent of type E
-    el_tags = mesh.ent2tags[ent][E]
-    if i > length(el_tags)
-        return nothing    
-    else
-        el_tag      = el_tags[i]            
-        tags::Matrix{Int} = mesh.elements[E]
-        node_tags   = view(tags,:,el_tag)
-        vtx         = view(mesh.nodes,node_tags)
-        el          = E(vtx)
-        return el,i+1
-    end
-end 
+"""
+    eltindices(m::GenericMesh,Ω)
 
-function _iterate(mesh::GenericMesh,E::Type{<:ParametricElement},ent::AbstractEntity,i::Int=1)
-    # if ent has not elements of type `E`, stop inner iteration
-    haskey(mesh.ent2tags[ent],E) || (return nothing)
-    # get tag for i-th elements in ent of type E
-    el_tags = mesh.ent2tags[ent][E]
-    if i > length(el_tags)
-        return nothing    
-    else
-        el_tag      = el_tags[i]            
-        tags::Vector{E} = mesh.elements[E]    
-        el              = tags[el_tag]
-        return el,i+1
+Return a `Dict` with keys being the `etypes` of `m`, and values being the
+indices of the elements in `Ω` of type `E`. 
+"""
+function eltindices(m::GenericMesh,Ω)
+    dict = Dict{DataType,Vector{Int}}()
+    for E in etypes(m)
+        tags = eltindices(m,Ω,E)    
+        if !isempty(tags)
+            dict[E] = tags
+        end
     end
-end 
+    return dict
+end    
 
 """
     _qrule_for_mesh(m,p)

@@ -6,16 +6,16 @@ Abstract shape given by the image of a parametrization with domain
 
 The type parameter `T` represents how points are represented (e.g.
 SVector{3,Float64} for a typical point in three dimensions). Note that the
-`ambient_dimension` must be inferrable from the type `T` alone. 
+[`ambient_dimension`](@ref) must be inferrable from the type `T` alone. 
 
 The geometric dimension of the element can be obtained from the geometric
 dimension of its domain `D`. 
 
-Instances `el` of `AbstractElement` are expected to implement.
+Instances `el` of `AbstractElement` are expected to implement:
 - `el(x̂)`: evaluate the parametrization defining the element at the parametric
     coordinates `x̂ ∈ D`.
 - `jacobian(el,x̂)` : evaluate the jacobian matrix of the parametrization at the
-    parametric coordinate `x ∈ D`. For performance reasons, this should return
+    parametric coordinate `x ∈ D`. For performance reasons, it is important to
     an `SMatrix` of size `M × N`, where `M` is the [`ambient_dimension`](@ref)
     of `el` and `N` is the [`geometric_dimension`](@ref) of `el`, respectively.
 """
@@ -34,6 +34,16 @@ function (el::AbstractElement)(x)
 end
 
 """
+    jacobian(el::AbstractElement,x)
+
+Evaluate the jacobian of the underlying parametrization of the element `el` at
+point `x`. 
+"""
+function jacobian(el::AbstractElement,x) 
+    abstractmethod(typeof(el))
+end
+
+"""
     domain(el::AbstractElement)
 
 Return an instance of the singleton type `R`; i.e. the reference element.
@@ -44,6 +54,25 @@ domain(el::AbstractElement) = domain(typeof(el))
 Base.eltype(el::AbstractElement{D,T}) where {D,T} = T
 
 """
+    geometric_dimension(el::AbstractElement{R})
+
+Return the geometric dimension of `el`, i.e. the number of variables needed to locally
+parametrize the element.
+"""
+geometric_dimension(t::Type{<:AbstractElement}) = geometric_dimension(domain(t))
+geometric_dimension(el::AbstractElement)        = geometric_dimension(typeof(el))
+
+"""
+    ambient_dimension(el::AbstractElement)
+
+Return the dimension of the ambient space where `el` lives.
+"""
+ambient_dimension(el::AbstractElement{R,T})   where {R,T}      = length(T)
+ambient_dimension(t::Type{<:AbstractElement{R,T}}) where {R,T} = length(T)
+
+codimension(el::AbstractElement) = ambient_dimension(el) - geometric_dimension(el)
+
+"""
     measure(τ,u)
 
 The integration measure `μ` of the transformation `τ` so that 
@@ -51,6 +80,11 @@ The integration measure `μ` of the transformation `τ` so that
 \\int_\\tau f(y) ds_y = \\int_{\\hat{\\tau}} f(\\tau(\\hat{y})) \\mu(\\hat{y}) d\\hat{y}
 ```
 where `` \\hat{\\tau} `` is the reference element.
+
+In general, this is given by `√det(g)`, where `g = JᵗJ` is the metric tensor and
+`J` the jacobian of the element. When `J` is a square matrix (i.e. when the
+`geometric_dimension` and `ambient_dimension` of `τ` coincide), the faster
+version `|det(J)|` is used. 
 """
 function measure(el,u)
     jac = jacobian(el,u)
@@ -93,23 +127,6 @@ function Geometry.normal(el::AbstractElement,u)
         notimplemented()    
     end            
 end    
-
-"""
-    geometric_dimension(el::AbstractElement{R})
-
-Return the geometric dimension of `el`, i.e. the number of variables needed to locally
-parametrize the element.
-"""
-geometric_dimension(t::Type{<:AbstractElement}) = geometric_dimension(domain(t))
-geometric_dimension(el::AbstractElement)        = geometric_dimension(typeof(el))
-
-"""
-    ambient_dimension(el::AbstractElement)
-
-Return the dimension of the ambient space where `el` lives.
-"""
-ambient_dimension(el::AbstractElement{R,T})   where {R,T}      = length(T)
-ambient_dimension(t::Type{<:AbstractElement{R,T}}) where {R,T} = length(T)
 
 boundary(el::AbstractLine) = el(0),el(1)
 
@@ -158,7 +175,7 @@ end
 # a convenience constructor to allow things like LagrangeLine(a,b) instead of LagrangeLine((a,b))
 LagrangeElement{R}(nodes...) where {R} = LagrangeElement{R}(nodes)
 
-# define some aliases for convenience
+# define some aliases 
 """
     const LagrangeLine = LagrangeElement{ReferenceLine}
 """
@@ -215,6 +232,11 @@ nodes(el::LagrangeElement) = el.nodes
 
 order(el::LagrangeElement) = order(typeof(el))
 
+"""
+    order(el::LagrangeElement)
+
+The order of the underlying polynomial used to represent this type of element.
+"""
 order(el::Type{LagrangeElement{ReferenceLine,Np,T}}) where {Np,T} = Np - 1
 
 function order(::Type{LagrangeElement{ReferenceTriangle,Np,T}}) where {Np,T} 
@@ -268,11 +290,6 @@ function (el::LagrangeElement{ReferenceTetrahedron,4})(u)
     x[1] + (x[2] - x[1]) * u[1] + (x[3] - x[1]) * u[2] + (x[4] - x[1]) * u[3]
 end 
 
-"""
-    jacobian(el::LagrangeElement,x)
-
-Evaluate the jacobian of the underlying parametrization of the element `el` at point `x`. 
-"""
 function jacobian(el::LagrangeElement{ReferenceLine,2}, u)
     N = ambient_dimension(el)    
     @assert length(u) == 1
@@ -316,42 +333,46 @@ function jacobian(el::LagrangeElement{ReferenceTetrahedron,4}, u)
 end 
 
 """
-    ParametricElement{D,N,F}
+    ParametricElement <: AbstractElement{D,T}
 
-An element represented through a (function) mapping `domain(el)` into the
-element.
+An element represented through a explicit function `f` mapping `D` into the
+element. 
+
+The underlying implementation maps `D = domain(el)` into a
+`preimage::HyperRectangle`, and then uses `f` on this `preimage`. This is done
+to avoid having to create a new function `f` (and therefore a new type) when
+parametric elements are split. This is an implementation detail, and the
+underlying usage is identical to e.g. a `LagrangeElement`. 
 """
-struct ParametricElement{D,T,F} <: AbstractElement{D,T}
+struct ParametricElement{D,T,F,R} <: AbstractElement{R,T}
     parametrization::F
-    preimage::D    
+    preimage::D  
+    function ParametricElement{D,T,F}(f::F,d::D) where {D,T,F}
+        if D <: HyperRectangle{1}
+            R = ReferenceLine
+        elseif D <: HyperRectangle{2}
+            R = ReferenceSquare
+        else
+            notimplemented()
+        end
+        return new{D,T,F,R}(f,d)
+    end    
 end
 
-preimage(el::ParametricElement) = el.preimage
+preimage(el::ParametricElement)        = el.preimage
 parametrization(el::ParametricElement) = el.parametrization
 
 Base.eltype(p::ParametricElement{D,T,F}) where {D,T,F} = T
 
-# The domain of a parametric element is the reference domain which can be used
-# to describe it.
-function domain(p::Type{ParametricElement{D,T,F}}) where {D,T,F}
-    if D <: HyperRectangle{1}
-        return ReferenceLine()    
-    elseif D <: HyperRectangle{2}
-        return ReferenceSquare()    
-    else
-        notimplemented()
-    end        
-end    
-domain(p::ParametricElement) = domain(typeof(p))
-
 geometric_dimension(p::ParametricElement) = geometric_dimension(domain(p))
 ambient_dimension(p::ParametricElement)   = length(eltype(p))
 
-# constructor which infers the return type of f by applying it to a point in the
-# reference domain.
+# constructor which infers the return type of f. To be on the safe side, error
+# if inferred type is not concrete 
 function ParametricElement(f,d)
     x = center(d)
-    T = Base.promote_op(f,typeof(x))    
+    T = Base.promote_op(f,typeof(x)) 
+    assert_concrete_type(T)
     D = typeof(d)
     F = typeof(f)
     return ParametricElement{D,T,F}(f,d)
@@ -363,11 +384,13 @@ function (el::ParametricElement)(u)
     lc  = low_corner(rec)
     hc  = high_corner(rec)
     N   = geometric_dimension(el)
-    # map from reference domain to domain of element (confusing...)
+    # map from reference domain to preimage
     v = svector(N) do dim
         lc[dim] + (hc[dim]-lc[dim])*u[dim]
     end    
-    el.parametrization(v)
+    # map from preimage to element
+    f = parametrization(el)
+    return f(v)
 end
 
 function jacobian(el::ParametricElement,u::SVector) 
@@ -376,21 +399,23 @@ function jacobian(el::ParametricElement,u::SVector)
     lc  = low_corner(rec)
     hc  = high_corner(rec)
     N = geometric_dimension(el)
-    # map from reference domain to domain of element (confusing...)
+    # map from reference domain to preimage
     v = svector(N) do dim
         lc[dim] + (hc[dim]-lc[dim])*u[dim]
     end        
     scal = svector(N) do dim
         (hc[dim]-lc[dim])
     end        
-    ForwardDiff.jacobian(el.parametrization,v) * SDiagonal(scal)
+    # compute jacobian
+    f = parametrization(el)
+    ForwardDiff.jacobian(f,v) * SDiagonal(scal)
 end
 jacobian(psurf::ParametricElement,s) = jacobian(psurf,SVector(s))
 
 # define some aliases for convenience
 const ParametricLine  = ParametricElement{HyperRectangle{1,Float64}}
 
-# higher order derivatives
+# higher order derivatives used in some Nystrom methods
 derivative(l::ParametricLine,s)  = ForwardDiff.derivative(l,s[1])
 derivative2(l::ParametricLine,s) = ForwardDiff.derivative(s -> derivative(l,s[1]),s[1])
 derivative3(l::ParametricLine,s) = ForwardDiff.derivative(s -> derivative2(l,s[1]),s[1])
@@ -399,6 +424,7 @@ derivative(l::LagrangeLine,s)  = ForwardDiff.derivative(l,s)
 derivative2(l::LagrangeLine,s) = ForwardDiff.derivative(s -> derivative(l,s),s)
 derivative3(l::LagrangeLine,s) = ForwardDiff.derivative(s -> derivative2(l,s),s)
 
+# overload integration methods
 function integrate(f,q::AbstractQuadratureRule,el::AbstractElement)
     x,w = q(el)
     integrate(f,x,w)

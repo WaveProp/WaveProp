@@ -26,4 +26,5 @@ end
     @test length(els) == 100
     @test eltype(els) == HyperRectangle{2,Float64}
     @test first(els) == HyperRectangle((0,0),(h,h))
+    els[end]
 end

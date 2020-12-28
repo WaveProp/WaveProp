@@ -32,50 +32,70 @@ ElementIterator(m::CartesianMesh) = ElementIterator(m,etype(m))
 elements(m::CartesianMesh)        = ElementIterator(m)
 
 # element iterator for cartesian mesh
-function Base.length(iter::ElementIterator{<:Any,<:CartesianMesh})
+# FIXME: the ElementIterator for a CartesianMesh should inherit from
+# AbstractMatrix and not AbstractVector since these are more naturally indexed
+# as matrices. Also this should be made generic on the dimension
+function Base.size(iter::ElementIterator{<:Any,<:CartesianMesh})
     E       = eltype(iter)    
     grids   = grid1d(iter.mesh)
     sz      = size(iter.mesh) 
-    return prod(n -> n-1, sz)
+    return sz .- 1
+end    
+function Base.length(iter::ElementIterator{<:Any,<:CartesianMesh})
+    prod(size(iter))
 end    
 
-# 1d iterator
-function Base.iterate(iter::ElementIterator{<:Any,<:CartesianMesh{1}}, state=1)
-    E      = eltype(iter)    
-    xx     = xgrid(iter.mesh)
-    n      = length(xx)
-    if state == n
-        return nothing
-    else    
-        low_corner = (xx[state], )
-        high_corner = (xx[state+1], )
-        el  = E(low_corner,high_corner) # construct the element
-        return el, state + 1
-    end
+# 1d case
+function Base.getindex(iter::ElementIterator{<:Any,<:CartesianMesh{1}}, i::Int)
+    E           = eltype(iter)
+    xx          = xgrid(iter.mesh)
+    low_corner  = (xx[i], )
+    high_corner = (xx[i+1], )
+    el          = E(low_corner,high_corner) # construct the element
+    return el
 end    
 
-# 2d iterator
-function Base.iterate(iter::ElementIterator{<:Any,<:CartesianMesh{2}}, state=(1,1))
+# 2d case
+function Base.getindex(iter::ElementIterator{<:Any,<:CartesianMesh{2}}, i::Int,j::Int)
     E      = eltype(iter)    
     xx     = xgrid(iter.mesh)
     yy     = ygrid(iter.mesh)
-    nx     = length(xx)
-    ny     = length(yy)
-    i,j    = state
-    if i == 1 && j == ny
-        return nothing
-    end    
     low_corner = (xx[i],yy[j])
     high_corner = (xx[i+1],yy[j+1])
     el  = E(low_corner,high_corner) # construct the element
-    if i == nx-1 # and j !== ny
-        state = (1,j+1) # next row
-        return el, state
-    else
-        state = (i+1,j) 
-        return el, state
-    end
+    return el
 end    
+
+function Base.getindex(iter::ElementIterator{<:Any,<:CartesianMesh{2}}, I::Int)
+    sz  = size(iter)
+    idx = CartesianIndices(sz)[I]
+    iter[idx[1],idx[2]]
+end    
+
+
+
+# # 2d iterator
+# function Base.iterate(iter::ElementIterator{<:Any,<:CartesianMesh{2}}, state=(1,1))
+#     E      = eltype(iter)    
+#     xx     = xgrid(iter.mesh)
+#     yy     = ygrid(iter.mesh)
+#     nx     = length(xx)
+#     ny     = length(yy)
+#     i,j    = state
+#     if i == 1 && j == ny
+#         return nothing
+#     end    
+#     low_corner = (xx[i],yy[j])
+#     high_corner = (xx[i+1],yy[j+1])
+#     el  = E(low_corner,high_corner) # construct the element
+#     if i == nx-1 # and j !== ny
+#         state = (1,j+1) # next row
+#         return el, state
+#     else
+#         state = (i+1,j) 
+#         return el, state
+#     end
+# end    
 
 grid1d(g::CartesianMesh)     = g.grid1d
 grid1d(g::CartesianMesh,dim) = g.grid1d[dim]

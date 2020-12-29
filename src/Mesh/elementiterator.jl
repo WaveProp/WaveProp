@@ -54,7 +54,7 @@ end
 function Base.size(iter::ElementIterator{<:AbstractElement,<:SubMesh})
     E          = eltype(iter)        
     submesh    = iter.mesh
-    idxs       = eltindices(submesh,E)
+    idxs       = dom2elt(submesh,E)
     return (length(idxs),)
 end  
 
@@ -62,7 +62,7 @@ function Base.getindex(iter::ElementIterator{<:AbstractElement,<:SubMesh},i::Int
     E      = eltype(iter)
     msh    = mesh(iter) # a SubMesh
     p_msh  = parent(msh) # parent mesh
-    iglob  = eltindices(msh,E)[i] # global index of element in parent mesh
+    iglob  = dom2elt(msh,E)[i] # global index of element in parent mesh
     iter = ElementIterator(p_msh,E)
     return iter[iglob]
 end    

@@ -1,9 +1,9 @@
 struct SubMesh{N,T} <: AbstractMesh{N,T}
     mesh::GenericMesh{N,T}
     domain::Domain
-    eltindices::Dict{DataType,Vector{Int}} # FIXME: this could be computed on the flight. Is that a problem?
+    dom2elt::Dict{DataType,Vector{Int}} # FIXME: this could be computed on the flight. Is that a problem?
     function SubMesh{N,T}(mesh::GenericMesh,Ω::Domain) where {N,T}
-        idxs = eltindices(mesh,Ω)    
+        idxs = dom2elt(mesh,Ω)    
         return new{N,T}(mesh,Ω,idxs)
     end    
 end
@@ -15,21 +15,21 @@ Base.view(m::GenericMesh,ent::AbstractEntity) = SubMesh(m,Domain(ent))
 Base.getindex(m::GenericMesh,Ω::Domain) = view(m,Ω)
 Base.getindex(m::GenericMesh,ent::AbstractEntity) = view(m,ent)
 
-Base.getindex(m::SubMesh,Ω::Domain)   = view(parent(m),Ω)
+Base.getindex(m::SubMesh,Ω::Domain)           = view(parent(m),Ω)
 Base.getindex(m::SubMesh,ent::AbstractEntity) = view(parent(m),ent)
 
 parent(m::SubMesh) = m.mesh
 domain(m::SubMesh) = m.domain
 
 """
-    eltindices(m::SubMesh,[E])
+    dom2elt(m::SubMesh,[E])
 
 A dictionary with keys being the element types of `m`, and values being the
 element indices in the parent mesh. If a type `E` is given, return the values
 associated with that key.
 """
-eltindices(m::SubMesh) = m.eltindices
-eltindices(m::SubMesh,E::Type{<:AbstractElement}) = m.eltindices[E]
+dom2elt(m::SubMesh) = m.dom2elt
+dom2elt(m::SubMesh,E::Type{<:AbstractElement}) = m.dom2elt[E]
 
 function etypes(submesh::SubMesh)
     Ω, M = submesh.domain, submesh.mesh    

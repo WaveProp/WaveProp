@@ -85,12 +85,12 @@ Return the element types contained in the mesh.
 etypes(mesh::GenericMesh) = mesh.etypes
 
 """
-    eltindices(m::GenericMesh,Ω,E)
+    dom2elt(m::GenericMesh,Ω,E)
 
 Compute the element indices `idxs` of the elements of type `E` composing `Ω`, so that `m[E][idxs]` gives all
 the elements of type `E` meshing `Ω`.
 """
-function eltindices(m::GenericMesh,Ω,E::DataType)
+function dom2elt(m::GenericMesh,Ω,E::DataType)
     idxs = Int[]    
     for ent in entities(Ω)
         tags = get(m.ent2tags[ent],E,Int[])
@@ -100,15 +100,15 @@ function eltindices(m::GenericMesh,Ω,E::DataType)
 end    
 
 """
-    eltindices(m::GenericMesh,Ω)
+    dom2elt(m::GenericMesh,Ω)
 
 Return a `Dict` with keys being the `etypes` of `m`, and values being the
 indices of the elements in `Ω` of type `E`. 
 """
-function eltindices(m::GenericMesh,Ω)
+function dom2elt(m::GenericMesh,Ω)
     dict = Dict{DataType,Vector{Int}}()
     for E in etypes(m)
-        tags = eltindices(m,Ω,E)    
+        tags = dom2elt(m,Ω,E)    
         if !isempty(tags)
             dict[E] = tags
         end

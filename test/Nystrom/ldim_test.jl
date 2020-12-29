@@ -42,6 +42,7 @@ end
     u    = (x)   -> SingleLayerKernel(pde)(xout,x)
     dudn = (x,n) -> DoubleLayerKernel(pde)(xout,x,n)
     # geo  = Circle()
+    Geometry.clear!()
     Ω,M   = WaveProp.IO.gmsh_disk()
     Γ     = boundary(Ω)
     # generate a Nystrom mesh with Gauss-Legendre quadrature

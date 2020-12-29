@@ -6,16 +6,18 @@ using WaveProp.Integration
 using WaveProp.Mesh
 
 @testset "Basic tests" begin
+    Geometry.clear!()
     Ω,M   = WaveProp.IO.gmsh_sphere(dim=2,h=0.05)
-    Γ = boundary(Ω)
+    Γ     = boundary(Ω)
     mesh  = view(M,boundary(Ω))
     nmesh = NystromMesh(mesh,order=2)
-    @test isapprox(sum(nmesh.qweights),π,atol=0.1)
+    @test isapprox(sum(qweights(nmesh)),π,atol=0.1)
+    Geometry.clear!()
     geo   = Circle(radius=0.5)
     Ω,M   = meshgen(geo;gridsize=(0.1))
     mesh  = view(M,boundary(Ω))
     nmesh = NystromMesh(mesh,order=2)
-    @test isapprox(sum(nmesh.qweights),π,atol=0.1)
+    @test isapprox(sum(qweights(nmesh)),π,atol=0.1)
 end
 
 @testset "Mesh quadrature" begin
@@ -27,18 +29,18 @@ end
         ∂Ω = boundary(Ω)
         mesh  = NystromMesh(view(M,∂Ω),order=1)
         A     = 2*(lx*ly + lx*lz + ly*lz)
-        @test A ≈ sum(mesh.qweights)
+        @test A ≈ sum(qweights(mesh))
         # generate a Nystrom mesh for volume. Note that since we are creating a
         # volume Nystrom mesh, we pass the kwarg compute_normal=false since
         # normals do not make sense in this case
         mesh  = NystromMesh(view(M,Ω),order=1,compute_normal=false)
         V     = prod(widths)
         # sum only weights corresponding to tetras
-        @test V ≈ sum(mesh.qweights)
+        @test V ≈ sum(qweights(mesh))
         # finally generate a Nystrom mesh for the surface AND volume        
         Ω₁ = union(Ω,∂Ω)
         mesh  = NystromMesh(view(M,Ω₁),order=1,compute_normal=false)
-        @test V+A ≈ sum(mesh.qweights)
+        @test V+A ≈ sum(qweights(mesh))
     end
     @testset "Sphere" begin
         r = 0.5

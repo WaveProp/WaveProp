@@ -7,6 +7,7 @@ using WaveProp.Mesh
 
 @testset "Basic tests" begin
     pde   = Helmholtz(;dim=3,k=1)
+    Geometry.clear!()
     Ω,M   = WaveProp.IO.gmsh_sphere(dim=2)
     Γ     = boundary(Ω)
     mesh  = NystromMesh(view(M,Γ),order=1)
@@ -27,6 +28,7 @@ end
     xout = SVector(3,3,3)
     u    = (x)   -> SingleLayerKernel(pde)(xout,x)
     dudn = (x,n) -> DoubleLayerKernel(pde)(xout,x,n)
+    Geometry.clear!()
     Ω,M   = WaveProp.IO.gmsh_sphere(dim=2,h=0.1)
     Γ     = boundary(Ω)
     mesh  = NystromMesh(view(M,Γ),order=1)
@@ -44,8 +46,8 @@ end
     xout = SVector(3,3)
     u    = (x)   -> SingleLayerKernel(pde)(xout,x)
     dudn = (x,n) -> DoubleLayerKernel(pde)(xout,x,n)
+    Geometry.clear!()
     Ω,M   = WaveProp.IO.gmsh_disk(dim=1,h=0.01)
-    M    = convert_to_2d(M)
     Γ     = boundary(Ω)
     mesh = NystromMesh(view(M,Γ);order=1)
     γ₀u   = γ₀(u,mesh)

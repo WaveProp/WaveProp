@@ -8,7 +8,7 @@ using WaveProp.Mesh
     d = ReferenceLine()
     h = 0.1
     mesh = CartesianMesh(d;gridsize=h)
-    els = elements(mesh)
+    els = ElementIterator(mesh)
     @test length(els) == 10
     @test eltype(els) == HyperRectangle{1,Float64}
     @test first(els) == HyperRectangle((0,),(h,))
@@ -21,7 +21,7 @@ end
     d    = ReferenceSquare()
     h    = 0.1
     mesh = CartesianMesh(d;gridsize=(h,h))
-    els = elements(mesh)
+    els = ElementIterator(mesh)
     length(els)
     @test length(els) == 100
     @test eltype(els) == HyperRectangle{2,Float64}

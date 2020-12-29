@@ -196,38 +196,6 @@ const LagrangeTetrahedron = LagrangeElement{ReferenceTetrahedron}
 """
 const LagrangeRectangle   = LagrangeElement{ReferenceSquare}
 
-"""
-    line(a,b)
-
-Create a straight line connecting points `a` and `b`. This returns an instance
-of [`LagrangeLine`](@ref).
-"""
-line(a,b) = LagrangeLine(a,b)
-
-"""
-    triangle(a,b,c)
-
-Create a triangle connecting points `a`, `b`, and `c`. This returns an instance
-of [`LagrangeTriangle`](@ref).
-"""
-triangle(a,b,c) = LagrangeTriangle(a,b,c)
-
-"""
-    tetrahedron(a,b,c,d)
-
-Create a tetrahedron with vertices `a`, `b`, `c` and `d`. This returns an instance
-of [`LagrangeTetrahedron`](@ref).
-"""
-tetrahedron(a,b,c,d) = LagrangeTetrahedron(a,b,c,d)
-
-"""
-    rectangle(a,b,c,d)
-
-Create a rectangle with vertices `a`, `b`, `c` and `d`. This returns an instance
-of [`LagrangeRectangle`](@ref).
-"""
-rectangle(a,b,c,d) = LagrangeRectangle(a,b,c,d)
-
 nodes(el::LagrangeElement) = el.nodes
 
 order(el::LagrangeElement) = order(typeof(el))

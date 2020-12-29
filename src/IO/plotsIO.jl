@@ -113,6 +113,7 @@ end
     for (E,els) in mesh.elements
         for el in els
             @series begin 
+                marker --> nothing    
                 el
             end
         end        

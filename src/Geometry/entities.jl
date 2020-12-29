@@ -99,6 +99,9 @@ struct ParametricEntity{D,F} <: AbstractEntity
     end    
 end
 
+const ParametricCurve{F} = ParametricEntity{ReferenceLine,F} 
+
+
 function ParametricEntity{D,F}(f::F) where {D,F}
     d = geometric_dimension(D)
     t = _new_tag(d) # automatically generate a new (valid) tag
@@ -221,6 +224,18 @@ function jacobian(psurf::GmshParametricEntity{N},s::SVector) where {N}
     end
 end
 
+"""
+    line(a,b)
+
+Create a straight line connecting points `a` and `b`. This returns an instance
+of [`ParametricCurve`](@ref).
+"""
+function line(a::SVector,b::SVector) 
+    f = (u) -> a + u*(b-a)
+    ParametricCurve(f)
+end
+line(a,b) = line(SVector(a),SVector(b))
+
 #####################################################################
 
 # Variables and functions to globally keep track of entities
@@ -295,3 +310,4 @@ function clear!()
     clear_entities!()
     nothing
 end
+

@@ -35,26 +35,6 @@ function single_doublelayer_dim(pde,X,Y=X;compress=Matrix,location=:onsurface)
     axpy!(true,δD,D)
     return S,D
 end
-
-function single_doublelayer_dim(pde,X,Y=X;compress=Matrix,location=:onsurface)
-    msg = "unrecognized value for kw `location`: received $location. 
-           Valid options are `:onsurface`, `:inside` and `:outside`."    
-    σ = location === :onsurface ? -0.5 : location === :inside ? 0 : location === :outside ? -1 : error(msg)
-    Sop  = SingleLayerOperator(pde,X,Y)
-    Dop  = DoubleLayerOperator(pde,X,Y)
-    # convert to a possibly more efficient format
-    S = compress(Sop)
-    D = compress(Dop)
-    basis,γ₁_basis = _basis_dim(Sop)    
-    γ₀B,γ₁B,R      = _auxiliary_quantities_dim(Sop,S,D,basis,γ₁_basis,σ)
-    # compute corrections
-    δS = _singular_weights_dim(Sop,γ₀B,γ₁B,R)
-    δD = _singular_weights_dim(Dop,γ₀B,γ₁B,R)
-    # add corrections to the dense part
-    axpy!(true,δS,S)
-    axpy!(true,δD,D)
-    return S,D
-end
 singlelayer_dim(args...;kwargs...) = single_doublelayer_dim(args...;kwargs...)[1]
 doublelayer_dim(args...;kwargs...) = single_doublelayer_dim(args...;kwargs...)[2]
 

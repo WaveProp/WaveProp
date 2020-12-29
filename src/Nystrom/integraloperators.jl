@@ -17,7 +17,7 @@ function IntegralOperator(k,X,Y=X)
     IntegralOperator{T}(k,X,Y)
 end
 
-Base.size(iop::IntegralOperator)      = (length(qnodes(iop.X)), length(qnodes(iop.Y)))
+Base.size(iop::IntegralOperator)      = (length(iop.X), length(iop.Y))
 
 kernel_type(iop::IntegralOperator) = kernel_type(iop.kernel)
 
@@ -65,7 +65,7 @@ function Integration.singular_weights(iop::IntegralOperator,qstd::AbstractQuadra
     Vs    = T[]
     ui    = qstd()[1]
     for (E,list_near) in dict_near # for each element type
-        el2qnodes = Y.el2qnodes[E]
+        el2qnodes = Y.elt2dof[E]
         num_qnodes, num_els   = size(el2qnodes)
         for (n,el) in enumerate(ElementIterator{E}(Y)) # for each element of type E in the mesh Y
             j_glob                = el2qnodes[:,n]

@@ -41,7 +41,7 @@ end
     op   = iop.kernel.op
     K0 = SingleLayerKernel(op)
     K1 = DoubleLayerKernel(op)
-    el2qnodes = Y.el2qnodes[E]
+    el2qnodes = elt2dof(Y,E)
     els  = elements(Y,E)
     @assert length(els) == length(list_near)
     ni      = size(el2qnodes,1)

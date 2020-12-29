@@ -11,8 +11,8 @@ function assemble_mk(iop::IntegralOperator)
             else 
                 # nothing special to do here, just fill up the matrix using the
                 # regular quadrature    
-                target_dof  = dof(X,target_ent)
-                source_dof  = dof(Y,source_ent)        
+                target_dof  = dom2dof(X,target_ent)
+                source_dof  = dom2dof(Y,source_ent)        
                 @. out[target_dof,source_dof] = iop[target_dof,source_dof]
             end        
         end    
@@ -23,7 +23,7 @@ end
 # Assemble the self-interaction part for a given entity
 function _assemble_mk_self!(out,iop,ent::AbstractEntity)
     X         = target_surface(iop)
-    etype2tag = X.ent2tags[ent]
+    etype2tag = X.ent2elt[ent]
     # loop over individual elements composing ent. Note that because we must
     # handle meshes composed of elements of possiby different types, we must
     # loop over element types, and then over the elements of that type
@@ -31,12 +31,12 @@ function _assemble_mk_self!(out,iop,ent::AbstractEntity)
     for (target_E,target_tags) in etype2tag, target_t in target_tags
         for (source_E,source_tags) in etype2tag, source_t in source_tags
             if source_E === target_E && target_t === source_t # same element
-                dof = X.el2qnodes[source_E][:,source_t] # dof for filling out in global matrix
+                dof = X.elt2dof[source_E][:,source_t] # dof for filling out in global matrix
                 el   = X.elements[source_E][source_t]                 # retrieve the element (i.e. access to its parametrization)     
                 _assemble_mk_self!(out,iop,el,dof)
             else
-                target_dof  = X.el2qnodes[target_E][:,target_t] # dof for filling out in global matrix
-                source_dof  = X.el2qnodes[source_E][:,source_t] # dof for filling out in global matrix
+                target_dof  = X.elt2dof[target_E][:,target_t] # dof for filling out in global matrix
+                source_dof  = X.elt2dof[source_E][:,source_t] # dof for filling out in global matrix
                 out[target_dof,source_dof] = iop[target_dof,source_dof]
             end        
         end

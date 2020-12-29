@@ -121,7 +121,7 @@ function _singular_weights_dim(iop::IntegralOperator,γ₀B,γ₁B,R)
     Js = Int[]
     Vs = T[]
     for (E,list_near) in dict_near
-        el2qnodes = Y.el2qnodes[E]
+        el2qnodes = elt2dof(Y,E)
         num_qnodes, num_els   = size(el2qnodes)
         M                     = Matrix{T}(undef,2*num_qnodes,num_basis)
         @assert length(list_near) == num_els
@@ -146,7 +146,7 @@ end
 function _source_gen(iop::IntegralOperator,kfactor=5)
     Y      =  iop.Y
     nquad  = 0
-    for (E,tags) in el2qnodes(Y)        
+    for (E,tags) in elt2dof(Y)        
         nquad = max(nquad,size(tags,1))
     end  
     nbasis = 3*nquad

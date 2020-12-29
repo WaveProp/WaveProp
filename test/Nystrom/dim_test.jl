@@ -54,4 +54,35 @@ end
     e1 = WaveProp.Nystrom.error_interior_green_identity(Smk,Dmk,γ₀u,γ₁u)
     @test norm(e0,Inf) > 1e-5
     @test norm(e1,Inf) < 1e-5
+    @test sum(qweights(mesh[Γ[2]])) ≈ 2π
+end
+
+
+@testset "Extract domain mesh" begin
+    # construct interior solution
+    pde  = Helmholtz(dim=2,k=1)
+    xout = SVector(-10,0)
+    u    = (x)   -> SingleLayerKernel(pde)(xout,x)
+    dudn = (x,n) -> DoubleLayerKernel(pde)(xout,x,n)
+    Geometry.clear!()
+    geo1  = Geometry.Kite()
+    geo2  = Circle(center=(10,0))
+    Ω,M   = meshgen([geo1,geo2],gridsize=0.1)
+    Γ     = boundary(Ω)
+    # generate a Nystrom mesh with Gauss-Legendre quadrature
+    qrule   = GaussLegendre(5)
+    e2qrule = Dict(E=>qrule for E in etypes(M))
+    Γ_mesh    = NystromMesh(M,Γ,e2qrule)
+    Γ1_mesh   = Γ_mesh[Γ[1]]
+    Γ2_mesh   = Γ_mesh[Γ[2]]
+    γ₀u   = γ₀(u,Γ2_mesh)
+    γ₁u   = γ₁(dudn,Γ2_mesh)
+    S     = SingleLayerOperator(pde,Γ2_mesh) 
+    D     = DoubleLayerOperator(pde,Γ2_mesh) 
+    Smk   = Nystrom.assemble_dim(S)
+    Dmk   = Nystrom.assemble_dim(D)
+    e0    = WaveProp.Nystrom.error_interior_green_identity(S,D,γ₀u,γ₁u)    
+    e1 = WaveProp.Nystrom.error_interior_green_identity(Smk,Dmk,γ₀u,γ₁u)
+    @test norm(e0,Inf) > 1e-5
+    @test norm(e1,Inf) < 1e-5
 end

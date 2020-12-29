@@ -175,9 +175,7 @@ function gmsh_disk(;rx=0.5,ry=0.5,center=(0.,0.,0.),dim=2,h=min(rx,ry)/10,order=
     gmsh.model.mesh.generate(dim)
     Ω = _initialize_domain(2)
     M = _initialize_mesh(Ω)
-    if dim == 2 
-        M = convert_to_2d(M)
-    end
+    M = convert_to_2d(M)
     gmsh.finalize()
     return Ω,M
 end    

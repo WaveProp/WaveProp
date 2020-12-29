@@ -44,6 +44,6 @@ function _meshgen(p::ParametricEntity;gridsize)
     f    = parametrization(p)
     d    = domain(p)
     grid = CartesianMesh(d;gridsize)
-    els = [ParametricElement(f,d) for d in elements(grid)]
+    els = [ParametricElement(f,d) for d in ElementIterator(grid)]
     return els
 end

@@ -84,67 +84,6 @@ Return the element types contained in the mesh.
 """
 etypes(mesh::GenericMesh) = mesh.etypes
 
-# submesh structure
-
-
-"""
-    elements(mesh::AbstractMesh,E::Type)
-
-Return an iterator for iterating over all elements of `mesh` of type `E`.
-"""
-elements(mesh::AbstractMesh, E::Type)   = ElementIterator(mesh,E)
-
-# utilities for iterating over elements of a mesh
-
-struct ElementIterator{E,M} <: AbstractVector{E}
-    mesh::M
-end  
-ElementIterator{E}(mesh::M) where {E,M <: AbstractMesh} = ElementIterator{E,M}(mesh)
-ElementIterator(mesh,E) = ElementIterator{E}(mesh)
-
-Base.getindex(m::GenericMesh,E::Type{<:AbstractElement}) = ElementIterator(m,E)
-
-Base.size(iter::ElementIterator) = (length(iter),)
-
-mesh(iter::ElementIterator) = iter.mesh
-
-function Base.getindex(iter::ElementIterator,I)
-    @assert eltype(I) <: Integer
-    map(i->iter[i],I)    
-end    
-
-function Base.length(iter::ElementIterator{<:LagrangeElement,<:GenericMesh})
-    msh               = mesh(iter)    
-    E                 = eltype(iter)    
-    tags::Matrix{Int} = msh.elements[E]
-    Np, Nel           = size(tags)
-    return Nel
-end    
-
-function Base.getindex(iter::ElementIterator{<:LagrangeElement,<:GenericMesh},i::Int)
-    E                   = eltype(iter)    
-    mesh                = iter.mesh    
-    tags::Matrix{Int}   = mesh.elements[E]
-    node_tags           = view(tags,:,i)
-    vtx                 = view(mesh.nodes,node_tags)
-    el                  = E(vtx)    
-    return el
-end    
-
-function Base.length(iter::ElementIterator{<:ParametricElement,<:GenericMesh})
-    E               = eltype(iter)
-    mesh            = iter.mesh    
-    tags::Vector{E} = mesh.elements[E]    
-    return length(iter.mesh.elements[E])
-end    
-
-function Base.getindex(iter::ElementIterator{<:ParametricElement,<:GenericMesh},i::Int)
-    E               = eltype(iter)
-    mesh            = iter.mesh    
-    els::Vector{E} = mesh.elements[E]    
-    return els[i]
-end    
-
 """
     eltindices(m::GenericMesh,Ω,E)
 

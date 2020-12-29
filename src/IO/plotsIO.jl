@@ -128,7 +128,7 @@ end
     grid   --> false
     aspect_ratio --> :equal    
     for E in etypes(mesh)
-        for el in elements(mesh,E)
+        for el in ElementIterator(mesh,E)
             @series begin 
                 el
             end

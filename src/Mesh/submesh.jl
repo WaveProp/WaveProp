@@ -9,7 +9,17 @@ struct SubMesh{N,T} <: AbstractMesh{N,T}
 end
 SubMesh(m::GenericMesh{N,T},args...;kwargs...) where {N,T} = SubMesh{N,T}(m,args...;kwargs...)
 
+Base.view(m::GenericMesh,Ω::Domain)           = SubMesh(m,Ω)
+Base.view(m::GenericMesh,ent::AbstractEntity) = SubMesh(m,Domain(ent))
+
+Base.getindex(m::GenericMesh,Ω::Domain) = view(m,Ω)
+Base.getindex(m::GenericMesh,ent::AbstractEntity) = view(m,ent)
+
+Base.getindex(m::SubMesh,Ω::Domain)   = view(parent(m),Ω)
+Base.getindex(m::SubMesh,ent::AbstractEntity) = view(parent(m),ent)
+
 parent(m::SubMesh) = m.mesh
+domain(m::SubMesh) = m.domain
 
 """
     eltindices(m::SubMesh,[E])
@@ -21,9 +31,6 @@ associated with that key.
 eltindices(m::SubMesh) = m.eltindices
 eltindices(m::SubMesh,E::Type{<:AbstractElement}) = m.eltindices[E]
 
-Base.view(m::GenericMesh,Ω::Domain)           = SubMesh(m,Ω)
-Base.view(m::GenericMesh,ent::AbstractEntity) = SubMesh(m,Domain(ent))
-
 function etypes(submesh::SubMesh)
     Ω, M = submesh.domain, submesh.mesh    
     ee = DataType[]
@@ -34,18 +41,3 @@ function etypes(submesh::SubMesh)
     return unique!(ee)
 end   
 
-# iterator for submesh
-function Base.length(iter::ElementIterator{<:AbstractElement,<:SubMesh})
-    E          = eltype(iter)        
-    submesh    = iter.mesh
-    idxs       = eltindices(submesh,E)
-    return length(idxs)
-end  
-
-function Base.getindex(iter::ElementIterator{<:AbstractElement,<:SubMesh},i::Int)
-    E      = eltype(iter)
-    msh    = mesh(iter) # a SubMesh
-    p_msh  = parent(msh) # parent mesh
-    iglob  = eltindices(msh,E)[i] # global index of element in parent mesh
-    return p_msh[E][iglob]
-end    

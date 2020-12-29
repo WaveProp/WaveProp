@@ -27,7 +27,7 @@ include("element.jl")
 include("meshes.jl")
 include("submesh.jl")
 include("cartesianmesh.jl")
-include("nystrommesh.jl")
 include("meshgen.jl")
+include("elementiterator.jl")
 
 end

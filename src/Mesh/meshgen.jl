@@ -1,44 +1,60 @@
 """
-    meshgen(p::AbstractParametricBody;gridsize::Tuple) --> Ω,M
+    meshgen(Ω::Domain;gridsize::Tuple) 
 
-Return a `Domain` Ω and a `GenericMesh` M for the parametric body.
+Generate a `GenericMesh` for the domain `Ω`. Requires the entities forming `Ω` to
+`ParametricEntity` or `ParametricBody`. 
 """
-function meshgen!(mesh::GenericMesh,Ω::Domain,p::AbstractParametricBody;gridsize)
-    push!(entities(Ω),p)
-    mesh.ent2tags[p] = OrderedDict{DataType,Vector{Int}}() # no mesh is generated for domain, only its boundary, so empty entry
-    for bnd in boundary(p)
-        # add elements for each boundary segment    
-        els             = _meshgen(bnd;gridsize)
-        E               = eltype(els)
-        push!(etypes(mesh),E)
-        vals            = get!(mesh.elements,E,Vector{E}())
-        istart          = length(vals) + 1
-        append!(vals,els)
-        iend            = length(vals)
-        mesh.ent2tags[bnd] = OrderedDict(E=>collect(istart:iend)) # add key
+function meshgen(Ω::Domain;gridsize=floatmax())
+    N       = ambient_dimension(first(Ω))
+    @assert all(p->ambient_dimension(p)==N,Ω) # check that ambient dimensions are consistent
+    mesh = GenericMesh{N,Float64}()
+    meshgen!(mesh,Ω;gridsize)
+end
+
+"""
+    meshgen!(mesh,Ω;gridsize)
+
+Similar to [`meshgen`](@ref), but append entries to `mesh`. 
+"""
+function meshgen!(mesh::GenericMesh,Ω::Domain;gridsize)
+    for ent in Ω
+        ent isa ParametricEntity || ent isa AbstractParametricBody || error("unable to generate mesh for entity of type $(typeof(ent))")
+        _meshgen!(mesh,ent;gridsize)
     end 
-    unique!(etypes(mesh))   
-    return Ω,mesh
+    return mesh       
 end    
 
-function meshgen(p::AbstractParametricBody;gridsize=floatmax())
-    N       = ambient_dimension(p)    
-    mesh    = GenericMesh{N,Float64}()
-    Ω       = Domain()
-    meshgen!(mesh,Ω,p;gridsize)
-end   
+function _meshgen!(mesh::GenericMesh,ent::ParametricEntity;gridsize)
+    # mesh the entity
+    els = _meshgen(ent;gridsize)
+    # push related information to mesh
+    E   = eltype(els)
+    E in etypes(mesh) || push!(etypes(mesh),E)
+    vals   = get!(mesh.elements,E,Vector{E}())
+    istart = length(vals) + 1
+    append!(vals,els)
+    iend   = length(vals)
+    haskey(mesh.ent2tags,ent) && error("entity already present in mesh")
+    mesh.ent2tags[ent] = OrderedDict(E=>collect(istart:iend)) # add key
+    return mesh
+end    
 
-function meshgen(ps::Vector{<:AbstractParametricBody};gridsize=floatmax())
-    N       = ambient_dimension(first(ps))
-    @assert all(p->ambient_dimension(p)==N,ps)
-    mesh    = GenericMesh{N,Float64}()
-    Ω       = Domain()    
-    for p in ps
-        meshgen!(mesh,Ω,p;gridsize)
+function _meshgen!(mesh::GenericMesh,p::AbstractParametricBody;gridsize)
+    mesh.ent2tags[p] = OrderedDict{DataType,Vector{Int}}() # no mesh is generated for ParametricBody, only its boundary, so empty entry
+    for ent in boundary(p)
+        _meshgen!(mesh,ent;gridsize)
     end
-    return Ω,mesh
-end   
+    return mesh
+end    
 
+"""
+    _meshgen(p::ParametricEntity;gridsize)
+
+Mesh `p` by creating a `CartesianMesh` for its parameter space followed by the
+push-forward map. Note that `gridsize` specifies the size in parameter space;
+for parametrizations with large `jacobian` this is poor indication of the
+mesh-size in real space. 
+"""
 function _meshgen(p::ParametricEntity;gridsize)
     # mesh the domain of p
     f    = parametrization(p)

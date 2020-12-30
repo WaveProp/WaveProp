@@ -13,7 +13,8 @@ using WaveProp.Mesh
     dudn = (x,n) -> DoubleLayerKernel(pde)(xout,x,n)
     Geometry.clear!()
     geo  = Geometry.Kite()
-    Ω,M  = meshgen(geo)
+    Ω    = Domain(geo)
+    M    = meshgen(Ω)
     Γ    = boundary(Ω)
     # generate a Nystrom mesh with trapezoidal quadrature
     etype2qrule = OrderedDict(E => TrapezoidalP(100) for E in etypes(M))
@@ -38,7 +39,8 @@ end
     dudn = (x,n) -> DoubleLayerKernel(pde)(xout,x,n)
     geo1  = Geometry.Kite()
     geo2  = Circle(center=(10,0))
-    Ω,M  = meshgen([geo1,geo2],gridsize=100)
+    Ω   = Domain([geo1,geo2])
+    M  = meshgen(Ω,gridsize=100)
     Γ    = boundary(Ω)
     # generate a Nystrom mesh with trapezoidal quadrature
     mesh  = NystromMesh(M,Γ;quad_rule=TrapezoidalP(100))
@@ -64,7 +66,8 @@ end
         SVector(cos(2π*u[1]),sin(2π*u[1]))
     end  
     bdy  = ParametricBody([geo])
-    Ω,M  = meshgen(bdy)
+    Ω    = Domain(bdy)
+    M    = meshgen(Ω)
     Γ    = boundary(Ω)
     # generate a Nystrom mesh with trapezoidal quadrature
     mesh  = NystromMesh(M,Γ;quad_rule=TrapezoidalP(40))
@@ -92,7 +95,8 @@ end
     u    = (x)   -> SingleLayerKernel(pde)(xout,x)
     dudn = (x,n) -> DoubleLayerKernel(pde)(xout,x,n)
     bdy  = Circle()
-    Ω,M  = meshgen(bdy;gridsize=0.05)
+    Ω    = Domain(bdy)
+    M  = meshgen(Ω;gridsize=0.05)
     Γ    = boundary(Ω)
     # generate a Nystrom mesh with trapezoidal quadrature
     mesh  = NystromMesh(M,Γ;quad_rule=qrule)

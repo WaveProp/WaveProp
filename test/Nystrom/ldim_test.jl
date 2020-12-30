@@ -46,7 +46,7 @@ end
     Ω,M   = WaveProp.IO.gmsh_disk()
     Γ     = boundary(Ω)
     # generate a Nystrom mesh with Gauss-Legendre quadrature
-    qrule   = GaussLegendre(10)
+    qrule   = GaussLegendre(3)
     e2qrule = OrderedDict(E=>qrule for E in etypes(M))
     mesh    = NystromMesh(M,Γ,e2qrule)
     γ₀u   = γ₀(u,mesh)
@@ -59,6 +59,14 @@ end
     e1    = WaveProp.Nystrom.error_interior_green_identity(Sldim,Dldim,γ₀u,γ₁u)
     @test norm(e0,Inf) > 1e-5
     @test norm(e1,Inf) < 1e-5    
+    K     = AdjointDoubleLayerOperator(pde,mesh)
+    H     = HyperSingularOperator(pde,mesh)
+    e0    = WaveProp.Nystrom.error_interior_derivative_green_identity(K,H,γ₀u,γ₁u)
+    Kldim  = Nystrom.assemble_ldim(K)
+    Hldim  = Nystrom.assemble_ldim(H)
+    e1    = WaveProp.Nystrom.error_interior_derivative_green_identity(Kldim,Hldim,γ₀u,γ₁u)
+    @test 10*norm(e1,Inf) < norm(e0,Inf)
+    @test norm(e1,Inf) < 1e-4
 end
 
 @testset "Single obstacle" begin
@@ -66,8 +74,10 @@ end
     xout = SVector(-10,0)
     u    = (x)   -> SingleLayerKernel(pde)(xout,x)
     dudn = (x,n) -> DoubleLayerKernel(pde)(xout,x,n)
+    Geometry.clear!()
     geo  = Kite()
-    Ω,M   = meshgen(geo,gridsize=0.05)
+    Ω    = Domain(geo)
+    M   = meshgen(Ω,gridsize=0.05)
     Γ     = boundary(Ω)
     # generate a Nystrom mesh with Gauss-Legendre quadrature
     qrule   = GaussLegendre(5)

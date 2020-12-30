@@ -7,7 +7,7 @@ using WaveProp.Mesh
 
 @testset "Greens interpolant test" begin
     # construct interior solution
-    pde  = Helmholtz(dim=3,k=1)
+    pde  = Helmholtz(dim=3,k=1+im)
     xout = SVector(3,3,3)
     u    = (x)   -> SingleLayerKernel(pde)(xout,x)
     dudn = (x,n) -> DoubleLayerKernel(pde)(xout,x,n)
@@ -46,7 +46,8 @@ end
     Geometry.clear!()
     geo1  = Geometry.Kite()
     geo2  = Circle(center=(10,0))
-    Ω,M   = meshgen([geo1,geo2],gridsize=0.1)
+    Ω     = Domain([geo1,geo2])
+    M     = meshgen(Ω,gridsize=0.1)
     Γ     = boundary(Ω)
     # generate a Nystrom mesh with Gauss-Legendre quadrature
     qrule   = GaussLegendre(5)
@@ -75,7 +76,8 @@ end
     Geometry.clear!()
     geo1  = Geometry.Kite()
     geo2  = Circle(center=(10,0))
-    Ω,M   = meshgen([geo1,geo2],gridsize=0.1)
+    Ω     = Domain([geo1,geo2])
+    M   = meshgen(Ω,gridsize=0.1)
     Γ     = boundary(Ω)
     # generate a Nystrom mesh with Gauss-Legendre quadrature
     qrule   = GaussLegendre(5)

@@ -39,8 +39,17 @@ end
     k    = iop.kernel  
     α,β = combined_field_coefficients(k)    
     op   = iop.kernel.op
-    K0 = SingleLayerKernel(op)
-    K1 = DoubleLayerKernel(op)
+    if kernel_type(iop) isa Union{SingleLayer,DoubleLayer}
+        K0 = SingleLayerKernel(op)
+        K1 = DoubleLayerKernel(op)
+        need_normal = false
+    elseif kernel_type(iop) isa Union{AdjointDoubleLayer,HyperSingular}
+        K0 = AdjointDoubleLayerKernel(op)
+        K1 = HyperSingularKernel(op)    
+        need_normal = true
+    else
+        error()    
+    end    
     el2qnodes = elt2dof(Y,E)
     els  = elements(Y,E)
     @assert length(els) == length(list_near)
@@ -84,7 +93,14 @@ end
                 Γ = auxiliary_domain_ldim(el,h)
                 σ = 0.0
             end   
-            _integrate_basis_ldim!(I,Γ,K0,K1,γ₀B,γ₁B,x,σ) # modify r
+            if K0 isa SingleLayerKernel
+                _integrate_basis_ldim!(I,Γ,K0,K1,γ₀B,γ₁B,x,σ) # modify r
+            elseif K0 isa AdjointDoubleLayerKernel
+                νx  = X.qnormals[iglob]    
+                _integrate_basis_ldim!(I,Γ,K0,K1,γ₀B,γ₁B,x,νx,σ) # modify r
+            else
+                error()    
+            end
             w   = (transpose(I)/M)*D
             v   = transpose(w) - iop[iglob,tags] # remove the "naive" approximation
             append!(Is,fill(iglob,length(w)))
@@ -164,7 +180,7 @@ function interpolation_matrix!(M,yi,νi,γ₀B,γ₁B)
     return M
 end
 
-function _integrate_basis_ldim!(r,Γ,K0,K1,γ₀B,γ₁B,x,σ)
+function _integrate_basis_ldim!(r,Γ,K0::SingleLayerKernel,K1::DoubleLayerKernel,γ₀B,γ₁B,x,σ)
     nb = length(r)
     for n in 1:nb
         r[n] = sum(Γ) do b
@@ -174,8 +190,24 @@ function _integrate_basis_ldim!(r,Γ,K0,K1,γ₀B,γ₁B,x,σ)
                 μ  = measure(b,v)
                 (K0(x,y)*γ₁B[n](y,νy) - K1(x,y,νy)*γ₀B[n](y))*μ
             end    
-        end    
+        end
         r[n] = r[n] + σ*γ₀B[n](x)
+    end    
+    return r
+end
+
+function _integrate_basis_ldim!(r,Γ,K0::AdjointDoubleLayerKernel,K1::HyperSingularKernel,γ₀B,γ₁B,x,νx,σ)
+    nb = length(r)
+    for n in 1:nb
+        r[n] = sum(Γ) do b
+            integrate(ReferenceLine) do v
+                y  = b(v)    
+                νy = normal(b,v)    
+                μ  = measure(b,v)
+                (K0(x,y,νx)*γ₁B[n](y,νy) - K1(x,y,νx,νy)*γ₀B[n](y))*μ
+            end    
+        end
+        r[n] = r[n] + σ*γ₁B[n](x,νx)
     end    
     return r
 end

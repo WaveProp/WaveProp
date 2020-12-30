@@ -63,7 +63,7 @@ export
     high_corner,
     measure,
     number_of_nodes,
-    
+    line,  
     # global variables
     TAGS,
     ENTITIES

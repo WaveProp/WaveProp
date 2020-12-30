@@ -79,7 +79,7 @@ This is a helper function, and should not be called by itself since it assumes t
 """
 function _fill_entity_boundary!(ent)
     combine  = true # FIXME: what should we use here?
-    oriented = false
+    oriented = true
     dim_tags = gmsh.model.getBoundary((ent.dim, ent.tag),combine,oriented)
     for (d, t) in dim_tags
         if haskey(ENTITIES,(d,t))

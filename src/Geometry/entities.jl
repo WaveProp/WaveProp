@@ -69,10 +69,12 @@ Notice that this implies `dim` and `tag` of an elementary entity should uniquely
 define it, and therefore global variables like [`TAGS`](@ref) are needed to make
 sure newly created `AbstractEntities` have a new `(dim,tag)` identifier. 
 """
-function Base.:(==)(Ω1::ElementaryEntity, Ω2::ElementaryEntity)
-    Ω1.dim       == Ω2.dim || return false
-    Ω1.tag       == Ω2.tag || return false
-    Ω1.boundary  == Ω2.boundary || return false
+function Base.:(==)(Ω1::AbstractEntity, Ω2::AbstractEntity)
+    d1,t1 = key(Ω1)
+    d2,t2 = key(Ω2)
+    d1 == d2  || return false
+    abs(t1)  == abs(t2) || return false
+    boundary(Ω1) == boundary(Ω2) || return false
     return true
 end
 
@@ -101,6 +103,9 @@ end
 
 const ParametricCurve{F} = ParametricEntity{ReferenceLine,F} 
 
+function Base.reverse(ent::ParametricEntity{D,F}) where {D,F}
+    ParametricEntity{D,F}(ent.dim,-ent.tag,ent.parametrization)
+end
 
 function ParametricEntity{D,F}(f::F) where {D,F}
     d = geometric_dimension(D)
@@ -139,7 +144,9 @@ geometric_dimension(p::ParametricEntity) = geometric_dimension(domain(p))
 jacobian(psurf::ParametricEntity,s::SVector)  = ForwardDiff.jacobian(psurf.parametrization,s::SVector)
 jacobian(psurf::ParametricEntity,s)           = jacobian(psurf,SVector(s))
 
-function normal(ent::AbstractEntity,u)
+function normal(ent::AbstractEntity,u)  
+    dim,tag = key(ent)
+    s = sign(tag)
     N    = ambient_dimension(ent)
     M    = geometric_dimension(ent)
     msg  = "computing the normal vector requires the entity to be of co-dimension one."
@@ -147,12 +154,12 @@ function normal(ent::AbstractEntity,u)
     if M == 1 # a line in 2d
         t = jacobian(ent,u)
         ν = SVector(t[2],-t[1])
-        return ν/norm(ν)
+        return s*ν/norm(ν)
     elseif M == 2 # a surface in 3d
         j  = jacobian(ent,u)    
         t₁ = j[:,1]
         t₂ = j[:,2]
-        ν  = cross(t₁,t₂)
+        ν  = s*cross(t₁,t₂)
         return ν/norm(ν)
     else
         notimplemented()    

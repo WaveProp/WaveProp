@@ -73,10 +73,11 @@ function Base.:(==)(Ω1::AbstractEntity, Ω2::AbstractEntity)
     d1,t1 = key(Ω1)
     d2,t2 = key(Ω2)
     d1 == d2  || return false
-    abs(t1)  == abs(t2) || return false
-    boundary(Ω1) == boundary(Ω2) || return false
+    abs(t1) == abs(t2) || return false
+    # boundary(Ω1) == boundary(Ω2) || return false
     return true
 end
+
 
 """
     ParametricEntity{D,F}

@@ -50,7 +50,7 @@ skeleton(Ω::Domain) = union(Domain.(boundary.(entities(Ω)))...)
 Two `Domain`s are equal if all their entities are equal (regardless of order). 
 """
 function Base.:(==)(Ω1::Domain, Ω2::Domain)
-    return Set(entities(Ω1)) == Set(entities(Ω2))
+    return issetequal(entities(Ω1),entities(Ω2))
 end
 
 

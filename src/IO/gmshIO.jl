@@ -105,8 +105,8 @@ function _initialize_mesh(Ω::Domain)
     # map gmsh type tags to actual internal types
     etypes = [_type_tag_to_etype(e) for e in gmsh.model.mesh.getElementTypes()]
     # Recursively populating the dictionaries
-    elements = Dict{DataType,Matrix{Int}}()
-    ent2tags = Dict{AbstractEntity,Dict{DataType,Vector{Int}}}()
+    elements = OrderedDict{DataType,Matrix{Int}}()
+    ent2tags = OrderedDict{AbstractEntity,OrderedDict{DataType,Vector{Int}}}()
     elements, ent2tag = _domain_to_mesh!(elements, ent2tags, Ω)
     return GenericMesh{3,Float64}(;nodes, etypes, elements, ent2tags)
 end
@@ -129,8 +129,8 @@ end
     _ent_to_mesh!(elements, ent2tag, ω::ElementaryEntity)
 
 For each element type used to mesh `ω`:
-- push into `elements::Dict` the pair `etype=>ntags`;
-- push into `ent2tag::Dict` the pair `etype=>etags`;
+- push into `elements::OrderedDict` the pair `etype=>ntags`;
+- push into `ent2tag::OrderedDict` the pair `etype=>etags`;
 
 where:
 - `etype::DataType` determines the type of the element (see
@@ -141,7 +141,7 @@ where:
 """
 function _ent_to_mesh!(elements, ent2tag, ω::ElementaryEntity)
     ω in keys(ent2tag) && (return elements, ent2tag)
-    etypes_to_etags = Dict{DataType,Vector{Int}}()
+    etypes_to_etags = OrderedDict{DataType,Vector{Int}}()
     # Loop on GMSH element types (integer)
     type_tags, _, ntagss = gmsh.model.mesh.getElements(key(ω)...)
     for (type_tag, ntags) in zip(type_tags, ntagss)

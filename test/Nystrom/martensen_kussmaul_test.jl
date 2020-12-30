@@ -1,4 +1,4 @@
-using Test, LinearAlgebra
+using Test, LinearAlgebra, OrderedCollections
 using WaveProp
 using WaveProp.Nystrom
 using WaveProp.Geometry
@@ -16,7 +16,7 @@ using WaveProp.Mesh
     Ω,M  = meshgen(geo)
     Γ    = boundary(Ω)
     # generate a Nystrom mesh with trapezoidal quadrature
-    etype2qrule = Dict(E => TrapezoidalP(100) for E in etypes(M))
+    etype2qrule = OrderedDict(E => TrapezoidalP(100) for E in etypes(M))
     mesh = NystromMesh(M,Γ,etype2qrule)
     γ₀u  = γ₀(u,mesh)
     γ₁u  = γ₁(dudn,mesh)

@@ -74,7 +74,7 @@ function Base.:(==)(Ω1::AbstractEntity, Ω2::AbstractEntity)
     d2,t2 = key(Ω2)
     d1 == d2  || return false
     abs(t1) == abs(t2) || return false
-    # boundary(Ω1) == boundary(Ω2) || return false
+    # boundary(Ω1) == boundary(Ω2) || return false # this should not be needed
     return true
 end
 
@@ -251,12 +251,12 @@ line(a,b) = line(SVector(a),SVector(b))
 #####################################################################
 
 """
-    const TAGS::Dict{Int,Vector{Int}}
+    const TAGS::OrderedDict{Int,Vector{Int}}
 
 Global dictionary storing the used entity tags (the value) for a given dimension
 (the key).
 """    
-const TAGS     = Dict{Int,Vector{Int}}()
+const TAGS     = OrderedDict{Int,Vector{Int}}()
 
 """
     const ENTITIES
@@ -264,7 +264,7 @@ const TAGS     = Dict{Int,Vector{Int}}()
 Global dictionary storing the used entity tags (the value) for a given dimension
 (the key).
 """    
-const ENTITIES = Dict{Tuple{Int,Int},AbstractEntity}()
+const ENTITIES = OrderedDict{Tuple{Int,Int},AbstractEntity}()
 
 function _global_add_entity!(ent::AbstractEntity)
     d,t = key(ent)

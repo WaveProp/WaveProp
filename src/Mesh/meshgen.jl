@@ -5,7 +5,7 @@ Return a `Domain` Ω and a `GenericMesh` M for the parametric body.
 """
 function meshgen!(mesh::GenericMesh,Ω::Domain,p::AbstractParametricBody;gridsize)
     push!(entities(Ω),p)
-    mesh.ent2tags[p] = Dict{DataType,Vector{Int}}() # no mesh is generated for domain, only its boundary, so empty entry
+    mesh.ent2tags[p] = OrderedDict{DataType,Vector{Int}}() # no mesh is generated for domain, only its boundary, so empty entry
     for bnd in boundary(p)
         # add elements for each boundary segment    
         els             = _meshgen(bnd;gridsize)
@@ -15,7 +15,7 @@ function meshgen!(mesh::GenericMesh,Ω::Domain,p::AbstractParametricBody;gridsiz
         istart          = length(vals) + 1
         append!(vals,els)
         iend            = length(vals)
-        mesh.ent2tags[bnd] = Dict(E=>collect(istart:iend)) # add key
+        mesh.ent2tags[bnd] = OrderedDict(E=>collect(istart:iend)) # add key
     end 
     unique!(etypes(mesh))   
     return Ω,mesh

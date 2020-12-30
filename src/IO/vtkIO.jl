@@ -107,7 +107,7 @@ end
 """
     const etype_to_vtk_cell_type
 
-Dictionary mapping internal element types to a tuple containing:
+OrderedDictionary mapping internal element types to a tuple containing:
     - the corresponding `WriteVTK` cell types (following the convention
     chosen by `VTK`, see below);
     - the indices in the `elements` column that defines the element.
@@ -133,7 +133,7 @@ VTK_HEXAHEDRON (=12)
 VTK_WEDGE (=13)
 VTK_PYRAMID (=14)
 """
-const etype_to_vtk_cell_type = Dict(
+const etype_to_vtk_cell_type = OrderedDict(
     SVector{3,Float64} => (VTKCellTypes.VTK_VERTEX, collect(1:1)),
     LagrangeLine{2,SVector{3,Float64}} => (VTKCellTypes.VTK_LINE, collect(1:2)),
     LagrangeTriangle{3,SVector{2,Float64}} => (VTKCellTypes.VTK_TRIANGLE, collect(1:3)),

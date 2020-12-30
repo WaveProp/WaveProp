@@ -12,16 +12,20 @@ The degrees of freedom of a `NystromMesh` are associated to its quadrature nodes
 `qnodes::Vector{SVector{N,T}}`. 
 """
 Base.@kwdef struct NystromMesh{N,T} <: AbstractMesh{N,T}
-    elements::Dict{DataType,Any} = Dict{DataType,Any}()
-    etype2qrule::Dict{DataType,AbstractQuadratureRule}= Dict{DataType,AbstractQuadratureRule}()
+    elements::OrderedDict{DataType,Any} = OrderedDict{DataType,Any}()
+    etype2qrule::OrderedDict{DataType,AbstractQuadratureRule}= OrderedDict{DataType,AbstractQuadratureRule}()
     # quadrature info
     qnodes::Vector{SVector{N,T}} = Vector{SVector{N,T}}()
     qweights::Vector{T} = Vector{T}()
     qnormals::Vector{SVector{N,T}} = Vector{SVector{N,T}}()
     # mappings from elements --> dofs and entities --> elements
-    elt2dof::Dict{DataType,Matrix{Int}} = Dict{DataType,Matrix{Int}}()
-    ent2elt::Dict{AbstractEntity,Dict{DataType,Vector{Int}}} = Dict{AbstractEntity,Dict{DataType,Vector{Int}}}()
+    elt2dof::OrderedDict{DataType,Matrix{Int}} = OrderedDict{DataType,Matrix{Int}}()
+    ent2elt::OrderedDict{AbstractEntity,OrderedDict{DataType,Vector{Int}}} = OrderedDict{AbstractEntity,OrderedDict{DataType,Vector{Int}}}()
 end
+
+# function Base.union(msh1::NystromMesh,msh2::NystromMesh)
+#     N,T = ambient_dimension(msh1), eltype(msh1)
+# end    
 
 # getters
 qnodes(m::NystromMesh)   = m.qnodes
@@ -39,7 +43,7 @@ Geometry.domain(mesh::NystromMesh)   = Domain(entities(mesh))
 Geometry.entities(mesh::NystromMesh) = collect(keys(mesh.ent2elt))
 
 function dom2elt(mesh::NystromMesh,domain::Domain)
-    dict = Dict{DataType,Vector{Int}}()
+    dict = OrderedDict{DataType,Vector{Int}}()
     for ent in entities(domain)
         other = ent2elt(mesh,ent)    
         mergewith!(append!,dict,other)
@@ -78,7 +82,7 @@ function NystromMesh(mesh::GenericMesh,Ω::Domain,e2qrule,compute_normal::Bool=t
     nys_mesh = NystromMesh{N,T}(;etype2qrule=e2qrule)
     # loop over entities
     for ent in entities(Ω) 
-        dict    = Dict{DataType,Vector{Int}}()    
+        dict    = OrderedDict{DataType,Vector{Int}}()    
         submesh = view(mesh,ent)
         for E in etypes(submesh)
             haskey(e2qrule,E) || error("no quadrature rule found for element of type $E")
@@ -135,7 +139,7 @@ function NystromMesh(mesh::SubMesh;order,compute_normal::Bool=true)
 end    
 
 function NystromMesh(mesh::GenericMesh,Ω::Domain;quad_rule,compute_normal::Bool=true)
-    etype2qrule = Dict(E=>quad_rule for E in etypes(view(mesh,Ω)))
+    etype2qrule = OrderedDict(E=>quad_rule for E in etypes(view(mesh,Ω)))
     NystromMesh(mesh,Ω,etype2qrule,compute_normal)
 end    
 
@@ -145,7 +149,7 @@ function Base.getindex(old_mesh::NystromMesh,Ω::Domain)
     # initialize empty fields
     new_mesh = NystromMesh{N,T}()    
     # extract relevant quadrature rules
-    etype2dof = Dict{DataType,Vector{Int}}()
+    etype2dof = OrderedDict{DataType,Vector{Int}}()
     for E in etypes(old_mesh,Ω)
         new_mesh.etype2qrule[E] = old_mesh.etype2qrule[E]
         etype2dof[E] = Int[]
@@ -154,7 +158,7 @@ function Base.getindex(old_mesh::NystromMesh,Ω::Domain)
     # loop over entities and extract the information
     for ent in Ω
         @assert ent in domain(old_mesh)
-        new_mesh.ent2elt[ent] = Dict{DataType,Vector{Int}}()
+        new_mesh.ent2elt[ent] = OrderedDict{DataType,Vector{Int}}()
         for (E,v) in old_mesh.ent2elt[ent]
             # add dofs information    
             old_dofs  = old_mesh.elt2dof[E][:,v]
@@ -184,7 +188,7 @@ end
 Base.getindex(m::NystromMesh,ent::AbstractEntity) = m[Domain(ent)]
 
 function _elt2dof(m::NystromMesh,Ω::Domain)
-    out = Dict{DataType,Matrix{Int}}()
+    out = OrderedDict{DataType,Matrix{Int}}()
     for ent in Ω
         dict = ent2elt(m,ent)
         for (E,v) in dict
@@ -211,7 +215,7 @@ information about the points in `X` which are close to a given element of
 the key type. 
 """
 function near_interaction_list(pts,Y;atol)
-    dict = Dict{DataType,Vector{Vector{Tuple{Int,Int}}}}()    
+    dict = OrderedDict{DataType,Vector{Vector{Tuple{Int,Int}}}}()    
     for E in etypes(Y)
         ilist = _etype_near_interaction_list(pts,Y,E,atol)
         push!(dict,E=>ilist)

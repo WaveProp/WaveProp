@@ -34,9 +34,9 @@ Base.@kwdef struct GenericMesh{N,T} <: AbstractMesh{N,T}
     etypes::Vector{DataType} = Vector{DataType}()
     # for each element type (key), get the data required to reconstruct the
     # elements (value)
-    elements::Dict{DataType,Any} = Dict{DataType,Any}()
+    elements::OrderedDict{DataType,Any} = OrderedDict{DataType,Any}()
     # mapping from elementary entity to (etype,tags)
-    ent2tags::Dict{AbstractEntity,Dict{DataType,Vector{Int}}} = Dict{AbstractEntity,Dict{DataType,Vector{Int}}}()
+    ent2tags::OrderedDict{AbstractEntity,OrderedDict{DataType,Vector{Int}}} = OrderedDict{AbstractEntity,OrderedDict{DataType,Vector{Int}}}()
 end
 
 # convert a mesh to 2d by ignoring third component. Note that this also requires
@@ -102,11 +102,11 @@ end
 """
     dom2elt(m::GenericMesh,Ω)
 
-Return a `Dict` with keys being the `etypes` of `m`, and values being the
+Return a `OrderedDict` with keys being the `etypes` of `m`, and values being the
 indices of the elements in `Ω` of type `E`. 
 """
 function dom2elt(m::GenericMesh,Ω)
-    dict = Dict{DataType,Vector{Int}}()
+    dict = OrderedDict{DataType,Vector{Int}}()
     for E in etypes(m)
         tags = dom2elt(m,Ω,E)    
         if !isempty(tags)
@@ -125,5 +125,5 @@ appropriate quadrature rule of order `p` over that element type.
 See also [`_qrule_for_reference_shape`](@ref)
 """
 function _qrule_for_mesh(m,order)
-    Dict(E=>Integration._qrule_for_element(E,order) for E in etypes(m))
+    OrderedDict(E=>Integration._qrule_for_element(E,order) for E in etypes(m))
 end    

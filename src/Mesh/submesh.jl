@@ -1,7 +1,7 @@
 struct SubMesh{N,T} <: AbstractMesh{N,T}
     mesh::GenericMesh{N,T}
     domain::Domain
-    dom2elt::Dict{DataType,Vector{Int}} # FIXME: this could be computed on the flight. Is that a problem?
+    dom2elt::OrderedDict{DataType,Vector{Int}} # FIXME: this could be computed on the flight. Is that a problem?
     function SubMesh{N,T}(mesh::GenericMesh,Ω::Domain) where {N,T}
         idxs = dom2elt(mesh,Ω)    
         return new{N,T}(mesh,Ω,idxs)

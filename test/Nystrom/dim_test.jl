@@ -1,4 +1,4 @@
-using Test, LinearAlgebra
+using Test, LinearAlgebra, OrderedCollections
 using WaveProp
 using WaveProp.Nystrom
 using WaveProp.Geometry
@@ -50,7 +50,7 @@ end
     Γ     = boundary(Ω)
     # generate a Nystrom mesh with Gauss-Legendre quadrature
     qrule   = GaussLegendre(5)
-    e2qrule = Dict(E=>qrule for E in etypes(M))
+    e2qrule = OrderedDict(E=>qrule for E in etypes(M))
     mesh    = NystromMesh(M,Γ,e2qrule)
     γ₀u   = γ₀(u,mesh)
     γ₁u   = γ₁(dudn,mesh)
@@ -79,7 +79,7 @@ end
     Γ     = boundary(Ω)
     # generate a Nystrom mesh with Gauss-Legendre quadrature
     qrule   = GaussLegendre(5)
-    e2qrule = Dict(E=>qrule for E in etypes(M))
+    e2qrule = OrderedDict(E=>qrule for E in etypes(M))
     Γ_mesh    = NystromMesh(M,Γ,e2qrule)
     Γ1_mesh   = Γ_mesh[Γ[1]]
     Γ2_mesh   = Γ_mesh[Γ[2]]

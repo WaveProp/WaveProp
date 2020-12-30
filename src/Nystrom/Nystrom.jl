@@ -7,6 +7,7 @@ using SparseArrays
 using IterativeSolvers
 using Base.Threads
 using SpecialFunctions
+using OrderedCollections
 
 using WaveProp.Utils
 using WaveProp.Geometry

@@ -239,7 +239,7 @@ Create a straight line connecting points `a` and `b`. This returns an instance
 of [`ParametricCurve`](@ref).
 """
 function line(a::SVector,b::SVector) 
-    f = (u) -> a + u*(b-a)
+    f = (u) -> a + u[1]*(b-a)
     ParametricCurve(f)
 end
 line(a,b) = line(SVector(a),SVector(b))

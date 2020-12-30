@@ -2,7 +2,7 @@
     meshgen(Ω::Domain;gridsize::Tuple) 
 
 Generate a `GenericMesh` for the domain `Ω`. Requires the entities forming `Ω` to
-`ParametricEntity` or `ParametricBody`. 
+`ParametricEntity` or `ClosedEntity`. 
 """
 function meshgen(Ω::Domain;gridsize=floatmax())
     N       = ambient_dimension(first(Ω))
@@ -34,13 +34,13 @@ function _meshgen!(mesh::GenericMesh,ent::ParametricEntity;gridsize)
     istart = length(vals) + 1
     append!(vals,els)
     iend   = length(vals)
-    haskey(mesh.ent2tags,ent) && error("entity already present in mesh")
+    haskey(mesh.ent2tags,ent) && @warn "skipping entity $(key(ent)): already present in mesh"
     mesh.ent2tags[ent] = OrderedDict(E=>collect(istart:iend)) # add key
     return mesh
 end    
 
 function _meshgen!(mesh::GenericMesh,p::AbstractParametricBody;gridsize)
-    mesh.ent2tags[p] = OrderedDict{DataType,Vector{Int}}() # no mesh is generated for ParametricBody, only its boundary, so empty entry
+    mesh.ent2tags[p] = OrderedDict{DataType,Vector{Int}}() # no mesh is generated for ClosedEntity, only its boundary, so empty entry
     for ent in boundary(p)
         _meshgen!(mesh,ent;gridsize)
     end

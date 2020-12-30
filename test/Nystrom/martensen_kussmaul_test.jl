@@ -65,7 +65,7 @@ end
     geo  = ParametricEntity(ReferenceLine()) do u
         SVector(cos(2π*u[1]),sin(2π*u[1]))
     end  
-    bdy  = ParametricBody([geo])
+    bdy  = ClosedEntity([geo])
     Ω    = Domain(bdy)
     M    = meshgen(Ω)
     Γ    = boundary(Ω)

@@ -244,6 +244,23 @@ function line(a::SVector,b::SVector)
 end
 line(a,b) = line(SVector(a),SVector(b))
 
+"""
+    Point{N,T} <: AbstractEntity
+"""
+struct Point{N,T} <: AbstractEntity
+    coords::SVector{N,T}
+end    
+
+geometric_dimension(::Type{<:Point}) = 0
+geometric_dimension(pt::Point) = geometric_dimension(typeof(pt))
+ambient_dimension(::Point{N}) where N = N
+ambient_dimension(::Type{<:Point{N}}) where N = N
+
+geometric_dimension(::Type{<:SVector}) = 0
+geometric_dimension(pt::SVector) = geometric_dimension(typeof(pt))
+ambient_dimension(::SVector{N}) where N = N
+ambient_dimension(::Type{<:SVector{N}}) where N = N
+
 #####################################################################
 
 # Variables and functions to globally keep track of entities

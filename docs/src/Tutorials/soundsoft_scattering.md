@@ -79,7 +79,7 @@ take the star-shaped curve given by
      \Gamma = \{r(u) \cos(2\pi u), r(u)\sin(2\pi u))\in\mathbb R^2,u\in (0,1)\} \quad \text{where} \quad
      r(u) = 1 + 0.25 \cos(10\pi u)
 ```
-To implement this, we create a `ParametricBody` which has boundary given by the
+To implement this, we create a `ClosedEntity` which has boundary given by the
 aforementioned curve (represented as a `ParametricEntity`):
 ```@example soundsoft-scattering sound-soft-scattering
     using WaveProp.Geometry # import various geometry utility functions into namespace
@@ -90,7 +90,7 @@ aforementioned curve (represented as a `ParametricEntity`):
         r = 1 + 0.25*cos(10π*u[1])     
         SVector(r*cos(2π*u[1]),r*sin(2π*u[1]))
     end     
-    geo = ParametricBody(boundary=bnd)
+    geo = ClosedEntity(boundary=bnd)
     plot(geo)
 ```
 
@@ -100,7 +100,7 @@ aforementioned curve (represented as a `ParametricEntity`):
     you can always try to just call `plot` on it.
 
 With the domain ``\Omega`` defined through ``\Gamma``, we must now create a mesh
-for it. Meshes for `ParametricBody` objects are surface meshes, meaning that
+for it. Meshes for `ClosedEntity` objects are surface meshes, meaning that
 only `\Gamma` will be discretized. In this very simple example where the initial
 geometry is known in closed parametric form, the *mesh* will be composed of a
 single mesh element: a `ParametricElement` representing the curve itself. We
@@ -167,7 +167,7 @@ points near $\Gamma$:
 
 Now that we have seen how to solve a scattering problem, let us make $\Gamma$
 slightly more complicated by adding more obstacles. This can be achieved easily
-by creating a vector `ParametricBody` as follows:
+by creating a vector `ClosedEntity` as follows:
 ```@example soundsoft-scattering sound-soft-scattering
 r     = 0.25
 geo   = [Circle(radius=r,center=(-0.5,-sqrt(3)/4)), Circle(radius=r,center=(0.5,-sqrt(3)/4)), Circle(radius=r,center=(0,sqrt(3)/4))]

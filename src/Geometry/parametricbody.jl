@@ -18,35 +18,35 @@ function ambient_dimension(ent::AbstractParametricBody)
 end    
 
 """
-    ParametricBody <: AbstractParametricBody
+    ClosedEntity <: AbstractParametricBody
 
 A geometric entity whose boundary is defined parametrically.
 """
-struct ParametricBody <: AbstractParametricBody
+struct ClosedEntity <: AbstractParametricBody
     dim::UInt8
     tag::Int
     boundary::Vector{ParametricEntity}
-    function ParametricBody(d, t, bnd)
+    function ClosedEntity(d, t, bnd)
         ent = new(d, t, bnd)
         _global_add_entity!(ent)
         return ent
     end        
 end
 
-function ParametricBody(boundary::Vector{<:ParametricEntity})
+function ClosedEntity(boundary::Vector{<:ParametricEntity})
     dims = geometric_dimension.(boundary) 
     d    = dims[1]
     @assert all(i->i==d,dims)
     d = d+1 # dimension of body is one greater than dimension of its boundary
     t = _new_tag(d)
-    ParametricBody(d, t, boundary)
+    ClosedEntity(d, t, boundary)
 end    
-ParametricBody(boundary::ParametricEntity) = ParametricBody([boundary,])
-ParametricBody(;boundary::Vector{<:ParametricEntity}) = ParametricBody(boundary)
+ClosedEntity(boundary::ParametricEntity) = ClosedEntity([boundary,])
+ClosedEntity(;boundary::Vector{<:ParametricEntity}) = ClosedEntity(boundary)
 
 
-key(ent::ParametricBody) = (ent.dim,ent.tag)
-geometric_dimension(ent::ParametricBody) = ent.dim
+key(ent::ClosedEntity) = (ent.dim,ent.tag)
+geometric_dimension(ent::ClosedEntity) = ent.dim
 
 struct Circle <: AbstractParametricBody
     # dim = 2

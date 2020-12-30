@@ -23,9 +23,52 @@ Base.@kwdef struct NystromMesh{N,T} <: AbstractMesh{N,T}
     ent2elt::OrderedDict{AbstractEntity,OrderedDict{DataType,Vector{Int}}} = OrderedDict{AbstractEntity,OrderedDict{DataType,Vector{Int}}}()
 end
 
-# function Base.union(msh1::NystromMesh,msh2::NystromMesh)
-#     N,T = ambient_dimension(msh1), eltype(msh1)
-# end    
+function Base.append!(msh1::NystromMesh,msh2::NystromMesh)
+    Ω = domain(msh2)    
+    @assert ambient_dimension(msh1) == ambient_dimension(msh2)
+    @assert eltype(msh1) == eltype(msh2)
+    # extract relevant quadrature rules
+    etype2dof = OrderedDict{DataType,Vector{Int}}()
+    for E in etypes(msh2,Ω)
+        if haskey(msh1.elements,E)
+            etype2dof[E]        = msh1.elt2dof[E] |> vec
+            @assert msh1.etype2qrule[E] == msh2.etype2qrule[E]
+        else    
+            etype2dof[E]        = Int[]    
+            msh1.elements[E]    = E[]
+            msh1.etype2qrule[E] = msh2.etype2qrule[E]
+        end
+    end
+    # loop over entities and extract the information
+    for ent in entities(msh2)
+        haskey(msh1.ent2elt,ent) && continue # entity alreay meshed
+        msh1.ent2elt[ent] = OrderedDict{DataType,Vector{Int}}()
+        for (E,v) in ent2elt(msh2,ent)
+            # add dofs information    
+            msh2_dofs  = msh2.elt2dof[E][:,v]
+            idx_start = length(msh1.qnodes) + 1 
+            append!(msh1.qnodes,msh2.qnodes[msh2_dofs])
+            append!(msh1.qweights,msh2.qweights[msh2_dofs])
+            if !isempty(qnormals(msh2)) # otherwise assume it did not have normal stored
+                append!(msh1.qnormals,msh2.qnormals[msh2_dofs])
+            end     
+            idx_end = length(msh1.qnodes) # end index of dofs added
+            append!(etype2dof[E],collect(idx_start:idx_end))
+            # append elements
+            idx_start = length(msh1.elements[E]) + 1
+            append!(msh1.elements[E],msh2.elements[E][v])
+            idx_end   = length(msh1.elements[E])
+            # and mapping ent -> elt
+            msh1.ent2elt[ent][E] = collect(idx_start:idx_end)
+        end
+    end
+    # finally do some rehshaping
+    for (E,v) in etype2dof
+        dof_per_el = size(msh2.elt2dof[E],1)
+        msh1.elt2dof[E] = reshape(v,dof_per_el,:)
+    end    
+    return msh1
+end    
 
 # getters
 qnodes(m::NystromMesh)   = m.qnodes
@@ -144,46 +187,46 @@ function NystromMesh(mesh::GenericMesh,Ω::Domain;quad_rule,compute_normal::Bool
 end    
 
 # construct a mesh as a restriction to a domain
-function Base.getindex(old_mesh::NystromMesh,Ω::Domain)
-    N,T      = ambient_dimension(old_mesh), eltype(old_mesh)
+function Base.getindex(msh2::NystromMesh,Ω::Domain)
+    N,T      = ambient_dimension(msh2), eltype(msh2)
     # initialize empty fields
-    new_mesh = NystromMesh{N,T}()    
+    msh1 = NystromMesh{N,T}()    
     # extract relevant quadrature rules
     etype2dof = OrderedDict{DataType,Vector{Int}}()
-    for E in etypes(old_mesh,Ω)
-        new_mesh.etype2qrule[E] = old_mesh.etype2qrule[E]
+    for E in etypes(msh2,Ω)
+        msh1.etype2qrule[E] = msh2.etype2qrule[E]
         etype2dof[E] = Int[]
-        new_mesh.elements[E] = E[]
+        msh1.elements[E] = E[]
     end
     # loop over entities and extract the information
     for ent in Ω
-        @assert ent in domain(old_mesh)
-        new_mesh.ent2elt[ent] = OrderedDict{DataType,Vector{Int}}()
-        for (E,v) in old_mesh.ent2elt[ent]
+        @assert ent in domain(msh2)
+        msh1.ent2elt[ent] = OrderedDict{DataType,Vector{Int}}()
+        for (E,v) in msh2.ent2elt[ent]
             # add dofs information    
-            old_dofs  = old_mesh.elt2dof[E][:,v]
-            idx_start = length(new_mesh.qnodes) + 1
-            append!(new_mesh.qnodes,old_mesh.qnodes[old_dofs])
-            append!(new_mesh.qweights,old_mesh.qweights[old_dofs])
-            if !isempty(qnormals(old_mesh)) 
-                append!(new_mesh.qnormals,old_mesh.qnormals[old_dofs])
+            msh2_dofs  = msh2.elt2dof[E][:,v]
+            idx_start = length(msh1.qnodes) + 1
+            append!(msh1.qnodes,msh2.qnodes[msh2_dofs])
+            append!(msh1.qweights,msh2.qweights[msh2_dofs])
+            if !isempty(qnormals(msh2)) 
+                append!(msh1.qnormals,msh2.qnormals[msh2_dofs])
             end     
-            idx_end = length(new_mesh.qnodes)
+            idx_end = length(msh1.qnodes)
             append!(etype2dof[E],collect(idx_start:idx_end))
             # append elements
-            idx_start = length(new_mesh.elements[E]) + 1
-            append!(new_mesh.elements[E],old_mesh.elements[E][v])
-            idx_end   = length(new_mesh.elements[E])
+            idx_start = length(msh1.elements[E]) + 1
+            append!(msh1.elements[E],msh2.elements[E][v])
+            idx_end   = length(msh1.elements[E])
             # and mapping ent -> elt
-            new_mesh.ent2elt[ent][E] = collect(idx_start:idx_end)
+            msh1.ent2elt[ent][E] = collect(idx_start:idx_end)
         end
     end
     # finally do some rehshaping
     for (E,v) in etype2dof
-        dof_per_el = size(old_mesh.elt2dof[E],1)
-        new_mesh.elt2dof[E] = reshape(v,dof_per_el,:)
+        dof_per_el = size(msh2.elt2dof[E],1)
+        msh1.elt2dof[E] = reshape(v,dof_per_el,:)
     end    
-    return new_mesh
+    return msh1
 end   
 Base.getindex(m::NystromMesh,ent::AbstractEntity) = m[Domain(ent)]
 

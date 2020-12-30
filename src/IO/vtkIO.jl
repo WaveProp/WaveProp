@@ -25,7 +25,7 @@ It is possible also to export a partition `Ωs::Vector{Domain}` using
 
     vtmfile = vtk_multiblock(name)
     for (Ω, pdata) in zip(Ωs, pdatas)
-        vtkfile = vtk_mesh_file(mesh, Ω, name)
+        vtkfile = vtk_mesh_file(mesh, Ω, vtmfile)
         vtkfile["my_point_data", VTKPointData()] = pdata
     end
     vtk_save(vtmfile)
@@ -34,15 +34,26 @@ To save a sequence of solutions (time steps, iterations), simply append
 the number of the element to the file name.
 Paraview will recognize the sequence automatically.
 """
-function vtk_mesh_file(mesh::GenericMesh, name::String)
+function vtk_mesh_file(mesh::GenericMesh, name::String;
+                       compress=true, append=true, ascii=false)
     points = _vtk_points(mesh)
     cells = _vtk_cells(mesh)
-    return vtk_grid(name * ".vtu", points, cells)
+    return vtk_grid(name * ".vtu", points, cells;
+                    compress=compress, append=append, ascii=ascii)
 end
-function vtk_mesh_file(mesh::GenericMesh, Ω::Domain, name::String)
+function vtk_mesh_file(mesh::GenericMesh, Ω::Domain, name::String;
+                       compress=true, append=true, ascii=false)
     points = _vtk_points(mesh)
     cells = _vtk_cells(mesh, Ω)
-    return vtk_grid(name * ".vtu", points, cells)
+    return vtk_grid(name * ".vtu", points, cells;
+                    compress=compress, append=append, ascii=ascii)
+end
+function vtk_mesh_file(mesh::GenericMesh, Ω::Domain, vtmfile::WriteVTK.MultiblockFile;
+                       compress=true, append=true, ascii=false)
+    points = _vtk_points(mesh)
+    cells = _vtk_cells(mesh, Ω)
+    return vtk_grid(vtmfile, points, cells;
+                    compress=compress, append=append, ascii=ascii)
 end
 
 

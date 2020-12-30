@@ -1,7 +1,7 @@
 """
 macro gmsh(ex)
 
-Initialize `gmsh` through `gmsh.initilize(), execute `ex`, the close `gmsh`
+Initialize `gmsh` through `gmsh.initilize(), execute `ex`, then close `gmsh`
 through `gmsh.finalize()`.
 """
 macro gmsh(ex)
@@ -17,14 +17,14 @@ end
 
 Read a `.geo` file and generate a domain [`Ω::Domain`](@ref) of dimension `d`.
 """
-function read_geo(fname;dim=3,h=nothing,order=nothing)
+function read_geo(fname;dim=3,h=nothing,order=nothing,nΩ=1)
     assert_extension(fname, ".geo")    
     gmsh.initialize()
     gmsh.open(fname)    
     h     === nothing || _gmsh_set_meshsize(h)
     order === nothing || _gmsh_set_meshorder(order)
     gmsh.model.mesh.generate(dim)
-    Ω = _initialize_domain(dim)
+    Ω = _initialize_domain(dim; nΩ=nΩ)
     M = _initialize_mesh(Ω)
     if dim == 2 
         M = convert_to_2d(M)
@@ -38,11 +38,11 @@ end
 
 Read a `.msh` file and return a domain [`Ω::Domain`](@ref) together with a mesh [`M::GenericMesh`](@ref).
 """
-function read_msh(fname;dim=3)
+function read_msh(fname;dim=3,nΩ=1)
     assert_extension(fname, ".msh")    
     gmsh.initialize()    
     gmsh.open(fname)
-    Ω = _initialize_domain(dim)
+    Ω = _initialize_domain(dim, nΩ=nΩ)
     M = _initialize_mesh(Ω)
     gmsh.finalize()    
     return Ω, M
@@ -55,7 +55,8 @@ Construct a `Domain` from the current `gmsh` model, starting from entities of di
 
 This is a helper function, and should not be called by itself since it assumes that `gmsh` has been initialized.
 """
-function _initialize_domain(dim)
+function _initialize_domain(dim; nΩ=1)
+    if nΩ > 1 gmsh.model.mesh.partition(nΩ) end
     Ω = Domain() # Create empty domain
     dim_tags = gmsh.model.getEntities(dim)
     for (_, tag) in dim_tags
@@ -101,7 +102,9 @@ construct the mesh.
 """
 function _initialize_mesh(Ω::Domain)
     tags, coord, _ = gmsh.model.mesh.getNodes()
-    nodes = reinterpret(SVector{3,Float64}, coord) |> collect
+    vtx = reshape(coord,3,:)
+    vtx[:,tags] = vtx # correct re-numbering
+    nodes = reinterpret(SVector{3,Float64}, vtx[:]) |> collect
     # map gmsh type tags to actual internal types
     etypes = [_type_tag_to_etype(e) for e in gmsh.model.mesh.getElementTypes()]
     # Recursively populating the dictionaries
@@ -166,14 +169,14 @@ end
 
 Use `gmsh` API to generate a disk and return `Ω::Domain` and `M::GenericMesh`.
 """
-function gmsh_disk(;rx=0.5,ry=0.5,center=(0.,0.,0.),dim=2,h=min(rx,ry)/10,order=1)
+function gmsh_disk(;rx=0.5,ry=0.5,center=(0.,0.,0.),dim=2,h=min(rx,ry)/10,order=1,nΩ=1)
     gmsh.initialize()
     _gmsh_set_meshsize(h)
     _gmsh_set_meshorder(order)
     gmsh.model.occ.addDisk(center...,rx,ry)
     gmsh.model.occ.synchronize()
     gmsh.model.mesh.generate(dim)
-    Ω = _initialize_domain(2)
+    Ω = _initialize_domain(dim; nΩ=nΩ)
     M = _initialize_mesh(Ω)
     if dim == 2 
         M = convert_to_2d(M)
@@ -188,14 +191,14 @@ end
 Use `gmsh` API to generate a sphere and return `Ω::Domain` and `M::GenericMesh`.
 Only entities of dimension `≤ dim` are meshed.
 """
-function gmsh_sphere(;radius=0.5,center=(0., 0., 0.),dim=3,h=radius/10,order=1)
+function gmsh_sphere(;radius=0.5,center=(0., 0., 0.),dim=3,h=radius/10,order=1,nΩ=1)
     gmsh.initialize()
     _gmsh_set_meshsize(h)
     _gmsh_set_meshorder(order)
     gmsh.model.occ.addSphere(center..., radius)
     gmsh.model.occ.synchronize()
     gmsh.model.mesh.generate(dim)
-    Ω = _initialize_domain(3)
+    Ω = _initialize_domain(dim; nΩ=nΩ)
     M = _initialize_mesh(Ω)
     gmsh.finalize()
     return Ω, M
@@ -206,13 +209,13 @@ end
 
 Use `gmsh` API to generate an axis aligned box. Return `Ω::Domain` and `M::GenericMesh`.
 """
-function gmsh_box(;origin=(0., 0., 0.),widths=(1., 1., 1.),h=0.1)
+function gmsh_box(;origin=(0., 0., 0.),widths=(1., 1., 1.),h=0.1,nΩ=1)
     @gmsh begin
         _gmsh_set_meshsize(h)
         gmsh.model.occ.addBox(origin..., widths...)
         gmsh.model.occ.synchronize()
         gmsh.model.mesh.generate()
-        Ω = _initialize_domain(3)
+        Ω = _initialize_domain(3; nΩ=nΩ)
         M = _initialize_mesh(Ω)
     end
     return Ω, M
@@ -221,13 +224,13 @@ end
 """ 
     gmsh_rectangle(;origin,widths)
 """
-function gmsh_rectangle(;origin=(0.,0.,0.),dx=1,dy=1,dim=2,h=0.1)
+function gmsh_rectangle(;origin=(0.,0.,0.),dx=1,dy=1,dim=2,h=0.1,nΩ=1)
     @gmsh begin
         _gmsh_set_meshsize(h)
         gmsh.model.occ.addRectangle(origin...,dx,dy)
         gmsh.model.occ.synchronize()
         gmsh.model.mesh.generate(dim)
-        Ω = _initialize_domain(dim)
+        Ω = _initialize_domain(dim; nΩ=nΩ)
         M = _initialize_mesh(Ω)
         if dim == 2 
             M = convert_to_2d(M)

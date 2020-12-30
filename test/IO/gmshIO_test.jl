@@ -69,3 +69,8 @@ end
     @test eltype(iter) == E
     @test length(iter) == size(M.elements[E],2)
 end
+
+@testset "Partitioning" begin
+    Geometry.clear!()
+    Ω, M = WaveProp.IO.gmsh_disk(;nΩ=2)
+end

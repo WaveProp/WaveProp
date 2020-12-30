@@ -99,81 +99,85 @@ a_helmholtz(u, v) = (i,j,x̂,el,x) -> (inv(transpose(jacobian(el,x̂))) * grad(u
 end
 
 
-## Poisson test 2D
-p, q = 2, 3
-sol(x,y) = sin(p*π*x) * sin(q*π*y)
-f(x,y) = (p^2 + q^2) * π^2 * sol(x,y)
-am(u, v) = (i,j,x̂,el,x) -> u(x̂)[j] * v(x̂)[i]
-a_poisson(u, v) = (i,j,x̂,el,x) -> (inv(transpose(jacobian(el,x̂))) * grad(u)(x̂)[j]) ⋅ (inv(transpose(jacobian(el,x̂))) *  grad(v)(x̂)[i])
-l_poisson(v) = (i,x̂,el,x) -> f(x...) * v(x̂)[i]
-Geometry.clear!()
-Ω, mesh2d = WaveProp.IO.gmsh_rectangle(;h=0.05);
-u = LagrangeBasis{ReferenceTriangle,1}()
-v = LagrangeBasis{ReferenceTriangle,1}()
-M = assembly(mesh2d, Ω, u, v; order=2, f=am);
-A = assembly(mesh2d, Ω, u, v; order=2, f=a_poisson);
-b = assembly(mesh2d, Ω, v; order=2, f=l_poisson);
-# Dirichlet BC
-vΩdofnb = local_dof_numbering(mesh2d, Ω, v);
-vΓdofnb = local_dof_numbering(mesh2d, boundary(Ω), trace(v));
-glob2loc = SparseVector(length(nodes(mesh2d)),dofs(vΩdofnb),collect(1:length(dofs(vΩdofnb))));
-ϵ = 1e-16
-for dof in dofs(vΓdofnb)
-    i = glob2loc[dof]
-    A[i,i] = 1 / ϵ
-    b[i] = 0
-end
-# Solution
-u = factorize(A) \ b;
-# Export
-vtkfile = vtk_mesh_file(mesh3d, Ω, joinpath(@__DIR__,"poisson"))
-vtkfile["u", VTKPointData()] = u;
-vtkfile |> vtk_save
-# Test
-uref = [sol(x...) for x in nodes(mesh2d)]
-e = u .- uref
-err = sqrt(transpose(e) * (M * e)) / sqrt(transpose(uref) * (M * uref))
-@show err
-# Should be quadratic in L2 norm (and it is)
-@test err < 2e-3 # for h = 0.05
+## Poisson test
+@testset "Poisson Lagrange P1" begin
+    @testset "Poisson 2D" begin
+        p, q = 2, 3
+        sol(x,y) = sin(p*π*x) * sin(q*π*y)
+        f(x,y) = (p^2 + q^2) * π^2 * sol(x,y)
+        am(u, v) = (i,j,x̂,el,x) -> u(x̂)[j] * v(x̂)[i]
+        a_poisson(u, v) = (i,j,x̂,el,x) -> (inv(transpose(jacobian(el,x̂))) * grad(u)(x̂)[j]) ⋅ (inv(transpose(jacobian(el,x̂))) *  grad(v)(x̂)[i])
+        l_poisson(v) = (i,x̂,el,x) -> f(x...) * v(x̂)[i]
+        Geometry.clear!()
+        Ω, mesh2d = WaveProp.IO.gmsh_rectangle(;h=0.05);
+        u = LagrangeBasis{ReferenceTriangle,1}()
+        v = LagrangeBasis{ReferenceTriangle,1}()
+        M = assembly(mesh2d, Ω, u, v; order=2, f=am);
+        A = assembly(mesh2d, Ω, u, v; order=2, f=a_poisson);
+        b = assembly(mesh2d, Ω, v; order=2, f=l_poisson);
+        # Dirichlet BC
+        vΩdofnb = local_dof_numbering(mesh2d, Ω, v);
+        vΓdofnb = local_dof_numbering(mesh2d, boundary(Ω), trace(v));
+        glob2loc = SparseVector(length(nodes(mesh2d)),dofs(vΩdofnb),collect(1:length(dofs(vΩdofnb))));
+        ϵ = 1e-16
+        for dof in dofs(vΓdofnb)
+            i = glob2loc[dof]
+            A[i,i] = 1 / ϵ
+            b[i] = 0
+        end
+        # Solution
+        u = factorize(A) \ b;
+        # Export
+        vtkfile = vtk_mesh_file(mesh3d, Ω, joinpath(@__DIR__,"poisson"))
+        vtkfile["u", VTKPointData()] = u;
+        vtkfile |> vtk_save
+        # Test
+        uref = [sol(x...) for x in nodes(mesh2d)]
+        e = u .- uref
+        err = sqrt(transpose(e) * (M * e)) / sqrt(transpose(uref) * (M * uref))
+        @show err
+        # Should be quadratic in L2 norm (and it is)
+        @test err < 2e-3 # for h = 0.05
+    end
+    @testset "Poisson 3D" begin
+        p, q, r = 2, 3, 4
+        sol(x,y,z) = sin(p*π*x) * sin(q*π*y) * sin(r*π*z)
+        f(x,y,z) = (p^2 + q^2 + r^2) * π^2 * sol(x,y,z)
+        am(u, v) = (i,j,x̂,el,x) -> u(x̂)[j] * v(x̂)[i]
+        a_poisson(u, v) = (i,j,x̂,el,x) -> (inv(transpose(jacobian(el,x̂))) * grad(u)(x̂)[j]) ⋅ (inv(transpose(jacobian(el,x̂))) *  grad(v)(x̂)[i])
+        l_poisson(v) = (i,x̂,el,x) -> f(x...) * v(x̂)[i]
 
-## Poisson test 3D
-p, q, r = 2, 3, 4
-sol(x,y,z) = sin(p*π*x) * sin(q*π*y) * sin(r*π*z)
-f(x,y,z) = (p^2 + q^2 + r^2) * π^2 * sol(x,y,z)
-am(u, v) = (i,j,x̂,el,x) -> u(x̂)[j] * v(x̂)[i]
-a_poisson(u, v) = (i,j,x̂,el,x) -> (inv(transpose(jacobian(el,x̂))) * grad(u)(x̂)[j]) ⋅ (inv(transpose(jacobian(el,x̂))) *  grad(v)(x̂)[i])
-l_poisson(v) = (i,x̂,el,x) -> f(x...) * v(x̂)[i]
-
-Ω, mesh3d = WaveProp.IO.gmsh_box(;h=0.05);
-u = LagrangeBasis{ReferenceTetrahedron,1}()
-v = LagrangeBasis{ReferenceTetrahedron,1}()
-A = assembly(mesh3d, Ω, u, v; order=2, f=a_poisson);
-M = assembly(mesh3d, Ω, u, v; order=2, f=am);
-b = assembly(mesh3d, Ω, v; order=2, f=l_poisson);
-# Dirichlet BC
-vΩdofnb = local_dof_numbering(mesh3d, Ω, v);
-vΓdofnb = local_dof_numbering(mesh3d, boundary(Ω), trace(v));
-glob2loc = SparseVector(length(nodes(mesh3d)),dofs(vΩdofnb),collect(1:length(dofs(vΩdofnb))));
-ϵ = 1e-16
-for dof in dofs(vΓdofnb)
-    i = glob2loc[dof]
-    A[i,i] = 1 / ϵ
-    b[i] = 0
+        Ω, mesh3d = WaveProp.IO.gmsh_box(;h=0.05);
+        u = LagrangeBasis{ReferenceTetrahedron,1}()
+        v = LagrangeBasis{ReferenceTetrahedron,1}()
+        A = assembly(mesh3d, Ω, u, v; order=2, f=a_poisson);
+        M = assembly(mesh3d, Ω, u, v; order=2, f=am);
+        b = assembly(mesh3d, Ω, v; order=2, f=l_poisson);
+        # Dirichlet BC
+        vΩdofnb = local_dof_numbering(mesh3d, Ω, v);
+        vΓdofnb = local_dof_numbering(mesh3d, boundary(Ω), trace(v));
+        glob2loc = SparseVector(length(nodes(mesh3d)),dofs(vΩdofnb),collect(1:length(dofs(vΩdofnb))));
+        ϵ = 1e-16
+        for dof in dofs(vΓdofnb)
+            i = glob2loc[dof]
+            A[i,i] = 1 / ϵ
+            b[i] = 0
+        end
+        # Solution
+        u = factorize(A) \ b;
+        # Export
+        vtkfile = vtk_mesh_file(mesh3d, Ω, joinpath(@__DIR__,"poisson"))
+        vtkfile["u", VTKPointData()] = u;
+        vtkfile |> vtk_save
+        # Test
+        uref = [sol(x...) for x in nodes(mesh3d)]
+        e = u .- uref
+        err = sqrt(transpose(e) * (M * e)) / sqrt(transpose(uref) * (M * uref))
+        @show err
+        # Should be quadratic in L2 norm (and it is)
+        @test err < 4e-2 # for h = 0.05
+    end
 end
-# Solution
-u = factorize(A) \ b;
-# Export
-vtkfile = vtk_mesh_file(mesh3d, Ω, joinpath(@__DIR__,"poisson"))
-vtkfile["u", VTKPointData()] = u;
-vtkfile |> vtk_save
-# Test
-uref = [sol(x...) for x in nodes(mesh3d)]
-e = u .- uref
-err = sqrt(transpose(e) * (M * e)) / sqrt(transpose(uref) * (M * uref))
-@show err
-# Should be quadratic in L2 norm (and it is)
-@test err < 4e-2 # for h = 0.05
 
 
 # ## Modes for 2D Neumann Laplacian

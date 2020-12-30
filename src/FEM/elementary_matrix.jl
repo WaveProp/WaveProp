@@ -31,8 +31,8 @@ function elementary_matrix_new!(A,el::AbstractElement, u::PolynomialBasis,
 end  
 
 function elementary_matrix(el::AbstractElement, u::PolynomialBasis,
-    v::PolynomialBasis, q::AbstractQuadratureRule;
-    f=(u,v)->(i,j,x̂,_,_)->u(x̂)[j]*v(x̂)[i])
+                           v::PolynomialBasis, q::AbstractQuadratureRule;
+                           f=(u,v)->(i,j,x̂,_,_)->u(x̂)[j]*v(x̂)[i])
     x̂,ŵ = q()
     x,w = q(el)
     m, n = length(v), length(u)

@@ -105,15 +105,9 @@ end
     label --> ""        
     grid   --> false
     aspect_ratio --> :equal    
-    @series begin
-        seriestype --> :scatter    
-        marker --> :x
-        mesh.qnodes
-    end
     for (E,els) in mesh.elements
         for el in els
             @series begin 
-                marker --> nothing    
                 el
             end
         end        

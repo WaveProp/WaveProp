@@ -40,7 +40,7 @@ end
     geo1  = Geometry.Kite()
     geo2  = Circle(center=(10,0))
     Ω   = Domain([geo1,geo2])
-    M  = meshgen(Ω,gridsize=100)
+    M  = meshgen(Ω,h=100)
     Γ    = boundary(Ω)
     # generate a Nystrom mesh with trapezoidal quadrature
     mesh  = NystromMesh(M,Γ;quad_rule=TrapezoidalP(100))
@@ -96,7 +96,7 @@ end
     dudn = (x,n) -> DoubleLayerKernel(pde)(xout,x,n)
     bdy  = Circle()
     Ω    = Domain(bdy)
-    M  = meshgen(Ω;gridsize=0.05)
+    M  = meshgen(Ω;h=0.05)
     Γ    = boundary(Ω)
     # generate a Nystrom mesh with trapezoidal quadrature
     mesh  = NystromMesh(M,Γ;quad_rule=qrule)

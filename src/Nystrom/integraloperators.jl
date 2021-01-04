@@ -100,6 +100,6 @@ function isinside(x::SVector,mesh::NystromMesh)
     end  
     u + 0.5 < 0 
 end
-isinside(x::Tuple,mesh::NystromMesh) = in(SVector(x),mesh)
+isinside(x::Tuple,mesh::NystromMesh) = isinside(SVector(x),mesh)
 
 qnodes(vec::Array{<:SVector}) = vec

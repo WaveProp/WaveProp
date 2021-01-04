@@ -77,7 +77,7 @@ end
     Geometry.clear!()
     geo  = Kite()
     Ω    = Domain(geo)
-    M   = meshgen(Ω,gridsize=0.05)
+    M   = meshgen(Ω,h=0.05)
     Γ     = boundary(Ω)
     # generate a Nystrom mesh with Gauss-Legendre quadrature
     qrule   = GaussLegendre(5)

@@ -47,7 +47,7 @@ end
     geo1  = Geometry.Kite()
     geo2  = Circle(center=(10,0))
     Ω     = Domain([geo1,geo2])
-    M     = meshgen(Ω,gridsize=0.1)
+    M     = meshgen(Ω,h=0.1)
     Γ     = boundary(Ω)
     # generate a Nystrom mesh with Gauss-Legendre quadrature
     qrule   = GaussLegendre(5)
@@ -77,7 +77,7 @@ end
     geo1  = Geometry.Kite()
     geo2  = Circle(center=(10,0))
     Ω     = Domain([geo1,geo2])
-    M   = meshgen(Ω,gridsize=0.1)
+    M   = meshgen(Ω,h=0.1)
     Γ     = boundary(Ω)
     # generate a Nystrom mesh with Gauss-Legendre quadrature
     qrule   = GaussLegendre(5)

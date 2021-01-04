@@ -15,7 +15,7 @@ using WaveProp.Mesh
     Geometry.clear!()
     geo   = Circle(radius=0.5)
     Ω     = Domain(geo)
-    M     = meshgen(Ω;gridsize=(0.1))
+    M     = meshgen(Ω;h=(0.1))
     mesh  = view(M,boundary(Ω))
     nmesh = NystromMesh(mesh,order=2)
     @test isapprox(sum(qweights(nmesh)),π,atol=0.1)

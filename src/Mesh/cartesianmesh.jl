@@ -14,15 +14,18 @@ etypes(m::CartesianMesh) = (etype(m),)
 # type if needed
 CartesianMesh(args...) = CartesianMesh(promote(args...))
 
-function CartesianMesh(d::ReferenceLine;gridsize::Number)
-    n     = cld(1,gridsize) + 1 |> Int
+function CartesianMesh(d::ReferenceLine;h::Number=floatmax(),n::Int=1)
+    m     = cld(1,h) + 1 |> Int 
+    n     = max(m,n)
     xgrid = LinRange(0,1,n)
     CartesianMesh(xgrid)
 end    
 
-function CartesianMesh(d::ReferenceSquare;gridsize)
-    nx     = cld(1,gridsize[1]) + 1 |> Int
-    ny     = cld(1,gridsize[2]) + 1 |> Int
+function CartesianMesh(d::ReferenceSquare;h=(floatmax(),floatmax()),n=(1,1))
+    nx     = cld(1,h[1]) + 1 |> Int
+    ny     = cld(1,h[2]) + 1 |> Int
+    nx     = max(n[1],nx)
+    ny     = max(n[2],ny)
     xgrid = LinRange(0,1,nx)
     ygrid = LinRange(0,1,ny)
     CartesianMesh(xgrid,ygrid)

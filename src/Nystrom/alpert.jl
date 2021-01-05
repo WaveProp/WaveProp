@@ -6,7 +6,7 @@ function assemble_alpert(iop::IntegralOperator;compress=Matrix)
     out        = compress(iop)
     correction = assemble_alpert_correction!(out,iop)
     axpy!(1,correction,out) # out <-- out + correction
-    return 
+    return out
 end    
 
 function assemble_alpert_correction!(out,iop)

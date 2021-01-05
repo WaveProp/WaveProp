@@ -9,9 +9,17 @@ makedocs(
     modules = [WaveProp],
     pages = [
         "Home"      => ["index.md",]
-        "Tutorials" => ["Tutorials/soundsoft_scattering.md",]
+        # "Tutorials" => ["Tutorials/soundsoft_scattering.md",]
         "Modules"   => ["Utils/Utils.md",
-                        "Geometry/Geometry.md"]
+                        "Geometry/Geometry.md",
+                        "Interpolation/Interpolation.md",
+                        "Integration/Integration.md",
+                        "Mesh/Mesh.md",
+                        "PhysicalProblem/PhysicalProblem.md",
+                        "FEM/FEM.md",
+                        "Nystrom/Nystrom.md",
+                        "IO/IO.md"
+                        ]
         # "Examples" => "examples.md"
         # "Documentation" => "devdocs.md"
     ]

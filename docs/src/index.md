@@ -44,7 +44,7 @@ Pkg.add("https://github.com/WaveProp/WaveProp")
 
 ## Getting started
 
-Assuming you know your way around boundary integrations...
+Assuming you know your way around boundary integral ...
 
 ## Introduction to Nystrom methods
 
@@ -56,7 +56,7 @@ this reduces the problem to certain integrals over the boundary where the
 between domains where the coefficients change.
 
 !!! tip
-    While it is relatively straigh-forward to generalize the methods to
+    While it is relatively straight-forward to generalize the methods to
     non-homogenous problems (e.g. Poisson instead of Laplace), tackling PDE with
     continuously varying coefficients using boundary integral equations is much
     more challenging. In fact some of the advantages of using a boundary
@@ -66,7 +66,7 @@ between domains where the coefficients change.
 Depending on the boundary condition (e.g. Dirichlet, Neumann), choice of
 formulation (e.g. direct, indirect), and choice of Green function (e.g.
 freespace, halfspace), a different boundary integral equation must be solved.
-Details aside, this quite often comes down to the evaluation of four [`IntegralOperator`](@ref): 
+Details aside, this quite often comes down to the evaluation of four [`Nystrom.IntegralOperator`](@ref): 
 
 * `SingleLayerOperator`
 * `DoubleLayerOperator`
@@ -83,7 +83,10 @@ and the single layer operator is
 ```math
 S[\varphi](x) = \int_\Gamma G(x,y)\varphi(y)d\Gamma_y.
 ```
-This package implements a subclass of boundary integral equation methods called *Nystrom*, where such integrals are discretized directly using a quadrature rule, and the value of the unknow function is sought at the quadrature nodes. This leads to approximations of the form
+This package implements a subclass of boundary integral equation methods called
+*Nystrom*, where such integrals are discretized directly using a quadrature
+rule, and the value of the unknown function is sought at the quadrature nodes.
+This leads to approximations of the form
 ```math
 S[\varphi](q_i) \approx \sum_j G(q_i,q_j) \varphi(q_j)w_j,
 ```

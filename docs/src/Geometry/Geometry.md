@@ -1,3 +1,7 @@
+```@meta
+CurrentModule = WaveProp
+```
+
 # Geometry module
 
 The `WaveProp.Geometry` module is of fundamental importance as it defines the
@@ -9,3 +13,6 @@ high-level, the usual workflow is:
 Here the `Geometry` handles everything related to defining geometrical entities,
 as well as **geometrical elements**. 
 
+```@autodocs
+Modules = [WaveProp.Geometry]
+```

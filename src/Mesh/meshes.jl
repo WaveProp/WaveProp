@@ -122,7 +122,7 @@ end
 Given a mesh `m`, create a dictionary mapping each element type of `m` to an
 appropriate quadrature rule of order `p` over that element type.
 
-See also [`_qrule_for_reference_shape`](@ref)
+See also [`Integration._qrule_for_reference_shape`](@ref)
 """
 function _qrule_for_mesh(m,order)
     OrderedDict(E=>Integration._qrule_for_element(E,order) for E in etypes(m))

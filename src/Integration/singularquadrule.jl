@@ -5,7 +5,7 @@ A quadrature rule over `D` intended to integrate functions which are singular at
 `s ∈ D`.
 
 A singular quadrature is rule is composed of a *regular* quadrature rule (e.g.
-`GaussLegendre`) and a [`SingularityHandler`](@ref) to transform the regular
+`GaussLegendre`) and a [`AbstractSingularityHandler`](@ref) to transform the regular
 quadrature. The regular quadrature rule generates nodes and weights on the
 `domain(sing_handler)`, and those are mapped into an appropriate quadrature over
 `D = range(sing_handler)` using the singularity handler. 
@@ -34,23 +34,18 @@ end
 qrule(q::SingularQuadratureRule) = q.qrule
 singularity_handler(q::SingularQuadratureRule) = q.singularity_handler
 
-"""
-    (qs::SingularQuadratureRule)()
-
-Return the nodes and weights for integrating over `domain(qs)`
-"""
-function (qs::SingularQuadratureRule)()
-    qstd = qs |> qrule
-    x̂,ŵ  = qstd() # reference quadrature
-    cov  = qs |> singularity_handler   
+@generated function (qs::SingularQuadratureRule{D,Q,S})() where {D,Q,S}
+    qstd  = Q()    
+    shand = S()
+    x̂,ŵ   = qstd() # reference quadrature
     # use the change of variables cov to modify reference quadrature
-    x    = map(x->cov(x),x̂)
-    w    = map(zip(x̂,ŵ)) do (x̂,ŵ)
-        jac = jacobian(cov,x̂)    
+    x    = map(x->shand(x),x̂)
+    w    = map(x̂,ŵ) do x̂,ŵ
+        jac = jacobian(shand,x̂)    
         μ   = abs(det(jac))
         μ*prod(ŵ)
     end 
-    return x,w
+    return :($x,$w)
 end
 
 """
@@ -63,6 +58,36 @@ The actual implementation depends on the type of `q`.
 """
 function singular_quadrature end
 
+function singular_quadrature(q::SingularQuadratureRule{ReferenceLine},s)
+    # remember that s is typically a static vector of length 1    
+    @assert 0 < s[1] < 1    
+    # qstd  = qrule(q)
+    # shand = singularity_handler(q)
+    # x̂,ŵ   = qstd()
+    # x1    = map(x̂) do x
+    #     x*(1-s) + s
+    # end    
+    # x2    = map(x̂) do x
+    #     x*(1-s) + s
+    # end    
+    x̂,ŵ = q() 
+    # left domain
+    x1  = @. s[1] * (1-x̂)
+    w1  = @. ŵ*s[1]
+    # right domain
+    x2  = @. s[1]  + x̂*(1-s[1])
+    w2  = @. ŵ*(1-s[1])
+    # split the domain into two
+    # l1    = line(s[1],0)
+    # l2    = line(s[1],1)
+    # # apply the quadrature to each segment
+    # x1,w1 = q(l1)
+    # x2,w2 = q(l2)
+    # combine the nodes and weights
+    return vcat(x1,x2), vcat(w1,w2)
+end 
+
+
 """
     singular_quadrature(k,q::SingularQuadratureRule,s)
 
@@ -71,6 +96,8 @@ factored weight `k`.
 """
 function singular_quadrature(k,q::SingularQuadratureRule,s)
     x,w = singular_quadrature(q,s)
+    T = Base.promote_op(k,eltype(x))
+    assert_concrete_type(T)
     w   = map(zip(x,w)) do (x,w)
         k(x)*w
     end
@@ -89,6 +116,28 @@ function singular_weights(k,ui,q::SingularQuadratureRule,s)
     wlag = barycentric_lagrange_weights(ui)
     L    = barycentric_lagrange_matrix(ui,x,wlag)
     return transpose(L)*w
+end    
+
+function singular_weights(k,qstd::AbstractQuadratureRule,q::SingularQuadratureRule,s)
+    ui  = qnodes(qstd)
+    ui  = map(x->x[1],ui)
+    x,w = singular_quadrature(k,q,s)
+    x   = map(x->x[1],x)
+    wlag = barycentric_lagrange_weights(qstd)
+    L    = barycentric_lagrange_matrix(ui,x,wlag)
+    return transpose(L)*w
+end    
+
+@generated function barycentric_lagrange_weights(Q::AbstractQuadratureRule)
+    q  = Q()
+    xs = qnodes(q) # static vector
+    N  = length(xs)
+    T  = eltype(xs) |> eltype
+    x  = map(x->x[1],xs)
+    # x  = Vector{T}(reinterpret(T,xs))
+    w  =  barycentric_lagrange_weights(x) 
+    ws = SVector{N}(w)
+    return :($ws)
 end    
 
 """

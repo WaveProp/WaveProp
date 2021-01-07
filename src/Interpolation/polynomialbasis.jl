@@ -5,6 +5,16 @@ A polynomial basis over `D` of order `≤P`.
 """
 abstract type PolynomialBasis{D,P} end
 
+"""
+        struct MonomialBasis{D,P}
+        
+A basis of monomials spanning all polynomials of *order* `P` over `D`. 
+
+For multi-dimensional domains `D`, the precise definion of *order* depends in
+fact on `D`. When `D` is a unit hypercube, the order of ``xᵅ`` where `α` is a
+multi-index (e.g. an `NTuple`) is infinity norm. When `D` is a reference
+simplex, the norm is the *L¹-norm*. 
+"""
 struct MonomialBasis{D,P} <: PolynomialBasis{D,P} end
 MonomialBasis(d::AbstractReferenceShape,p::Int) = MonomialBasis{typeof(d),p}()
 
@@ -66,7 +76,16 @@ function lagrange_basis(xi,m::MonomialBasis)
     return C
 end    
 
+"""
+    struct LagrangeBasis{D,P}
 
+A Lagrange basis of order `P` over the reference shape
+`D<:AbstractReferenceShape`. Spans the same space [`MonomialBasis{D,P}`](@ref)
+    
+Can be used as a function through `(b::LagrangeBasis)(x)`, where it Evaluate all
+base elements in `b` at the point `x`. Returns a `StaticVector` of length
+`length(b)`.
+"""
 struct LagrangeBasis{D,P} <: PolynomialBasis{D,P} 
 end    
 
@@ -76,12 +95,7 @@ Base.length(::LagrangeBasis{ReferenceLine,P}) where {P} = P+1 |> Int
 Base.length(::LagrangeBasis{ReferenceTriangle,P}) where {P} = (P+1)*(P+2)/2 |> Int
 Base.length(::LagrangeBasis{ReferenceTetrahedron,P}) where {P} = (P+1)*(P+2)*(P+3)/6 |> Int
 
-"""
-    (b::LagrangeBasis)(x)
 
-Evaluate all base elements in `b` at the point `x`. Return a `StaticVector` of
-length `length(b)`.
-"""
 function (b::LagrangeBasis{D,0})(x::SVector{<:Any,<:Number}) where {D}
     SVector(1)
 end    

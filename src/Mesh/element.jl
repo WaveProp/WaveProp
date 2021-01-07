@@ -353,9 +353,7 @@ function (el::ParametricElement)(u)
     hc  = high_corner(rec)
     N   = geometric_dimension(el)
     # map from reference domain to preimage
-    v = svector(N) do dim
-        lc[dim] + (hc[dim]-lc[dim])*u[dim]
-    end    
+    v = @. lc + (hc - lc)*u
     # map from preimage to element
     f = parametrization(el)
     return f(v)
@@ -368,12 +366,8 @@ function jacobian(el::ParametricElement,u::SVector)
     hc  = high_corner(rec)
     N = geometric_dimension(el)
     # map from reference domain to preimage
-    v = svector(N) do dim
-        lc[dim] + (hc[dim]-lc[dim])*u[dim]
-    end        
-    scal = svector(N) do dim
-        (hc[dim]-lc[dim])
-    end        
+    scal = hc .- lc
+    v = @. lc + scal*u
     # compute jacobian
     f = parametrization(el)
     ForwardDiff.jacobian(f,v) * SDiagonal(scal)
@@ -454,24 +448,6 @@ function _push_forward_quadrature(el,x̂,ŵ)
     end 
     return x,w
 end    
-
-"""
-    singular_quadrature(q::SingularQuadratureRule,s)
-
-Return the nodes and weights to integrate a function over `domain(q)`. The
-function can be (weakly) singular at the location `s`.
-"""
-function singular_quadrature(q::SingularQuadratureRule{ReferenceLine},s)
-    @assert 0 < s < 1    
-    # split the domain into two
-    l1    = LagrangeLine(s,0)
-    l2    = LagrangeLine(s,1)
-    # apply the quadrature to each segment
-    x1,w1 = q(l1)
-    x2,w2 = q(l2)
-    # combine the nodes and weights
-    return vcat(x1,x2), vcat(w1,w2)
-end 
 
 function singular_quadrature(q::SingularQuadratureRule{ReferenceTriangle,<:Any,Duffy},s)
     # split the domain

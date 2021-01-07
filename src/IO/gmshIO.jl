@@ -15,7 +15,8 @@ end
 """
     read_geo(fname::String;dim=3)
 
-Read a `.geo` file and generate a domain [`Ω::Domain`](@ref) of dimension `d`.
+Read a `.geo` file and generate a [`GenericMesh`](@ref) together with a
+[`Domain`](@ref) for it using `gmsh`.
 """
 function read_geo(fname;dim=3,h=nothing,order=nothing)
     assert_extension(fname, ".geo")    
@@ -36,7 +37,8 @@ end
 """
     read_msh(fname::String)
 
-Read a `.msh` file and return a domain [`Ω::Domain`](@ref) together with a mesh [`M::GenericMesh`](@ref).
+Similar to [`read_geo`](@ref), but the mesh is simply read from the input file
+instead of generated. 
 """
 function read_msh(fname;dim=3)
     assert_extension(fname, ".msh")    
@@ -134,7 +136,7 @@ For each element type used to mesh `ω`:
 
 where:
 - `etype::DataType` determines the type of the element (see
-    [`type_tag_to_etype`](@ref));
+    [`_type_tag_to_etype`](@ref));
 - `ntags::Matrix{Int}` gives the indices of the nodes defining those
     elements;
 - `etags::Vector{Int}` gives the indices of those elements in `elements`.
@@ -164,7 +166,8 @@ end
 """
     gmsh_disk(;rx=0.5,ry=0.5,center=(0,0,0)) -> Ω, M
 
-Use `gmsh` API to generate a disk and return `Ω::Domain` and `M::GenericMesh`.
+Use `gmsh` API to generate a disk and return a [`Domain`](@ref) `Ω` and a
+[`GenericMesh`](@ref) of the disk.
 """
 function gmsh_disk(;rx=0.5,ry=0.5,center=(0.,0.,0.),dim=2,h=min(rx,ry)/10,order=1)
     gmsh.initialize()

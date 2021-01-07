@@ -102,6 +102,11 @@ struct ParametricEntity{D,F} <: AbstractEntity
     end    
 end
 
+"""
+    const ParametricCurve{F} = ParametricEntity{ReferenceLine,F}
+
+A curve defined by the function `f::F`.
+"""
 const ParametricCurve{F} = ParametricEntity{ReferenceLine,F} 
 
 function Base.reverse(ent::ParametricEntity{D,F}) where {D,F}

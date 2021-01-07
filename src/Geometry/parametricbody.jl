@@ -98,6 +98,54 @@ end
 key(ent::Kite) = (2,ent.tag)
 geometric_dimension(ent::Kite) = 2
 
+struct Droplet <: AbstractParametricBody
+    # dim = 2
+    tag::Int    
+    center::SVector{2,Float64}
+    radius::Float64
+    boundary::Vector{ParametricEntity}
+    function Droplet(t,c,r,bnd)
+        d   = 2
+        ent = new(t,c,r,bnd)    
+        _global_add_entity!(ent)
+        return ent
+    end    
+end
+
+function Droplet(;radius=1,center=(0,0))
+    f = (s) -> center .+ radius .* SVector(2 * sinpi(s[1]),-sinpi(2*s[1]))
+    domain = ReferenceLine()
+    surf   = ParametricEntity(f, domain)
+    t      = _new_tag(2)
+    return Droplet(t,center, radius, [surf])
+end    
+key(ent::Droplet) = (2,ent.tag)
+geometric_dimension(ent::Droplet) = 2
+
+struct Boomerang <: AbstractParametricBody
+    # dim = 2
+    tag::Int    
+    center::SVector{2,Float64}
+    radius::Float64
+    boundary::Vector{ParametricEntity}
+    function Boomerang(t,c,r,bnd)
+        d   = 2
+        ent = new(t,c,r,bnd)    
+        _global_add_entity!(ent)
+        return ent
+    end    
+end
+
+function Boomerang(;radius=1,center=(0,0))
+    f = (s) -> center .+ radius .* SVector(-2/3 * sinpi(3*s[1]),-sinpi(2*s[1]))
+    domain = ReferenceLine()
+    surf   = ParametricEntity(f, domain)
+    t      = _new_tag(2)
+    return Droplet(t,center, radius, [surf])
+end    
+key(ent::Boomerang) = (2,ent.tag)
+geometric_dimension(ent::Boomerang) = 2
+
 # struct Ellipsoid{T} <: AbstractParametricBody{3,2,T}
 #     center::SVector{3,T}
 #     paxis::SVector{3,T}

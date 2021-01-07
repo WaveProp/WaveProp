@@ -60,9 +60,8 @@ end
 
 jacobian(f::Kress,x) = derivative(f,x) |> SMatrix{1,1}
 
-
 """
-    struct KressP{P} <: SingularityHandler{ReferenceLine}
+    struct KressP{P} <: AbstractSingularityHandler{ReferenceLine}
     
 Like [`Kress`](@ref), this change of variables maps the interval `[0,1]` onto
 itself, but the first `P` derivatives of the transformation vanish at **both**
@@ -129,10 +128,9 @@ end
 
 # TODO: generalize to `N` dimensions
 """
-    struct TensorProductSingularityHandler{S} <:
-    AbstractSingularityHandler{ReferenceSquare}
+    struct TensorProductSingularityHandler{S} <: AbstractSingularityHandler{ReferenceSquare}
         
-A tensor product of two one-dimensional `SingularityHandler`s for performing
+A tensor product of two one-dimensional `AbstractSingularityHandler`s for performing
 integration over the `ReferenceSquare`.
 """
 struct TensorProductSingularityHandler{S} <: AbstractSingularityHandler{ReferenceSquare} 

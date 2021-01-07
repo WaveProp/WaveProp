@@ -17,8 +17,25 @@ abstract type AbstractQuadratureRule{D} end
 
 domain(q::AbstractQuadratureRule{D}) where {D} = D()
 
+"""
+    qnodes(Y)
+
+Return the quadrature nodes associated with `Y`.
+"""
 qnodes(q::AbstractQuadratureRule) = q()[1]
+
+"""
+    qweights(Y)
+
+Return the quadrature weights associated with `Y`.
+"""
 qweights(q::AbstractQuadratureRule) = q()[2]
+
+"""
+    qnormals(Y)
+
+Return the normal vector at the quadrature nodes of `Y.
+"""
 qnormals(q::AbstractQuadratureRule) = error("abstract quadrature rule has no normal")
 
 """
@@ -177,7 +194,11 @@ GaussLegendre(n::Int) = GaussLegendre{n}()
     ws   = svector(i->w[i]/2,N)
     return :($xs,$ws)
 end
- 
+
+function refine(q::GaussLegendre{N},k=2) where {N}
+    GaussLegendre(Int(N*k))
+end    
+
 """
     struct Gauss{D,N} <: AbstractQuadratureRule{D}
     
@@ -241,12 +262,19 @@ struct TensorProductQuadrature{Q} <: AbstractQuadratureRule{ReferenceSquare}
     quad::Q
 end
 
+# FIXME: this is a workaround the need to easily construct a tensor quadrature
+# based only on the the types of the quadratures. Useful in generated functions,
+# but there is probably a better way
+function TensorProductQuadrature{Tuple{Q1,Q2}}() where {Q1,Q2}
+    TensorProductQuadrature(Q1(),Q2())
+end    
+
 function TensorProductQuadrature(q...)
     TensorProductQuadrature(q)
 end    
 
 # FIXME: the current implementation is rather obscure. How should we handle the
-# product quadrature rules in general?
+# product quadrature rules in general? Also make this into a generated function.
 function (q::TensorProductQuadrature)()
     N       = length(q.quad)    
     nodes   = map(q->q()[1],q.quad)    

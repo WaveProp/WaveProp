@@ -3,8 +3,8 @@
 
 Methods for integrating over instances of [`AbstractReferenceShape`](@ref). 
     
-Besides some standard quadrature rules used in the [`FEM`](@ref) module, we also
-define singular integration routines useful for (weakly) singular integrands. 
+Besides some standard quadrature rules used in the `FEM` module, this module also
+defines singular integration routines useful for (weakly) singular integrands. 
 
 Exports:
 $(EXPORTS)
@@ -21,6 +21,7 @@ import HCubature: hcubature
 
 using WaveProp.Utils
 using WaveProp.Geometry
+using WaveProp.Interpolation
 
 import WaveProp.Geometry: 
     domain, 
@@ -28,6 +29,8 @@ import WaveProp.Geometry:
     ambient_dimension, 
     geometric_dimension,
     jacobian
+
+import WaveProp.Interpolation: barycentric_lagrange_weights    
 
 export 
     # abstract types

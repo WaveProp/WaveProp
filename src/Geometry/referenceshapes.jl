@@ -1,10 +1,10 @@
 """
     abstract type AbstractReferenceShape{N}
     
-A reference polygon in `ℜᴺ`.
+A reference domain/shape in `ℜᴺ`.
 
-Reference shapes are used mostly for defining [`AbstractElement`](@ref)s as
-transformations mapping an `AbstractReferenceShape` into some region of `ℜᴹ`. 
+Used mostly for defining more complex shapes as transformations mapping an
+`AbstractReferenceShape` into some region of `ℜᴹ`. 
 
 See e.g. [`ReferenceLine`](@ref) or [`ReferenceTriangle`](@ref) for some
 examples of concrete subtypes.

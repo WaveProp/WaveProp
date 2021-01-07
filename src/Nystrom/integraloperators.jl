@@ -13,7 +13,8 @@ end
 IntegralOperator{T}(k,X,Y) where {T} = IntegralOperator{T,typeof(k),typeof(X),typeof(Y)}(k,X,Y)
 
 function IntegralOperator(k,X,Y=X)
-    T = return_type(k)
+    T = return_type(k,X,Y)
+    assert_concrete_type(T)
     IntegralOperator{T}(k,X,Y)
 end
 
@@ -54,39 +55,7 @@ AdjointDoubleLayerOperator(op::AbstractPDE,X,Y=X) = IntegralOperator(AdjointDoub
 HyperSingularOperator(op::AbstractPDE,X,Y=X)      = IntegralOperator(HyperSingularKernel(op),X,Y)
 
 ambient_dimension(iop::IntegralOperator) = ambient_dimension(iop.kernel)
-
-function Integration.singular_weights(iop::IntegralOperator,qstd::AbstractQuadratureRule,q::SingularQuadratureRule)
-    X,Y = iop.X, iop.Y    
-    T = eltype(iop)    
-    K = iop.kernel
-    dict_near = near_interaction_list(qnodes(X),Y;dim=ambient_dimension(Y)-1,atol=0.1)
-    Is    = Int[]
-    Js    = Int[]
-    Vs    = T[]
-    ui    = qstd()[1]
-    for (E,list_near) in dict_near # for each element type
-        el2qnodes = Y.elt2dof[E]
-        num_qnodes, num_els   = size(el2qnodes)
-        for (n,el) in enumerate(ElementIterator{E}(Y)) # for each element of type E in the mesh Y
-            j_glob                = el2qnodes[:,n]
-            for (i,jloc) in list_near[n] # for each near observation point
-                x   = X.qnodes[i] # observation point
-                vs  = ui[jloc]    # regularization center in parameter space
-                if kernel_type(K) == SingleLayer()
-                    k    = (v) -> K(x,el(v))*measure(el,v)
-                elseif kernel_type(K) == DoubleLayer()
-                    k    = (v) -> K(x,el(v),normal(el,v)) * measure(el,v)
-                end    
-                w  = singular_weights(k,ui,q,vs)
-                append!(Is,fill(i,num_qnodes))
-                append!(Js,j_glob)
-                w  = w - iop[i,j_glob]
-                append!(Vs,w)
-            end            
-        end
-    end  
-    return Sp = sparse(Is,Js,Vs,size(iop)...)      
-end    
+ 
 
 function isinside(x::SVector,mesh::NystromMesh)
     N   = ambient_dimension(mesh)     

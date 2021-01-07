@@ -1,7 +1,7 @@
 function assemble_mk(iop::IntegralOperator)
+    assert_mk_compatibility(iop)
     X = target_surface(iop)
     Y = source_surface(iop)
-    @assert X === Y "Martensen-Kussmaul method should only be used for computing integral operators"
     N   = length(X) # number of dof
     out = zero(iop) # output matrix to be filled
     for target_ent in entities(X)
@@ -48,7 +48,7 @@ function _assemble_mk_self!(out,iop,el::AbstractElement,idxs)
     X     = target_surface(iop)
     qrule = X.etype2qrule[typeof(el)] # quadrature used on elements of type el
     x̂,ŵ   = qrule()                   # nodes on reference segment [0,1]
-    # compute all quantities needed for mk rule, which includes higher order
+    # compute all quantities needed for mk rule, which includes high order
     # derivatives of the parametrization. 
     N     = length(idxs)
     dx    =  [derivative(el,u)/(2π)     for u in x̂]
@@ -87,7 +87,7 @@ function _assemble_mk_self!(out,iop,el::AbstractElement,idxs)
     return out
 end    
 
-# analytical splitting of kernel in 2d
+# analytical splitting of kernel in 2d Helmholtz
 function mk_split(SL::SingleLayerKernel{T,S}) where {T,S<:Helmholtz}
     k = SL.op.k
     ϕ = (x,y) -> begin
@@ -122,10 +122,8 @@ function nystrom_weights(M)
     return R
 end
 
-function assert_mk_compatibility(iop::IntegralOperator,mesh::NystromMesh)
-    # write the various checks regarding compatibility 
-    # a) 2d problem
-    # b) only closed entities
-    # c) closed entites must be discretized using a single element (global
-    # quadrature)
+function assert_mk_compatibility(iop::IntegralOperator)
+    # check 2d    
+    @assert ambient_dimension(iop) == 2 "Martensen-Kussmaul method only applicable to two-dimensional problems"
+    # FIXME: add other checks...
 end    

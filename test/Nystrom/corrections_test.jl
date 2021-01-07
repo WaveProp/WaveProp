@@ -3,30 +3,29 @@ using WaveProp
 using WaveProp.Nystrom
 using WaveProp.Geometry
 using WaveProp.Integration
-using WaveProp.Integration
 using WaveProp.Mesh
 
 @testset "Greens identity test" begin
     # construct interior solution
+    Geometry.clear!()
     pde  = Helmholtz(dim=2,k=1)
     xout = SVector(3,3)
     u    = (x)   -> SingleLayerKernel(pde)(xout,x)
     dudn = (x,n) -> DoubleLayerKernel(pde)(xout,x,n)
-    Ω,mesh = WaveProp.IO.gmsh_disk(dim=1,h=0.025,order=2)
-    mesh   = convert_to_2d(mesh)
-    compute_quadrature!(mesh,dim=1,order=3,need_normal=true)
-    sum(mesh.qweights)
+    geo = Circle()
+    Ω   = Domain(geo)
+    M   = meshgen(Ω,h=0.1)
+    mesh = NystromMesh(view(M,boundary(Ω));order=5)
     γ₀u   = γ₀(u,mesh)
     γ₁u   = γ₁(dudn,mesh)
     𝐒     = SingleLayerOperator(pde,mesh) 
     𝐃     = DoubleLayerOperator(pde,mesh) 
     e0    = WaveProp.Nystrom.error_interior_green_identity(𝐒,𝐃,γ₀u,γ₁u)
     norm(e0,Inf)/norm(γ₀u,Inf)
-    qstd  = GaussLegendre(3)
     shand = Kress()
     q     = SingularQuadratureRule(GaussLegendre(8),shand)
-    δ𝐒    = singular_weights(𝐒,qstd,q)
-    δ𝐃    = singular_weights(𝐃,qstd,q)
+    δ𝐒    = singular_weights(𝐒,q)
+    δ𝐃    = singular_weights(𝐃,q)
     SS    = 𝐒 + δ𝐒
     DD    = 𝐃 + δ𝐃 
     e0    = WaveProp.Nystrom.error_interior_green_identity(SS,DD,γ₀u,γ₁u)

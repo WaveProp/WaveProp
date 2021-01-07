@@ -12,6 +12,8 @@ using SafeTestsets
 
 @safetestset "Operator tests" begin include("integraloperator_test.jl") end
 
+@safetestset "Default assemble" begin include("assemble_test.jl") end
+
 @safetestset "Density interpolation" begin include("dim_test.jl") end
 
 @safetestset "Local density interpolation" begin include("ldim_test.jl") end

@@ -1,26 +1,64 @@
 using Test
 using WaveProp.Geometry
+using WaveProp.Interpolation
 using WaveProp.Integration
 using LinearAlgebra
 
 @testset "Reference segment" begin
     qstd = GaussLegendre(20)    
+    d     = domain(qstd)    
     # simple test on smooth integrand
     for shand in [IMT(), Kress(), KressP()]
         q     = SingularQuadratureRule(qstd,shand)
         @test isapprox(integrate(cos,q),sin(1),rtol=1e-2)
     end
-    # non-smooth integrand
+    # non-smooth integrand, singularity at 0
+    f     = (x) -> log(abs(x))
+    I     = integrate(f,d;rtol=1e-16)
     for shand in [IMT(), Kress(),KressP()]
-        d     = domain(qstd)    
-        f     = (x) -> log(abs(x))
         q     = SingularQuadratureRule(qstd,shand)
-        I     = integrate(f,d;rtol=1e-16)
         Ia    = integrate(f,q)
         @test isapprox(Ia,I,rtol=1e-3)
         # check that the `naive` integration woudl have failed the test
         Istd    = integrate(f,qstd)
         @test !isapprox(Istd,I,rtol=1e-3)
+    end
+    # non-smooth integrand, singularity somewhere inside
+    s     = rand()
+    f     = (x) -> x[1]==s ? 0.0 : log(abs(x[1]-s))
+    I     = integrate(f,d;rtol=1e-8)
+    for shand in [IMT(), Kress(),KressP()]
+        q     = SingularQuadratureRule(qstd,shand)
+        x,w   = singular_quadrature(q,s)
+        Ia    = integrate(f,x,w)
+        @debug I - Ia
+        @test isapprox(Ia,I,rtol=1e-3)
+        # check that the `naive` integration woudl have failed the test
+        Istd    = integrate(f,q)
+        @test !isapprox(Istd,I,rtol=1e-3)
+    end
+    # quadrature for integrating a factored kernel singular at location s
+    k = (x) -> x[1]==s ? 0. : log(abs(x[1]-s))
+    ϕ = (x) -> cos(x[1])
+    f = (x) -> k(x)*ϕ(x)
+    I = integrate(f,d)
+    for shand in [IMT(), Kress(),KressP()]
+        q     = SingularQuadratureRule(qstd,shand)
+        x,w   = singular_quadrature(k,q,s)
+        Ia    = integrate(ϕ,x,w)
+        @debug I - Ia
+        @test isapprox(Ia,I,rtol=1e-3)
+        # check that the `naive` integration woudl have failed the test
+        Istd    = integrate(f,q)
+        @test !isapprox(Istd,I,rtol=1e-3)
+    end
+    # weights for integrating a factored kernel singular at location s
+    x  = qnodes(qstd)
+    for shand in [IMT(), Kress(),KressP()]
+        q     = SingularQuadratureRule(qstd,shand)
+        ws    = singular_weights(k,qstd,q,s)
+        Ia    = integrate(ϕ,x,ws)
+        @test isapprox(Ia,I,rtol=1e-3)
     end
 end
 

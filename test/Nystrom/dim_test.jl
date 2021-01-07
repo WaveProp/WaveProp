@@ -24,7 +24,7 @@ using WaveProp.Mesh
     Ddim  = Nystrom.assemble_dim(D)
     e1    = WaveProp.Nystrom.error_interior_green_identity(Sdim,Ddim,γ₀u,γ₁u)
     @test 10*norm(e1,Inf) < norm(e0,Inf)
-    S,D   = Nystrom.single_double_layer(pde,mesh)
+    S,D   = Nystrom.single_doublelayer_dim(pde,mesh)
     e2    = WaveProp.Nystrom.error_interior_green_identity(S,D,γ₀u,γ₁u)
     @test e1 ≈ e2
     K     = AdjointDoubleLayerOperator(pde,mesh)

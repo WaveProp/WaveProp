@@ -74,4 +74,13 @@ end
         P = 2π*r 
         @test isapprox(P,sum(qweights(mesh));atol=0.1)
     end
+    @testset "Append" begin
+        Geometry.clear!()
+        Ω, M = WaveProp.IO.gmsh_disk()
+        Γ = boundary(Ω)
+        mesh = NystromMesh(view(M,Ω),order=2,compute_normal=false)
+        Σ_mesh = NystromMesh{2,Float64}()
+        append!(Σ_mesh,mesh)
+        append!(Σ_mesh,mesh)
+    end    
 end

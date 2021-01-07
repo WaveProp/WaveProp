@@ -41,7 +41,8 @@ export
     single_double_layer, 
     isinside, 
     NystromMesh, 
-    dom2dof
+    dom2dof,
+    assemble
 
 include("nystrommesh.jl")
 include("greensformulae.jl")

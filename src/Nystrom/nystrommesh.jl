@@ -29,19 +29,19 @@ function Base.append!(msh1::NystromMesh,msh2::NystromMesh)
     @assert eltype(msh1) == eltype(msh2)
     # extract relevant quadrature rules
     etype2dof = OrderedDict{DataType,Vector{Int}}()
-    for E in etypes(msh2,Ω)
+    for (E,q) in etypes(msh2,Ω)
         if haskey(msh1.elements,E)
             etype2dof[E]        = msh1.elt2dof[E] |> vec
-            @assert msh1.etype2qrule[E] == msh2.etype2qrule[E]
+            @assert msh1.etype2qrule[E] == q
         else    
             etype2dof[E]        = Int[]    
             msh1.elements[E]    = E[]
-            msh1.etype2qrule[E] = msh2.etype2qrule[E]
+            msh1.etype2qrule[E] = q
         end
     end
     # loop over entities and extract the information
     for ent in entities(msh2)
-        haskey(msh1.ent2elt,ent) && continue # entity alreay meshed
+        haskey(msh1.ent2elt,ent) && continue # entity already meshed
         msh1.ent2elt[ent] = OrderedDict{DataType,Vector{Int}}()
         for (E,v) in ent2elt(msh2,ent)
             # add dofs information    
@@ -81,6 +81,8 @@ elt2dof(m::NystromMesh)  = m.elt2dof
 elt2dof(m::NystromMesh,E::DataType) = m.elt2dof[E]
 ent2elt(m::NystromMesh) = m.ent2elt
 ent2elt(m::NystromMesh,ent::AbstractEntity) = m.ent2elt[ent]
+etype2qrule(m)   = m.etype2qrule
+etype2qrule(m,E) = etype2qrule(m)[E]
 
 Geometry.domain(mesh::NystromMesh)   = Domain(entities(mesh))
 Geometry.entities(mesh::NystromMesh) = collect(keys(mesh.ent2elt))
@@ -110,12 +112,16 @@ ent2dof(mesh,ent::AbstractEntity) = dom2dof(mesh,ent)
 Base.length(m::NystromMesh) = length(qnodes(m))
 
 function etypes(m::NystromMesh,Ω::Domain=domain(m)) 
-    ee = DataType[]
+    ee = Tuple{DataType,AbstractQuadratureRule}[]
     for ent in entities(Ω)
         dict = ent2elt(m,ent)
-        union!(ee, keys(dict))
+        EE    = keys(dict)
+        for E in EE
+            q = etype2qrule(m,E) 
+            push!(ee,(E,q))
+        end    
     end    
-    @assert allunique(ee)
+    unique!(ee)
     return ee
 end
 
@@ -193,8 +199,8 @@ function Base.getindex(msh2::NystromMesh,Ω::Domain)
     msh1 = NystromMesh{N,T}()    
     # extract relevant quadrature rules
     etype2dof = OrderedDict{DataType,Vector{Int}}()
-    for E in etypes(msh2,Ω)
-        msh1.etype2qrule[E] = msh2.etype2qrule[E]
+    for (E,q) in etypes(msh2,Ω)
+        msh1.etype2qrule[E] = q
         etype2dof[E] = Int[]
         msh1.elements[E] = E[]
     end
@@ -249,17 +255,17 @@ function _elt2dof(m::NystromMesh,Ω::Domain)
 end    
 
 """
-    near_interaction_list(pts,Y;dim,atol)
+    near_interaction_list(pts,Y;atol)
 
-Given a target mesh `X` and a source mesh `Y`, return a dictionary with keys
+Given a target points `pts` and a `Y::NystromMesh`, return a dictionary with keys
 given by element types of the source mesh `Y`. To each key, which represents an
 element type, we associate a vector whose `i`-th entry encodes
 information about the points in `X` which are close to a given element of
 the key type. 
 """
-function near_interaction_list(pts,Y;atol)
+function near_interaction_list(pts,Y::NystromMesh;atol)
     dict = OrderedDict{DataType,Vector{Vector{Tuple{Int,Int}}}}()    
-    for E in etypes(Y)
+    for (E,Q) in etypes(Y)
         ilist = _etype_near_interaction_list(pts,Y,E,atol)
         push!(dict,E=>ilist)
     end

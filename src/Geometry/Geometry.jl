@@ -31,6 +31,7 @@ export
     # types
     ElementaryEntity, 
     ParametricEntity,
+    ParametricCurve,
     ClosedEntity,
     Circle, 
     Kite,

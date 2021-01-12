@@ -66,8 +66,8 @@ end
         wi = @view Y.qweights[tags]
         # basis
         l       = sum(wi)
-        h       = sum(wi)/length(wi) # typical space of a grid
-        γ₀B,γ₁B = basis_ldim(op,el,p.r_multiplier*h,nb)
+        h       = l/length(wi) # typical space of a grid
+        γ₀B,γ₁B = basis_ldim(op,el,p.r_multiplier*l,nb)
         # interpolation matrix
         interpolation_matrix!(M,yi,νi,γ₀B,γ₁B)
         # F   = qr!(M)

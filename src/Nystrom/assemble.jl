@@ -4,13 +4,12 @@ function assemble(iop,qdict;compress=Matrix)
     axpy!(1,correction,out) # out <-- out + correction
 end
 
-function assemble(iop;compress=Matrix)
+function assemble(iop;compress=Matrix,k=2)
     Y = target_surface(iop)
     dict = Dict{DataType,SingularQuadratureRule}()
     for (E,q) in etypes(Y)
         # use a finer quadrature to compute singular integrals. Oversemple by a
         # factor of k    
-        k     = 2    
         q     = Integration.refine(q,k) 
         # combine the oversample quadrature with a singularity handler to obtain
         # an appropriate SingularQuadratureRule

@@ -44,13 +44,13 @@ range(k::Kress)  = ReferenceLine()
 # NOTE: fastmath is needed here to allow for various algebraic simplifications
 # which are not exact in floating arithmetic. Maybe reorder the operations *by
 # hand* to avoid having to use fastmath? In any case, benchmark first.
-@fastmath function (f::Kress{P})(y) where {P}
+function (f::Kress{P})(y) where {P}
     x = y[1]
     v = (x) -> (1/P - 1/2)*((1-x))^3 + 1/P*((x-1)) + 1/2
     return 2v(x)^P / (v(x)^P + v(2-x)^P)
 end
 
-@fastmath function derivative(f::Kress{P},y) where {P}
+function derivative(f::Kress{P},y) where {P}
     x = y[1]
     v = (x) -> (1/P - 1/2)*((1-x))^3 + 1/P*((x-1)) + 1/2
     vp = (x) -> -3*(1/P - 1/2)*((1-x))^2 + 1/P
@@ -102,7 +102,17 @@ end
 
 jacobian(f::KressP,x) = derivative(f,x) |> SMatrix{1,1}
 
+function (shand::KressP)(ent::ParametricCurve)
+    f = parametrization(ent)
+    new_f = v -> f(shand(v))
+    return ParametricCurve(new_f)
+end    
 
+function (shand::KressP)(ent::AbstractParametricBody)
+    bnd = boundary(ent) 
+    map!(f->shand(f),bnd,bnd)
+    return ent
+end    
 
 """
     struct Duffy <: AbstractSingularityHandler{RefereceTriangle}

@@ -155,9 +155,23 @@ function _singular_weights_dim(iop::IntegralOperator,γ₀B,γ₁B,R)
             j_glob                = @view el2qnodes[:,n]
             M[1:num_qnodes,:]     = @view γ₀B[j_glob,:]
             M[num_qnodes+1:end,:] = @view γ₁B[j_glob,:]
-            F                     = qr(M)
+            # distinguis scalar and vectorial case
+            if T <: Number
+                F                     = qr(M)
+            elseif T <: SMatrix
+                F                     = qr!(blockmatrix_to_matrix(M))
+            else 
+                error("unknown element type T=$T")        
+            end        
             for (i,_) in list_near[n]
-                tmp  = (R[i:i,:]/F.R)*adjoint(F.Q)
+                if T <: Number    
+                    tmp = ((R[i:i,:])/F.R)*adjoint(F.Q)
+                elseif T <: SMatrix
+                    tmp_scalar  = (blockmatrix_to_matrix(R[i:i,:])/F.R)*adjoint(F.Q)    
+                    tmp  = matrix_to_blockmatrix(tmp_scalar,T)
+                else
+                    error("unknown element type T=$T")
+                end
                 w    = axpby!(a,view(tmp,1:num_qnodes),b,view(tmp,(num_qnodes+1):(2*num_qnodes)))
                 append!(Is,fill(i,num_qnodes))
                 append!(Js,j_glob)

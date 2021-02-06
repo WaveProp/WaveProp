@@ -12,6 +12,8 @@ using WaveProp
 
 export 
     svector, 
+    matrix_to_blockmatrix,
+    blockmatrix_to_matrix,
     notimplemented, 
     abstractmethod, 
     assert_extension,
@@ -23,6 +25,49 @@ export
 Just like [`Base.ntuple`](https://docs.julialang.org/en/v1/base/base/#Base.ntuple), but convert output to an `SVector`.
 """
 svector(f,n) = ntuple(f,n) |> SVector
+
+"""
+    blockmatrix_to_matrix(A::Matrix{B}) where {B<:SMatrix}
+
+Convert a `Matrix{B}`, where `B<:SMatrix`, to the equivalent `Matrix{T}`, where `T = eltype(B)`
+"""
+function blockmatrix_to_matrix(A::Matrix{B})  where B <: SMatrix
+    T = eltype(B) 
+    sblock = size(B)
+    ss     = size(A).*sblock # matrix size when viewed as matrix over T
+    Afull = Matrix{T}(undef,ss)
+    for i=1:ss[1], j=1:ss[2]
+        bi, ind_i = divrem(i-1,sblock[1]) .+ (1,1)
+        bj, ind_j = divrem(j-1,sblock[2]) .+ (1,1)
+        Afull[i,j] = A[bi,bj][ind_i,ind_j]
+    end
+    return Afull
+end
+
+"""
+    matrix_to_blockmatrix(A::Matrix,B)
+
+Convert a `Matrix{T}` to a `Matrix{B}`, where `B<:Type{SMatrix}`. The element
+type of `B` must match that of `A`, and the size of `A` must be divisible by the
+size of `B` along each dimension. 
+"""
+function matrix_to_blockmatrix(A::Matrix,B::Type{<:SMatrix})
+    @assert eltype(A) == eltype(B)
+    @assert sum(size(A) .% size(B)) == 0 "block size $(size(B)) not compatible with size of A=$(size(A))"
+    sblock = size(B)
+    nblock = div.(size(A),sblock)
+    Ablock = Matrix{B}(undef,nblock)
+    for i in 1:nblock[1]
+        istart = (i-1)*sblock[1] + 1
+        iend = i*sblock[1]
+        for j in 1:nblock[2]
+            jstart = (j-1)*sblock[2] + 1
+            jend   = j*sblock[2]
+            Ablock[i,j] = A[istart:iend,jstart:jend]
+        end
+    end
+    return Ablock
+end
 
 """
     notimplemented()

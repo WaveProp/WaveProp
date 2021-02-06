@@ -23,6 +23,7 @@ import WaveProp.Mesh: etypes, elements
 export 
     Laplace, 
     Helmholtz, 
+    Elastostatic,
     SingleLayerKernel, 
     DoubleLayerKernel, 
     IntegralOperator, 
@@ -50,6 +51,7 @@ include("lebedev.jl")
 include("kernels.jl")
 include("laplace.jl")
 include("helmholtz.jl")
+include("elastostatic.jl")
 include("density.jl")
 include("potential.jl")
 include("integraloperators.jl")

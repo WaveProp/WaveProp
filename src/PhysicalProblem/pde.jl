@@ -32,3 +32,21 @@ getname(::Helmholtz) = "Helmholtz"
 
 default_kernel_eltype(::Helmholtz)  = ComplexF64
 default_density_eltype(::Helmholtz) = ComplexF64
+
+"""
+    struct Elastostatic{N,T} <: AbstractPDE{N}
+    
+Elastostatic equation in `N` dimensions: μΔu + (μ+λ)∇(∇⋅u) = 0. Note that the
+displacement u is a vector of length `N` since this is a vectorial problem.
+"""
+struct Elastostatic{N,T} <: AbstractPDE{N}
+    μ::T
+    λ::T
+end
+Elastostatic(;μ,λ,dim=3)               = Elastostatic{dim}(promote(μ,λ)...)
+Elastostatic{N}(μ::T,λ::T) where {N,T} = Elastostatic{N,T}(μ,λ)
+
+getname(::Elastostatic) = "Elastostatic"
+
+default_kernel_eltype(::Elastostatic{N}) where {N}  = SMatrix{N,N,Float64,N*N}
+default_density_eltype(::Elastostatic{N}) where {N} = SVector{N,Float64}

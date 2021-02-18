@@ -65,6 +65,7 @@ export
     high_corner,
     measure,
     number_of_nodes,
+    vertices,
     line,  
     # global variables
     TAGS,

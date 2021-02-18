@@ -29,6 +29,8 @@ center(::ReferenceLine)       = 0.5
 number_of_nodes(::Type{ReferenceLine}) = 2
 number_of_nodes(::ReferenceLine)       = 2
 
+vertices(ln::ReferenceLine) = SVector(0), SVector(1)
+
 """
     struct ReferenceTriangle
     
@@ -39,6 +41,8 @@ end
 Base.in(x,::ReferenceTriangle) = 0 ≤ x[1] ≤ 1 && 0 ≤ x[2] ≤ 1 - x[1]
 number_of_nodes(::Type{ReferenceTriangle}) = 3
 number_of_nodes(::ReferenceTriangle)       = 3
+
+vertices(tri::ReferenceTriangle) = SVector(0,0), SVector(1,0), SVector(0,1)
 
 """
     struct ReferenceSquare
@@ -52,6 +56,8 @@ center(::Type{ReferenceSquare}) = SVector(0.5,0.5)
 center(::ReferenceSquare)       = SVector(0.5,0.5)
 number_of_nodes(::Type{ReferenceSquare}) = 4
 number_of_nodes(::ReferenceSquare)       = 4
+
+vertices(sq::ReferenceSquare) = SVector(0,0), SVector(1,0), SVector(1,1), SVector(0,1)
 
 """
     struct ReferenceTetrahedron

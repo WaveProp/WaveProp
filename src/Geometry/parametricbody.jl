@@ -164,23 +164,63 @@ geometric_dimension(ent::Boomerang) = 2
 # end
 # Ellipsoid(args...;kwargs...) = Ellipsoid{Float64}(args...;kwargs...)
 
-# struct Sphere{T} <: AbstractParametricBody{3,2,T}
-#     center::SVector{3,T}
-#     radius::T
-#     parts::Vector{ParametricEntity{3,2,T}}
-# end
+struct Sphere <: AbstractParametricBody
+    # dim = 3
+    tag::Int
+    center::SVector{3,Float64}
+    radius::Float64
+    boundary::Vector{ParametricEntity}
+    function Sphere(t,c,r,bnd)
+        d = 3
+        ent = new(t,c,r,bnd)    
+        _global_add_entity!(ent)
+        return ent
+    end    
+end
 
-# function Sphere{T}(;center=zeros(3),radius=1) where {T}
-#     nparts = 6
-#     domain = HyperRectangle((-1.,-1.),(1.,1.))
-#     parts  = Vector{ParametricEntity}(undef,nparts)
-#     for id=1:nparts
-#         param     = (x) -> _sphere_parametrization(x[1],x[2],id,radius,center)
-#         parts[id] = ParametricEntity(param,domain,[domain])
-#     end
-#     return Sphere{T}(center,radius,parts)
-# end
-# Sphere(args...;kwargs...) = Sphere{Float64}(args...;kwargs...)
+function Sphere(;center=(0, 0,0),radius=1)
+    nparts = 6
+    domain = ReferenceSquare()
+    parts  = Vector{ParametricEntity}(undef,nparts)
+    for id=1:nparts
+        param     = (x) -> _sphere_parametrization(x[1],x[2],id,radius,center)
+        parts[id] = ParametricEntity(param,domain)
+    end
+    tag = _new_tag(3)
+    return Sphere(tag,center,radius,parts)
+end
+Base.in(pt,sph::Sphere) = norm(pt .- sph.center) < sph.radius
+key(ent::Sphere) = (3,ent.tag)
+geometric_dimension(ent::Sphere) = 3
+
+struct Cube <: AbstractParametricBody
+    # dim = 3
+    tag::Int
+    origin::SVector{3,Float64}
+    paxis::SVector{3,Float64}
+    boundary::Vector{ParametricEntity}
+    function Cube(t,c,p,bnd)
+        d = 3
+        ent = new(t,c,p,bnd)    
+        _global_add_entity!(ent)
+        return ent
+    end    
+end
+
+function Cube(;origin=SVector(0,0,0),paxis=(1,1,1))
+    nparts = 6
+    domain = ReferenceSquare()
+    parts  = Vector{ParametricEntity}(undef,nparts)
+    for id=1:nparts
+        param     = (x) -> _cube_parametrization(x[1],x[2],id,paxis,origin)
+        parts[id] = ParametricEntity(param,domain)
+    end
+    tag = _new_tag(3)
+    return Cube(tag,origin,paxis,parts)
+end
+# Base.in(pt,cub::Cube) = norm(pt .- sph.center) < sph.radius
+key(ent::Cube) = (3,ent.tag)
+geometric_dimension(ent::Cube) = 3
 
 # struct Bean{T} <: AbstractParametricBody{3,2,T}
 #     center::SVector{3,T}
@@ -235,57 +275,43 @@ geometric_dimension(ent::Boomerang) = 2
 # end
 # Cushion(args...;kwargs...) = Cushion{Float64}(args...;kwargs...)
 
-# ################################################################################
-# ################################################################################
-# ################################################################################
-# function _rectangle_parametrization(u,id,length,width,center,rot)
-#     R = [cos(rot) -sin(rot) ; sin(rot) cos(rot)]
-#     if id==1
-#         x = [-(length/2)*u,+width/2]
-#     elseif id==2
-#         x =[-length/2,(-width/2)*u]
-#     elseif id==3
-#         x = [(length/2)*u,-width/2]
+function _cube_parametrization(u,v,id,paxis=SVector(1,1,1),origin=SVector(0.0,0.0,0.0))
+    if id==1
+        x = SVector(1.,u,v)
+    elseif id==2
+        x = SVector(u,1.,v)
+    elseif id==3
+        x = SVector(u,v,1.)
+    elseif id==4
+        x = SVector(0.,u,v)
+    elseif id==5
+        x = SVector(u,0.,v)
+    elseif id==6
+        x = SVector(u,v,0.)
+    end
+    return origin + paxis .* x
+end
 
-#     elseif id==4
-#         x = [length/2,(width/2)*u]
-#     end
-#     return center .+ R*x
-# end
-
-# function _cube_parametrization(u,v,id,paxis,center)
-#     if id==1
-#         x = [1.,u,v]
-#     elseif id==2
-#         x = [-u,1.,v];
-#     elseif id==3
-#         x = [u,v,1.];
-#     elseif id==4
-#         x =[-1.,-u,v];
-#     elseif id==5
-#         x = [u,-1.,v];
-#     elseif id==6
-#         x = [-u,v,-1.];
-#     end
-#     return center .+ paxis.*x
-# end
-
-# function _sphere_parametrization(u,v,id,rad=1,center=zeros(3))
-#     if id==1
-#         x = [1.,u,v]
-#     elseif id==2
-#         x = [-u,1.,v];
-#     elseif id==3
-#         x = [u,v,1.];
-#     elseif id==4
-#         x =[-1.,-u,v];
-#     elseif id==5
-#         x = [u,-1.,v];
-#     elseif id==6
-#         x = [-u,v,-1.];
-#     end
-#     return center .+ rad.*x./sqrt(u^2+v^2+1)
-# end
+function _sphere_parametrization(u,v,id,rad=1,center=zeros(3))
+    # map [0,1]×[0,1] to [-1,1] × [-1,1]
+    u = 2u-1
+    v = 2v-1
+    # parametrization of 6 patches
+    if id==1
+        x = SVector(1.,u,v)
+    elseif id==2
+        x = SVector(-u,1.,v)
+    elseif id==3
+        x = SVector(u,v,1.)
+    elseif id==4
+        x = SVector(-1.,-u,v)
+    elseif id==5
+        x = SVector(u,-1.,v)
+    elseif id==6
+        x = SVector(-u,v,-1.)
+    end
+    return center .+ rad.*x./sqrt(u^2+v^2+1)
+end
 
 # function _ellipsoid_parametrization(u,v,id,paxis=ones(3),center=zeros(3))
 #     x = _sphere_parametrization(u,v,id)

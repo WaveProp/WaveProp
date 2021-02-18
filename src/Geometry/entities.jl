@@ -297,6 +297,16 @@ function _global_add_entity!(ent::AbstractEntity)
     return d,t
 end    
 
+"""
+    _new_tag(dim)
+
+Generate a unique tag for an `AbstractEntity` of dimension `dim`.
+
+The implementation consists of adding one to the maximum value of `TAGS[dim]`
+
+# See also: [`TAGS`](@ref).
+
+"""
 function _new_tag(dim)
     if !haskey(TAGS,dim) 
         return 1

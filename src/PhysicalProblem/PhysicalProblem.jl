@@ -14,6 +14,7 @@ module PhysicalProblem
         Laplace, 
         Helmholtz, 
         Elastostatic, 
+        Maxwell,
         default_density_eltype, 
         default_kernel_eltype
 

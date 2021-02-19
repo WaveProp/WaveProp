@@ -2,3 +2,10 @@
 *.vtu
 *.vtk
 *.json
+tutorials/*.md
+tutorials/*.ipynb
+docs/src/*.html
+tutorials/**
+**.DS_Store
+**_bak.jl 
+convergence/**

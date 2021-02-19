@@ -7,7 +7,8 @@ using WaveProp.Mesh
 @testset "Sphere geo" begin
     # Test the simple sphere geometry
     fname = joinpath(@__DIR__,"sphere.geo")
-    Ω = read_geo(fname)
+    Geometry.clear!()
+    Ω,M = read_geo(fname)
     @test length(Ω) == 1
     @test geometric_dimension(Ω) == 3
 
@@ -27,20 +28,44 @@ end
 
 @testset "Sphere msh" begin
     # Test the simple sphere geometry
+    Geometry.clear!()
     fname = joinpath(@__DIR__,"sphere.msh")
-    Ω, M = read_msh(fname)
-    @test etypes(M) == [LagrangeLine{2,3,Float64},LagrangeTriangle{3,3,Float64},LagrangeTetrahedron{4,3,Float64},Point{3,Float64}] # mesh composed of gmsh simplices
+    Ω, M  = read_msh(fname)
+    etypes(M)
+    T = SVector{3,Float64}
+    @test etypes(M) == [LagrangeLine{2,T},LagrangeTriangle{3,T},LagrangeTetrahedron{4,T},T] # mesh composed of gmsh simplices
     # Test internal creation of sphere
     Ω, M = WaveProp.IO.gmsh_sphere()    
-    @test etypes(M) == [LagrangeLine{2,3,Float64},LagrangeTriangle{3,3,Float64},LagrangeTetrahedron{4,3,Float64},Point{3,Float64}] # mesh composed of gmsh simplices
+    @test etypes(M) == [LagrangeLine{2,T},LagrangeTriangle{3,T},LagrangeTetrahedron{4,T},T] # mesh composed of gmsh simplices
 end
 
 @testset "Disk" begin
     # Test internal creation of disk
+    Geometry.clear!()
     Ω, M = WaveProp.IO.gmsh_disk()    
-    @test etypes(M) == [LagrangeLine{2,3,Float64},LagrangeTriangle{3,3,Float64},Point{3,Float64}] # mesh composed of gmsh simplices
-    Ω, M = WaveProp.IO.gmsh_disk(dim=1)    
-    M = GenericMesh{2}(M)
-    compute_quadrature!(M;dim=1,order=10)
-    @test isapprox(sum(M.qweights),π,rtol=1e-2)
+    T = SVector{2,Float64}
+    @test etypes(M) == [LagrangeLine{2,T},LagrangeTriangle{3,T},T] # mesh composed of gmsh simplices
+end
+
+@testset "Element iterator" begin
+    Geometry.clear!()
+    (lx,ly,lz) = widths = (1.,1.,2.)
+    Ω, M  = WaveProp.IO.gmsh_box(;widths=widths)
+    idx  = 2
+    E    = etypes(M)[idx]
+    iter = ElementIterator{E}(M)
+    @test eltype(iter) == E
+    @test length(iter) == size(M.elements[E],2)
+end
+
+@testset "Sub mesh" begin
+    Geometry.clear!()
+    (lx,ly,lz) = widths = (1.,1.,2.)
+    Ω, M  = WaveProp.IO.gmsh_box(;widths=widths)
+    subM  = SubMesh(M,external_boundary(Ω))
+    idx  = 2
+    E    = etypes(M)[idx]
+    iter = ElementIterator{E}(subM)
+    @test eltype(iter) == E
+    @test length(iter) == size(M.elements[E],2)
 end

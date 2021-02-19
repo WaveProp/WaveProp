@@ -4,7 +4,7 @@ using WaveProp.Geometry
 @testset "HyperRectangle tests" begin
     low_corner  = (0.0,0.0)
     high_corner = (1.0,2.0)
-    mid         = (low_corner .+ high_corner) ./ 2 |> Point
+    mid         = (low_corner .+ high_corner) ./ 2 |> SVector
     rec = HyperRectangle(low_corner,high_corner)
     @test mid == center(rec)
     @test (mid ∈ rec)  == true

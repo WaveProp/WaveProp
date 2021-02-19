@@ -47,10 +47,10 @@ using LinearAlgebra
         x,w   = singular_quadrature(k,q,s)
         Ia    = integrate(ϕ,x,w)
         @debug I - Ia
-        @test isapprox(Ia,I,rtol=1e-3)
+        @test isapprox(Ia,I,rtol=1e-5)
         # check that the `naive` integration woudl have failed the test
         Istd    = integrate(f,q)
-        @test !isapprox(Istd,I,rtol=1e-3)
+        @test !isapprox(Istd,I,rtol=1e-5)
     end
     # weights for integrating a factored kernel singular at location s
     x  = qnodes(qstd)
@@ -87,29 +87,22 @@ end
     @test !isapprox(Ie,Ia,rtol=1e-5)
 end
 
-# @testset "2d Kress" begin
-#     q1d   = GaussLegendre{10}()
-#     qstd  = TensorProductQuadrature(q1d,q1d)
-#     s1d   = Kress(order=2)
-#     sing_handler = TensorProductQuadratureHandler(s1d,s1d)
-#     qsin = SingularQuadratureRule(qstd,sing_handler)
-#     x,w  = qsin()    
-#     # regular kernel
-#     k(x) = cos(x[1])
-#     I    = quadgk(k,ReferenceSquare)
-#     Isin = sum(k.(x).*w)
-#     @test isapprox(I,Isin,rtol=1e-2)
-#     # singular kernel at origin
-#     k(x) = 1/norm(x)
-#     I    = quadgk(k,ReferenceSquare)
-#     Isin = sum(k.(x).*w)
-#     @test isapprox(I,Isin,rtol=1e-2)
-#     # singular kernel elsewhere
-#     s   = SVector(0.47,0.38)
-#     x,w  = qsin(ReferenceSquare(),s)
-#     k(x) = 1/norm(x-s)
-#     I    = quadgk(k,ReferenceSquare)
-#     Isin = sum(k.(x).*w)
-#     @test isapprox(I,Isin,rtol=1e-2)
-# end
+@testset "2d Kress" begin
+    q1d   = GaussLegendre{10}()
+    qstd  = TensorProductQuadrature(q1d,q1d)
+    s1d   = Kress(order=2)
+    sing_handler = TensorProductSingularityHandler(s1d,s1d)
+    qsin = SingularQuadratureRule(qstd,sing_handler)
+    x,w  = qsin()    
+    # regular kernel
+    k(x) = cos(x[1])
+    Ie    = integrate(k,ReferenceSquare)
+    Isin = sum(k.(x).*w)
+    @test isapprox(Ie,Isin,rtol=1e-2)
+    # singular kernel at origin
+    k(x) = 1/norm(x)
+    Ie    = integrate(k,ReferenceSquare)
+    Isin = sum(k.(x).*w)
+    @test isapprox(Ie,Isin,rtol=1e-2)
+end
 

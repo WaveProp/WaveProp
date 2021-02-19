@@ -6,6 +6,9 @@ CurrentModule = WaveProp
 
 *A Julia package for solving some **Boundary Integral Equations**.*
 
+!!! warning
+    This is work in progress!
+
 ## Overview
 
 This package's purpose is to solve certain PDEs by boundary integral equation methods. Some examples of equations which can be solved using this package are:

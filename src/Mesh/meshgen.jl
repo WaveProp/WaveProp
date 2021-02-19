@@ -8,7 +8,8 @@ function meshgen(Ω::Domain;h=floatmax(),n=1)
     N       = ambient_dimension(first(Ω))
     @assert all(p->ambient_dimension(p)==N,Ω) # check that ambient dimensions are consistent
     mesh = GenericMesh{N,Float64}()
-    meshgen!(mesh,Ω;h,n)
+    meshgen!(mesh,Ω;h,n) # fill in 
+    return mesh
 end
 
 """
@@ -60,6 +61,7 @@ function _meshgen(p::ParametricEntity;h,n)
     f    = parametrization(p)
     d    = domain(p)
     grid = CartesianMesh(d;h,n)
-    els = [ParametricElement(f,d) for d in ElementIterator(grid)]
+    iter = ElementIterator(grid) 
+    els = [ParametricElement(f,d) for d in iter]
     return els
 end

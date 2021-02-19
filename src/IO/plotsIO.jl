@@ -68,8 +68,9 @@ end
 
 # recipe for paramatric surface
 @recipe function f(ent::ParametricEntity{ReferenceSquare};h=0.1)
+    legend --> false    
     grid   --> false
-    aspect_ratio --> :equal
+    # aspect_ratio --> :equal
     seriestype := :surface
     xrange = 0:h:1
     yrange = 0:h:1
@@ -77,13 +78,13 @@ end
     x      =  [pt[1] for pt in pts]
     y      =  [pt[2] for pt in pts]
     z      =  [pt[3] for pt in pts]
-    vec(x),vec(y),vec(z)
+    x,y,z
 end
 
 # recipe for parametric body
 @recipe function f(bdy::AbstractParametricBody)
     label --> ""    
-    aspect_ratio --> :equal    
+    # aspect_ratio --> :equal    
     for patch in boundary(bdy)
         @series begin
             patch
@@ -133,6 +134,7 @@ end
 
 # FIXME: write better recipes
 @recipe function f(el::LagrangeTriangle)
+    label --> "" 
     vtx = nodes(el)
     for n in 1:3
         is = n
@@ -141,7 +143,19 @@ end
             [vtx[is],vtx[ie]]
         end
     end
-end    
+end  
+
+@recipe function f(el::LagrangeRectangle)
+    label --> ""    
+    vtx = nodes(el)
+    for n in 1:4
+        is = n
+        ie = 1 + (n%4)
+        @series begin
+            [vtx[is],vtx[ie]]
+        end
+    end
+end   
 
 @recipe function f(el::LagrangeLine)
     vtx = nodes(el)
@@ -166,4 +180,19 @@ end
             el    
         end
     end    
+end
+
+@recipe function f(ent::AbstractElement{ReferenceSquare};h=0.1)
+    legend --> false    
+    grid   --> true
+    seriesalpha --> 0.1
+    # aspect_ratio --> :equal
+    seriestype --> :wireframe
+    xrange = 0:h:1
+    yrange = 0:h:1
+    pts    = [ent((x,y)) for x in xrange, y in yrange]
+    x      =  [pt[1] for pt in pts]
+    y      =  [pt[2] for pt in pts]
+    z      =  [pt[3] for pt in pts]
+    x,y,z
 end

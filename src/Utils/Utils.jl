@@ -14,6 +14,8 @@ export
     svector, 
     matrix_to_blockmatrix,
     blockmatrix_to_matrix,
+    blockvector_to_vector,
+    vector_to_blockvector,
     notimplemented, 
     abstractmethod, 
     assert_extension,
@@ -45,6 +47,16 @@ function blockmatrix_to_matrix(A::Matrix{B})  where B <: SMatrix
 end
 
 """
+    blockvector_to_vector(A::Vector{B}) where {B<:SVector}
+
+Convert a `Vector{B}`, where `B<:SVector`, to the equivalent `Vector{T}`, where `T = eltype(B)`
+"""
+function blockvector_to_vector(A::Vector{B})  where B <: SVector
+    T = eltype(B)     
+    reinterpret(T,A) |> collect
+end
+
+"""
     matrix_to_blockmatrix(A::Matrix,B)
 
 Convert a `Matrix{T}` to a `Matrix{B}`, where `B<:Type{SMatrix}`. The element
@@ -67,6 +79,20 @@ function matrix_to_blockmatrix(A::Matrix,B::Type{<:SMatrix})
         end
     end
     return Ablock
+end
+
+"""
+    vector_to_blockvector(A::Vector,B)
+
+Convert a `Vector{T}` to a `Vector{B}`, where `B<:Type{SVector}`. The element
+type of `B` must match that of `A`, and the size of `A` must be divisible by the
+size of `B` along each dimension. 
+"""
+function vector_to_blockvector(A::Vector,B::Type{<:SVector})
+    @assert eltype(A) == eltype(B)
+    @assert sum(size(A) .% size(B)) == 0 "block size $(size(B)) not compatible with size of A=$(size(A))"
+    T = eltype(B)     
+    reinterpret(B,A) |> collect
 end
 
 """

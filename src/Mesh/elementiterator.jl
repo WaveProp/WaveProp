@@ -76,8 +76,8 @@ ElementIterator(m::CartesianMesh) = ElementIterator(m,etype(m))
 function Base.size(iter::ElementIterator{<:Any,<:CartesianMesh})
     E       = eltype(iter)    
     grids   = grid1d(iter.mesh)
-    sz      = size(iter.mesh) 
-    return sz .- 1
+    sz      = size(iter.mesh) .- 1
+    return (prod(sz),)
 end    
 
 # 1d case
@@ -102,7 +102,16 @@ function Base.getindex(iter::ElementIterator{<:Any,<:CartesianMesh{2}}, i::Int,j
 end    
 
 function Base.getindex(iter::ElementIterator{<:Any,<:CartesianMesh{2}}, I::Int)
-    sz  = size(iter)
+    sz  = size(iter.mesh) .- 1
     idx = CartesianIndices(sz)[I]
     iter[idx[1],idx[2]]
+end
+
+function Base.iterate(iter::ElementIterator{<:Any,<:CartesianMesh},state=1) 
+    n = length(iter)    
+    if state > n
+        return nothing    
+    else    
+        iter[state],state+1
+    end    
 end    

@@ -21,7 +21,7 @@ function CartesianMesh(d::ReferenceLine;h::Number=floatmax(),n::Int=1)
     CartesianMesh(xgrid)
 end    
 
-function CartesianMesh(d::ReferenceSquare;h=(floatmax(),floatmax()),n=(1,1))
+function CartesianMesh(d::ReferenceSquare, h, n)
     nx     = cld(1,h[1]) + 1 |> Int
     ny     = cld(1,h[2]) + 1 |> Int
     nx     = max(n[1],nx)
@@ -30,6 +30,7 @@ function CartesianMesh(d::ReferenceSquare;h=(floatmax(),floatmax()),n=(1,1))
     ygrid = LinRange(0,1,ny)
     CartesianMesh(xgrid,ygrid)
 end    
+CartesianMesh(d::ReferenceSquare; h::Number, n::Number) = CartesianMesh(d,(h,h),(n,n))
 
 grid1d(g::CartesianMesh)     = g.grid1d
 grid1d(g::CartesianMesh,dim) = g.grid1d[dim]
@@ -67,20 +68,20 @@ end
 Base.CartesianIndices(g::CartesianMesh) = CartesianIndices(size(g))
 
 # iterate over all nodes
-function Base.iterate(g::CartesianMesh)
-    i = first(CartesianIndices(g))
-    return g[i],i
-end    
+# function Base.iterate(g::CartesianMesh)
+#     i = first(CartesianIndices(g))
+#     return g[i],i
+# end    
 
-function Base.iterate(g::CartesianMesh,state)
-    idxs = CartesianIndices(g)        
-    next = iterate(idxs,state)            
-    if next === nothing
-        return nothing
-    else    
-        i,state = next
-        return g[i],state
-    end
-end    
+# function Base.iterate(g::CartesianMesh,state)
+#     idxs = CartesianIndices(g)        
+#     next = iterate(idxs,state)            
+#     if next === nothing
+#         return nothing
+#     else    
+#         i,state = next
+#         return g[i],state
+#     end
+# end    
 
-Base.IteratorSize(::CartesianMesh{N}) where {N} = Base.HasShape{N}()
+# Base.IteratorSize(::CartesianMesh{N}) where {N} = Base.HasShape{N}()

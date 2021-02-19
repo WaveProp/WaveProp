@@ -155,7 +155,7 @@ function _singular_weights_dim(iop::IntegralOperator,γ₀B,γ₁B,R)
             j_glob                = @view el2qnodes[:,n]
             M[1:num_qnodes,:]     = @view γ₀B[j_glob,:]
             M[num_qnodes+1:end,:] = @view γ₁B[j_glob,:]
-            # distinguis scalar and vectorial case
+            # distinguish scalar and vectorial case
             if T <: Number
                 F                     = qr(M)
             elseif T <: SMatrix

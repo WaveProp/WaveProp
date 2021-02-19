@@ -129,7 +129,7 @@ domain(::Duffy) = ReferenceSquare()
 range(::Duffy)  = ReferenceTriangle()
 
 function (::Duffy)(u)
-    SVector(u[1][1],(1-u[1][1])*u[2][1])
+    SVector(u[1],(1-u[1])*u[2])
 end    
 
 function jacobian(::Duffy,u)
@@ -148,10 +148,13 @@ struct TensorProductSingularityHandler{S} <: AbstractSingularityHandler{Referenc
 end
 
 domain(::TensorProductSingularityHandler) = ReferenceSquare()
+range(::TensorProductSingularityHandler) = ReferenceSquare()
 
 function TensorProductSingularityHandler(q...)
     TensorProductSingularityHandler(q)
 end    
+
+TensorProductSingularityHandler{Tuple{P,Q}}() where {P,Q} = TensorProductSingularityHandler(P(),Q())
 
 function (f::TensorProductSingularityHandler)(x)
     shandler = f.shandler    

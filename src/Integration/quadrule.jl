@@ -299,7 +299,7 @@ function _qrule_for_reference_shape(ref,order)
         n = ((order + 1) ÷  2) + 1
         return GaussLegendre{n}()
     elseif ref isa ReferenceSquare
-        n  = (order + 1)/2 |> ceil
+        n  = ((order + 1) ÷ 2) + 1
         qx = GaussLegendre{n}()
         qy = qx
         return TensorProductQuadrature(qx,qy)

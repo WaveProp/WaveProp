@@ -1,7 +1,6 @@
 module IO
 
 using DocStringExtensions
-using GmshSDK
 using StaticArrays
 using Printf
 using RecipesBase

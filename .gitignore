@@ -8,3 +8,4 @@ docs/src/*.html
 tutorials/**
 **.DS_Store
 **_bak.jl 
+convergence/**

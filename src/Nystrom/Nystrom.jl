@@ -24,6 +24,8 @@ export
     Laplace, 
     Helmholtz, 
     Elastostatic,
+    Stokes,
+    Maxwell,
     SingleLayerKernel, 
     DoubleLayerKernel, 
     IntegralOperator, 
@@ -52,6 +54,7 @@ include("kernels.jl")
 include("laplace.jl")
 include("helmholtz.jl")
 include("elastostatic.jl")
+include("maxwell.jl")
 include("density.jl")
 include("potential.jl")
 include("integraloperators.jl")

@@ -1,20 +1,20 @@
 # plot a vector of points
 @recipe function f(pts::AbstractVector{<:SVector{N}}) where {N}
     if N == 2
-        xx = [pt[1] for pt in pts]    
-        yy = [pt[2] for pt in pts]    
+        xx = [pt[1] for pt in pts]
+        yy = [pt[2] for pt in pts]
         return xx,yy
     elseif N == 3
-        xx = [pt[1] for pt in pts]    
-        yy = [pt[2] for pt in pts]    
-        zz = [pt[3] for pt in pts]    
+        xx = [pt[1] for pt in pts]
+        yy = [pt[2] for pt in pts]
+        zz = [pt[3] for pt in pts]
         return xx,yy,zz
     else
         notimplemented()
-    end        
-end    
+    end
+end
 
-@recipe function f(pts::AbstractMatrix{<:SVector}) 
+@recipe function f(pts::AbstractMatrix{<:SVector})
     vec(pts)
 end
 
@@ -44,12 +44,21 @@ end
     end
 end
 
+# plot domain --> plot all of its entities
+@recipe function f(Ω::Domain)
+    for ent in entities(Ω)
+        @series begin
+            ent
+        end
+    end
+end
+
 # recipe for parametric line
 @recipe function f(ent::ParametricEntity{ReferenceLine};h=0.01)
     par = ent.parametrization
     grid   --> false
     aspect_ratio --> :equal
-    s       = 0:h:1    
+    s       = 0:h:1
     pts     = [par(v) for v in s]
     x       = [pt[1] for pt in pts]
     y       = [pt[2] for pt in pts]
@@ -61,14 +70,14 @@ end
     aspect_ratio --> :equal
     for ent in ents
         @series begin
-            ent    
+            ent
         end
-    end    
+    end
 end
 
 # recipe for paramatric surface
 @recipe function f(ent::ParametricEntity{ReferenceSquare};h=0.1)
-    legend --> false    
+    legend --> false
     grid   --> false
     # aspect_ratio --> :equal
     seriestype := :surface
@@ -83,8 +92,8 @@ end
 
 # recipe for parametric body
 @recipe function f(bdy::AbstractParametricBody)
-    label --> ""    
-    # aspect_ratio --> :equal    
+    label --> ""
+    # aspect_ratio --> :equal
     for patch in boundary(bdy)
         @series begin
             patch
@@ -94,7 +103,7 @@ end
 
 # recipe for many parametric bodies
 @recipe function f(bdies::Vector{<:AbstractParametricBody})
-    aspect_ratio --> :equal    
+    aspect_ratio --> :equal
     for bdy in bdies
         @series begin
             bdy
@@ -103,38 +112,38 @@ end
 end
 
 @recipe function f(mesh::NystromMesh)
-    label --> ""        
+    label --> ""
     grid   --> false
-    aspect_ratio --> :equal    
+    aspect_ratio --> :equal
     for (E,els) in mesh.elements
         for el in els
-            @series begin 
+            @series begin
                 el
             end
-        end        
-    end    
-end   
+        end
+    end
+end
 
 @recipe function f(mesh::GenericMesh,Ω::Domain)
-    view(mesh,Ω)    
+    view(mesh,Ω)
 end
-    
+
 @recipe function f(mesh::SubMesh)
-    label --> ""        
+    label --> ""
     grid   --> false
-    aspect_ratio --> :equal    
+    aspect_ratio --> :equal
     for E in etypes(mesh)
         for el in ElementIterator(mesh,E)
-            @series begin 
+            @series begin
                 el
             end
-        end    
+        end
     end
-end   
+end
 
 # FIXME: write better recipes
 @recipe function f(el::LagrangeTriangle)
-    label --> "" 
+    label --> ""
     vtx = nodes(el)
     for n in 1:3
         is = n
@@ -143,10 +152,10 @@ end
             [vtx[is],vtx[ie]]
         end
     end
-end  
+end
 
 @recipe function f(el::LagrangeRectangle)
-    label --> ""    
+    label --> ""
     vtx = nodes(el)
     for n in 1:4
         is = n
@@ -155,12 +164,12 @@ end
             [vtx[is],vtx[ie]]
         end
     end
-end   
+end
 
 @recipe function f(el::LagrangeLine)
     vtx = nodes(el)
     [vtx[1],vtx[2]]
-end    
+end
 
 @recipe function f(el::AbstractElement{ReferenceLine};npts=10)
     label --> ""
@@ -177,13 +186,13 @@ end
     grid   --> false
     for el in els
         @series begin
-            el    
+            el
         end
-    end    
+    end
 end
 
 @recipe function f(ent::AbstractElement{ReferenceSquare};h=0.1)
-    legend --> false    
+    legend --> false
     grid   --> true
     seriesalpha --> 0.1
     # aspect_ratio --> :equal

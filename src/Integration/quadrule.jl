@@ -1,6 +1,6 @@
 """
     abstract type AbstractQuadratureRule{D<:AbstractReferenceShape}
-    
+
 A quadrature rule for integrating a function over the domain `D`.
 
 An instance `q` of `AbstractQuadratureRule{D}` is expected to implement the
@@ -8,10 +8,10 @@ following methods:
 
 - `q()` : return the nodes `x` and weights `w` of the quadrature rule on the
   reference domain `D`. For performance reasons, the result shoudl depend only
-  on the type of `q`. 
+  on the type of `q`.
 - `q(el)` : return the nodes `x` and weights `w` of the quadrature rule on the
   elemenent `D`. This assumes that `domain(q)==domain(el)`, so that the element
-  quadrature can be computed by *pushing forward* a reference quadrature to `el`.  
+  quadrature can be computed by *pushing forward* a reference quadrature to `el`.
 """
 abstract type AbstractQuadratureRule{D} end
 
@@ -58,21 +58,21 @@ function integrate(f,q::AbstractQuadratureRule)
         return integrate(x->f(x[1]),x,w)
     else
         return integrate(f,x,w)
-    end    
-end    
+    end
+end
 
 function integrate(f,x,w)
     sum(zip(x,w)) do (x,w)
         f(x)*prod(w)
     end
-end    
+end
 
 # overload quadgk for integration over reference shapes. Useful for various
 # testing purposes.
 """
     integrate(f,s::AbstractReferenceShape)
 
-Use `quadgk` to (adaptively) integrate a function over the reference shape `s`. 
+Use `quadgk` to (adaptively) integrate a function over the reference shape `s`.
 
 This is used mostly for testing purposes. It returns only the value of the
 integral (i.e. without the error estimate).
@@ -84,7 +84,7 @@ integrate(f,::Type{ReferenceLine};kwargs...) = quadgk(f,0,1;kwargs...)[1]
 function integrate(f,::Type{ReferenceSquare})
     I    = x-> quadgk(y->f(SVector(x,y)),0,1)[1]
     out  = quadgk(I,0,1)[1]
-end    
+end
 
 # hacky way to compute integration over reference triangles. Only used for
 # testing purposes to avoid having to compute integrals analyically when testing.
@@ -101,8 +101,8 @@ end
 `N`-point trapezoidal rule for integrating a function over the interval `[0,1]`.
 
 Note that for analytic 1-periodic functions, this rule will converge
-exponentially fast. 
-    
+exponentially fast.
+
 # Examples:
 ```julia
 q    = Trapezoidal(10)
@@ -121,10 +121,10 @@ function (q::Trapezoidal{N})() where {N}
     w[1]   = h/2
     w[end] = h/2
     # convert to static arrays
-    xs = svector(i->SVector(0.5*(x[i]+1)),N) 
+    xs = svector(i->SVector(0.5*(x[i]+1)),N)
     ws = svector(i->w[i]/2,N)
     return xs,ws
-end   
+end
 
 """
     struct TrapezoidalP{N} <: AbstractQuadratureRule{ReferenceLine}
@@ -137,12 +137,12 @@ struct TrapezoidalP{N} <: AbstractQuadratureRule{ReferenceLine} end
 TrapezoidalP(n::Int) = TrapezoidalP{n}()
 
 # open periodic trapezoidal rule on [0,1]
-function _trapezoidalP(n)    
+function _trapezoidalP(n)
     h = 1/n
     x = [(k-0.5)*h for k in 1:n]
     w = [h   for k in 1:n]
     return x,w
-end    
+end
 
 function (q::TrapezoidalP{N})() where {N}
     x,w = _trapezoidalP(N)
@@ -150,7 +150,7 @@ function (q::TrapezoidalP{N})() where {N}
     xs = SVector{N}(SVector{1}.(x))
     ws = SVector{N}(w)
     return xs,ws
-end    
+end
 
 """
     struct Fejer{N}
@@ -173,7 +173,7 @@ function (q::Fejer{N})() where {N}
         end
         w[j] = 2/N * (1 - 2*tmp)
     end
-    xs = svector(i->SVector(0.5*(x[i]+1)),N) 
+    xs = svector(i->SVector(0.5*(x[i]+1)),N)
     ws = svector(i->w[i]/2,N)
     return xs,ws
 end
@@ -190,18 +190,18 @@ GaussLegendre(n::Int) = GaussLegendre{n}()
 
 @generated function (q::GaussLegendre{N})() where {N}
     x,w  = gauss(N) # This is a quadgk function. Gives integral in [-1,1]. Converted to [0,1] below
-    xs   = svector(i->SVector(0.5*(x[i]+1)),N) 
+    xs   = svector(i->SVector(0.5*(x[i]+1)),N)
     ws   = svector(i->w[i]/2,N)
     return :($xs,$ws)
 end
 
 function refine(q::GaussLegendre{N},k=2) where {N}
     GaussLegendre(Int(N*k))
-end    
+end
 
 """
     struct Gauss{D,N} <: AbstractQuadratureRule{D}
-    
+
 Tabulated `N`-point symmetric Gauss quadrature rule for integration over `D`.
 
 This is currently implemented *by hand* for low values of `N` on triangles and tetrahedrons.
@@ -222,7 +222,7 @@ Gauss(ref;n) = Gauss{typeof(ref),n}()
         w = svector(i->1/6,3)
     else
         notimplemented()
-    end            
+    end
     return :($x,$w)
 end
 
@@ -241,7 +241,7 @@ end
         w = svector(i->1/24,4)
     else
         notimplemented()
-    end            
+    end
     return :($x,$w)
 end
 
@@ -258,7 +258,7 @@ qy = GaussLegendre(15)
 q  = TensorProductQuadrature(qx,qy)
 ```
 """
-struct TensorProductQuadrature{Q} <: AbstractQuadratureRule{ReferenceSquare} 
+struct TensorProductQuadrature{Q} <: AbstractQuadratureRule{ReferenceSquare}
     quad::Q
 end
 
@@ -267,31 +267,31 @@ end
 # but there is probably a better way
 function TensorProductQuadrature{Tuple{Q1,Q2}}() where {Q1,Q2}
     TensorProductQuadrature(Q1(),Q2())
-end    
+end
 
 function TensorProductQuadrature(q...)
     TensorProductQuadrature(q)
-end    
+end
 
 # FIXME: the current implementation is rather obscure. How should we handle the
 # product quadrature rules in general? Also make this into a generated function.
 function (q::TensorProductQuadrature)()
-    N       = length(q.quad)    
-    nodes   = map(q->q()[1],q.quad)    
-    weights = map(q->q()[2],q.quad)  
+    N       = length(q.quad)
+    nodes   = map(q->q()[1],q.quad)
+    weights = map(q->q()[2],q.quad)
     nodes_iter   = Iterators.product(nodes...)
     weights_iter = Iterators.product(weights...)
     x = map(x->vcat(x...),nodes_iter)
     w = map(w->prod(w),weights_iter)
     return SArray(x), w
-end    
+end
 
 # some helper functions
 
 """
     _qrule_for_reference_shape(ref,order)
 
-Given a `ref`erence shape and a desired quadrature `order`, return 
+Given a `ref`erence shape and a desired quadrature `order`, return
 an appropiate quadrature rule.
 """
 function _qrule_for_reference_shape(ref,order)
@@ -305,19 +305,19 @@ function _qrule_for_reference_shape(ref,order)
         return TensorProductQuadrature(qx,qy)
     elseif ref isa ReferenceTriangle
         if order <= 1
-            return Gauss(ref,n=1) 
+            return Gauss(ref,n=1)
         elseif order <=2
-            return Gauss(ref,n=3)     
+            return Gauss(ref,n=3)
         end
     elseif ref isa ReferenceTetrahedron
         if order <= 1
-            return Gauss(ref;n=1) 
+            return Gauss(ref;n=1)
         elseif order <=2
             return Gauss(ref;n=4)
         end
-    end    
+    end
     error("no appropriate quadrature rule found.")
-end   
+end
 
 """
     _qrule_for_element(E,p)
@@ -326,4 +326,4 @@ Given an element type `E`, return an appropriate quadrature of order `p`.
 """
 function _qrule_for_element(E,order)
     _qrule_for_reference_shape(domain(E),order)
-end    
+end

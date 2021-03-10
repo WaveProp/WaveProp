@@ -1,7 +1,7 @@
 """
     struct Density{T,S} <: AbstractVector{T}
-    
-Discrete density with values `vals` on the qnodes `qnodes(surface::S)`. 
+
+Discrete density with values `vals` on the qnodes `qnodes(surface::S)`.
 """
 struct Density{V,S} <: AbstractVector{V}
     vals::Vector{V}
@@ -20,12 +20,13 @@ function Base.:\(A::AbstractMatrix,σ::Density)
     @assert size(A,1) == size(A,2)
     y = A\σ.vals
     return Density(y,σ.surface)
-end    
+end
 
 function IterativeSolvers.gmres!(σ::Density,A,μ::Density,args...;kwargs...)
     gmres!(σ.vals,A,μ.vals,args...;kwargs...)
-    return σ
 end
+IterativeSolvers.gmres(A,μ::Density,args...;kwargs...) = gmres!(zero(μ),A,μ,args...;kwargs...)
+
 
 function γ₀(f,X)
     vals = [f(x) for x in qnodes(X)]

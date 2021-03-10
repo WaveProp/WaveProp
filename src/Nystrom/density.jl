@@ -25,6 +25,8 @@ end
 function IterativeSolvers.gmres!(σ::Density,A,μ::Density,args...;kwargs...)
     gmres!(σ.vals,A,μ.vals,args...;kwargs...)
 end
+IterativeSolvers.gmres(A,μ::Density,args...;kwargs...) = gmres!(zero(μ),A,μ,args...;kwargs...)
+
 
 function γ₀(f,X)
     vals = [f(x) for x in qnodes(X)]

@@ -1,31 +1,31 @@
 function assemble_dim(iop::IntegralOperator;compress=Matrix,location=:onsurface)
-    X    = target_surface(iop)    
-    Y    = source_surface(iop)    
+    X    = target_surface(iop)
+    Y    = source_surface(iop)
     pde  = iop.kernel.op
-    T    = kernel_type(iop)    
+    T    = kernel_type(iop)
     if T === SingleLayer()
-        singlelayer_dim(pde,X,Y;compress,location)    
+        singlelayer_dim(pde,X,Y;compress,location)
     elseif T === DoubleLayer()
-        doublelayer_dim(pde,X,Y;compress,location)        
+        doublelayer_dim(pde,X,Y;compress,location)
     elseif T === AdjointDoubleLayer()
-        adjointdoublelayer_dim(pde,X,Y;compress,location)    
-    elseif T === HyperSingular()    
-        hypersingular_dim(pde,X,Y;compress,location)        
-    else    
-        notimplemented()    
-    end    
-end    
+        adjointdoublelayer_dim(pde,X,Y;compress,location)
+    elseif T === HyperSingular()
+        hypersingular_dim(pde,X,Y;compress,location)
+    else
+        notimplemented()
+    end
+end
 
 function single_doublelayer_dim(pde,X,Y=X;compress=Matrix,location=:onsurface)
-    msg = "unrecognized value for kw `location`: received $location. 
-           Valid options are `:onsurface`, `:inside` and `:outside`."    
+    msg = "unrecognized value for kw `location`: received $location.
+           Valid options are `:onsurface`, `:inside` and `:outside`."
     σ = location === :onsurface ? -0.5 : location === :inside ? 0 : location === :outside ? -1 : error(msg)
     Sop  = SingleLayerOperator(pde,X,Y)
     Dop  = DoubleLayerOperator(pde,X,Y)
     # convert to a possibly more efficient format
     S = compress(Sop)
     D = compress(Dop)
-    basis,γ₁_basis = _basis_dim(Sop)    
+    basis,γ₁_basis = _basis_dim(Sop)
     γ₀B,γ₁B,R      = _auxiliary_quantities_dim(Sop,S,D,basis,γ₁_basis,σ)
     # compute corrections
     δS = _singular_weights_dim(Sop,γ₀B,γ₁B,R)
@@ -39,15 +39,15 @@ singlelayer_dim(args...;kwargs...) = single_doublelayer_dim(args...;kwargs...)[1
 doublelayer_dim(args...;kwargs...) = single_doublelayer_dim(args...;kwargs...)[2]
 
 function adjointdoublelayer_hypersingular_dim(pde,X,Y=X;compress=Matrix,location=:onsurface)
-    msg = "unrecognized value for kw `location`: received $location. 
-    Valid options are `:onsurface`, `:inside` and `:outside`."    
+    msg = "unrecognized value for kw `location`: received $location.
+    Valid options are `:onsurface`, `:inside` and `:outside`."
     σ = location === :onsurface ? -0.5 : location === :inside ? 0 : location === :outside ? -1 : error(msg)
     Kop  = AdjointDoubleLayerOperator(pde,X,Y)
     Hop  = HyperSingularOperator(pde,X,Y)
     # convert to a possibly more efficient compress
     K = compress(Kop)
     H = compress(Hop)
-    basis,γ₁_basis = _basis_dim(Kop)    
+    basis,γ₁_basis = _basis_dim(Kop)
     γ₀B,γ₁B,R      = _auxiliary_quantities_dim(Kop,K,H,basis,γ₁_basis,σ)
     # compute corrections
     δK = _singular_weights_dim(Kop,γ₀B,γ₁B,R)
@@ -62,18 +62,18 @@ hypersingular_dim(args...;kwargs...)        = adjointdoublelayer_hypersingular_d
 
 
 function singular_weights_dim(iop::IntegralOperator,compress=Matrix)
-    X,Y,op = iop.X, iop.Y, iop.kernel.op        
+    X,Y,op = iop.X, iop.Y, iop.kernel.op
     σ = X == Y ? -0.5 : 0.0
-    # 
+    #
     basis,γ₁_basis = _basis_dim(iop)
-    Op1, Op2       = _auxiliary_operators_dim(iop,compress)    
+    Op1, Op2       = _auxiliary_operators_dim(iop,compress)
     γ₀B,γ₁B,R      = _auxiliary_quantities_dim(iop,Op1,Op2,basis,γ₁_basis,σ)
     Sp = _singular_weights_dim(iop,γ₀B,γ₁B,R)
     return Sp # a sparse matrix
 end
 
-function _auxiliary_quantities_dim(iop,Op1,Op2,basis,γ₁_basis,σ) 
-    T           = eltype(iop)    
+function _auxiliary_quantities_dim(iop,Op1,Op2,basis,γ₁_basis,σ)
+    T           = eltype(iop)
     kernel,X,Y  = iop.kernel, iop.X, iop.Y
     op          = kernel.op
     m,n         = length(X),length(Y)
@@ -92,7 +92,7 @@ function _auxiliary_quantities_dim(iop,Op1,Op2,basis,γ₁_basis,σ)
     # integrate the basis over Y
     xnodes   = qnodes(X)
     xnormals = qnormals(X)
-    R        = Op1*γ₁B - Op2*γ₀B   
+    R        = Op1*γ₁B - Op2*γ₀B
     # analytic correction for on-surface evaluation of Greens identity
     if kernel_type(iop) isa Union{SingleLayer,DoubleLayer}
         if σ !== 0
@@ -112,10 +112,10 @@ function _auxiliary_quantities_dim(iop,Op1,Op2,basis,γ₁_basis,σ)
         end
     end
     return γ₀B, γ₁B, R
-end    
+end
 
 function _auxiliary_operators_dim(iop,compress)
-    X,Y,op = iop.X, iop.Y, iop.kernel.op    
+    X,Y,op = iop.X, iop.Y, iop.kernel.op
     T = eltype(iop)
     # construct integral operators required for correction
     if kernel_type(iop) isa Union{SingleLayer,DoubleLayer}
@@ -126,7 +126,7 @@ function _auxiliary_operators_dim(iop,compress)
         Op2 = IntegralOperator{T}(HyperSingularKernel(op),X,Y) |> compress
     end
     return Op1,Op2
-end 
+end
 
 function _basis_dim(iop)
     op = iop.kernel.op
@@ -134,10 +134,10 @@ function _basis_dim(iop)
     basis     = [y->SingleLayerKernel(op)(x,y) for x in xs]
     γ₁_basis  = [(y,ny)->transpose(DoubleLayerKernel(op)(x,y,ny)) for x in xs]
     return basis,γ₁_basis
-end    
+end
 
 function _singular_weights_dim(iop::IntegralOperator,γ₀B,γ₁B,R)
-    X,Y = iop.X, iop.Y    
+    X,Y = iop.X, iop.Y
     T = eltype(iop)
     num_basis = size(γ₀B,2)
     a,b = combined_field_coefficients(iop)
@@ -160,14 +160,14 @@ function _singular_weights_dim(iop::IntegralOperator,γ₀B,γ₁B,R)
                 F                     = qr(M)
             elseif T <: SMatrix
                 F                     = qr!(blockmatrix_to_matrix(M))
-            else 
-                error("unknown element type T=$T")        
-            end        
+            else
+                error("unknown element type T=$T")
+            end
             for (i,_) in list_near[n]
-                if T <: Number    
+                if T <: Number
                     tmp = ((R[i:i,:])/F.R)*adjoint(F.Q)
                 elseif T <: SMatrix
-                    tmp_scalar  = (blockmatrix_to_matrix(R[i:i,:])/F.R)*adjoint(F.Q)    
+                    tmp_scalar  = (blockmatrix_to_matrix(R[i:i,:])/F.R)*adjoint(F.Q)
                     tmp  = matrix_to_blockmatrix(tmp_scalar,T)
                 else
                     error("unknown element type T=$T")
@@ -177,8 +177,8 @@ function _singular_weights_dim(iop::IntegralOperator,γ₀B,γ₁B,R)
                 append!(Js,j_glob)
                 append!(Vs,w)
             end
-        end    
-    end        
+        end
+    end
     Sp = sparse(Is,Js,Vs,size(iop)...)
     return Sp
 end
@@ -186,9 +186,9 @@ end
 function _source_gen(iop::IntegralOperator,kfactor=5)
     Y      =  iop.Y
     nquad  = 0
-    for (E,tags) in elt2dof(Y)        
+    for (E,tags) in elt2dof(Y)
         nquad = max(nquad,size(tags,1))
-    end  
+    end
     nbasis = 3*nquad
     # construct source basis
     return _source_gen(iop,nbasis;kfactor)
@@ -222,8 +222,7 @@ function _sphere_sources_lebedev(;nsources, radius=10, center=SVector(0.,0.,0.))
 end
 
 function _circle_sources(;nsources, radius=10, center=SVector(0.,0.))
-    geo   = Circle(center=center,radius=radius)
-    par   = boundary(geo)[1]
+    par   = (s) -> center .+ radius .* SVector(cospi(2 * s[1]), sinpi(2 * s[1]))
     x,_   = Integration._trapezoidalP(nsources)
     Xs    = SVector{2,Float64}[]
     for pt in x

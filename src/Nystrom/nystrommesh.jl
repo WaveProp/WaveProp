@@ -1,6 +1,6 @@
 """
     struct NystromMesh{N,T} <: AbstractMesh{N,T}
-    
+
 A mesh data structure for solving boundary integral equation using Nyström
 methods.
 
@@ -9,7 +9,7 @@ A `NystromMesh` can be constructed from a `mesh::AbstractMesh` and a dictionary
 quadrature rule for integration over elements of that type (the value).
 
 The degrees of freedom of a `NystromMesh` are associated to its quadrature nodes
-`qnodes::Vector{SVector{N,T}}`. 
+`qnodes::Vector{SVector{N,T}}`.
 """
 Base.@kwdef struct NystromMesh{N,T} <: AbstractMesh{N,T}
     elements::OrderedDict{DataType,Any} = OrderedDict{DataType,Any}()
@@ -24,7 +24,7 @@ Base.@kwdef struct NystromMesh{N,T} <: AbstractMesh{N,T}
 end
 
 function Base.append!(msh1::NystromMesh,msh2::NystromMesh)
-    Ω = domain(msh2)    
+    Ω = domain(msh2)
     @assert ambient_dimension(msh1) == ambient_dimension(msh2)
     @assert eltype(msh1) == eltype(msh2)
     # extract relevant quadrature rules
@@ -33,8 +33,8 @@ function Base.append!(msh1::NystromMesh,msh2::NystromMesh)
         if haskey(msh1.elements,E)
             etype2dof[E]        = msh1.elt2dof[E] |> vec
             @assert msh1.etype2qrule[E] == q
-        else    
-            etype2dof[E]        = Int[]    
+        else
+            etype2dof[E]        = Int[]
             msh1.elements[E]    = E[]
             msh1.etype2qrule[E] = q
         end
@@ -44,14 +44,14 @@ function Base.append!(msh1::NystromMesh,msh2::NystromMesh)
         haskey(msh1.ent2elt,ent) && continue # entity already meshed
         msh1.ent2elt[ent] = OrderedDict{DataType,Vector{Int}}()
         for (E,v) in ent2elt(msh2,ent)
-            # add dofs information    
+            # add dofs information
             msh2_dofs  = msh2.elt2dof[E][:,v]
-            idx_start = length(msh1.qnodes) + 1 
+            idx_start = length(msh1.qnodes) + 1
             append!(msh1.qnodes,msh2.qnodes[msh2_dofs])
             append!(msh1.qweights,msh2.qweights[msh2_dofs])
             if !isempty(qnormals(msh2)) # otherwise assume it did not have normal stored
                 append!(msh1.qnormals,msh2.qnormals[msh2_dofs])
-            end     
+            end
             idx_end = length(msh1.qnodes) # end index of dofs added
             append!(etype2dof[E],collect(idx_start:idx_end))
             # append elements
@@ -66,9 +66,9 @@ function Base.append!(msh1::NystromMesh,msh2::NystromMesh)
     for (E,v) in etype2dof
         dof_per_el = size(msh2.elt2dof[E],1)
         msh1.elt2dof[E] = reshape(v,dof_per_el,:)
-    end    
+    end
     return msh1
-end    
+end
 
 # getters
 qnodes(m::NystromMesh)   = m.qnodes
@@ -90,37 +90,37 @@ Geometry.entities(mesh::NystromMesh) = collect(keys(mesh.ent2elt))
 function dom2elt(mesh::NystromMesh,domain::Domain)
     dict = OrderedDict{DataType,Vector{Int}}()
     for ent in entities(domain)
-        other = ent2elt(mesh,ent)    
+        other = ent2elt(mesh,ent)
         mergewith!(append!,dict,other)
     end
     return dict
-end    
+end
 
 function dom2dof(mesh::NystromMesh,domain::Domain)
     idxs = Int[]
     for ent in entities(domain)
         dict = ent2elt(mesh,ent)
         for (E,tags) in dict
-            append!(idxs,view(elt2dof(mesh,E),:,tags))    
-        end    
-    end    
+            append!(idxs,view(elt2dof(mesh,E),:,tags))
+        end
+    end
     return idxs
-end    
+end
 dom2dof(mesh,ent::AbstractEntity) = dom2dof(mesh,Domain(ent))
 ent2dof(mesh,ent::AbstractEntity) = dom2dof(mesh,ent)
 
 Base.length(m::NystromMesh) = length(qnodes(m))
 
-function etypes(m::NystromMesh,Ω::Domain=domain(m)) 
+function etypes(m::NystromMesh,Ω::Domain=domain(m))
     ee = Tuple{DataType,AbstractQuadratureRule}[]
     for ent in entities(Ω)
         dict = ent2elt(m,ent)
         EE    = keys(dict)
         for E in EE
-            q = etype2qrule(m,E) 
+            q = etype2qrule(m,E)
             push!(ee,(E,q))
-        end    
-    end    
+        end
+    end
     unique!(ee)
     return ee
 end
@@ -130,8 +130,8 @@ function NystromMesh(mesh::GenericMesh,Ω::Domain,e2qrule,compute_normal::Bool=t
     # initialize empty fields
     nys_mesh = NystromMesh{N,T}(;etype2qrule=e2qrule)
     # loop over entities
-    for ent in entities(Ω) 
-        dict    = OrderedDict{DataType,Vector{Int}}()    
+    for ent in entities(Ω)
+        dict    = OrderedDict{DataType,Vector{Int}}()
         submesh = view(mesh,ent)
         for E in etypes(submesh)
             haskey(e2qrule,E) || error("no quadrature rule found for element of type $E")
@@ -142,13 +142,13 @@ function NystromMesh(mesh::GenericMesh,Ω::Domain,e2qrule,compute_normal::Bool=t
                 istart = 1
             end
             _build_nystrom_mesh!(nys_mesh,submesh,E,qrule,compute_normal)
-            iend   = length(nys_mesh.elements[E])       
+            iend   = length(nys_mesh.elements[E])
             dict[E] = collect(istart:iend)
-        end  
-        nys_mesh.ent2elt[ent] = dict # new entry 
-    end   
-    return nys_mesh 
-end    
+        end
+        nys_mesh.ent2elt[ent] = dict # new entry
+    end
+    return nys_mesh
+end
 
 @noinline function _build_nystrom_mesh!(nys_mesh,submesh,E,qrule,compute_normal)
     els::Vector{E}         = get!(nys_mesh.elements,E,Vector{E}())
@@ -159,8 +159,8 @@ end
         # compute quadrature on element
         x = map(el,x̂)
         w = map(zip(x̂,ŵ)) do (x̂,ŵ)
-            ŵ*measure(el,x̂)    
-        end 
+            ŵ*measure(el,x̂)
+        end
         # add element
         push!(els,el)
         # append quadrature information
@@ -168,7 +168,7 @@ end
         append!(qweights(nys_mesh),w)
         append!(qnodes(nys_mesh),x)
         if compute_normal
-            ν = map(x->normal(el,x),x̂)   
+            ν = map(x->normal(el,x),x̂)
             append!(qnormals(nys_mesh),ν)
         end
         iend   = length(qnodes(nys_mesh))
@@ -185,18 +185,18 @@ NystromMesh(submesh::SubMesh,args...) = NystromMesh(submesh.mesh,submesh.domain,
 function NystromMesh(mesh::SubMesh;order,compute_normal::Bool=true)
     etype2qrule = Mesh._qrule_for_mesh(mesh,order)
     NystromMesh(mesh,etype2qrule,compute_normal)
-end    
+end
 
 function NystromMesh(mesh::GenericMesh,Ω::Domain;quad_rule,compute_normal::Bool=true)
     etype2qrule = OrderedDict(E=>quad_rule for E in etypes(view(mesh,Ω)))
     NystromMesh(mesh,Ω,etype2qrule,compute_normal)
-end    
+end
 
 # construct a mesh as a restriction to a domain
 function Base.getindex(msh2::NystromMesh,Ω::Domain)
     N,T      = ambient_dimension(msh2), eltype(msh2)
     # initialize empty fields
-    msh1 = NystromMesh{N,T}()    
+    msh1 = NystromMesh{N,T}()
     # extract relevant quadrature rules
     etype2dof = OrderedDict{DataType,Vector{Int}}()
     for (E,q) in etypes(msh2,Ω)
@@ -209,14 +209,14 @@ function Base.getindex(msh2::NystromMesh,Ω::Domain)
         @assert ent in domain(msh2)
         msh1.ent2elt[ent] = OrderedDict{DataType,Vector{Int}}()
         for (E,v) in msh2.ent2elt[ent]
-            # add dofs information    
+            # add dofs information
             msh2_dofs  = msh2.elt2dof[E][:,v]
             idx_start = length(msh1.qnodes) + 1
             append!(msh1.qnodes,msh2.qnodes[msh2_dofs])
             append!(msh1.qweights,msh2.qweights[msh2_dofs])
-            if !isempty(qnormals(msh2)) 
+            if !isempty(qnormals(msh2))
                 append!(msh1.qnormals,msh2.qnormals[msh2_dofs])
-            end     
+            end
             idx_end = length(msh1.qnodes)
             append!(etype2dof[E],collect(idx_start:idx_end))
             # append elements
@@ -231,9 +231,9 @@ function Base.getindex(msh2::NystromMesh,Ω::Domain)
     for (E,v) in etype2dof
         dof_per_el = size(msh2.elt2dof[E],1)
         msh1.elt2dof[E] = reshape(v,dof_per_el,:)
-    end    
+    end
     return msh1
-end   
+end
 Base.getindex(m::NystromMesh,ent::AbstractEntity) = m[Domain(ent)]
 
 function _elt2dof(m::NystromMesh,Ω::Domain)
@@ -241,18 +241,18 @@ function _elt2dof(m::NystromMesh,Ω::Domain)
     for ent in Ω
         dict = ent2elt(m,ent)
         for (E,v) in dict
-            dofs = get!(out,E,Matrix{Int}(undef,0,0))  
-            # make into vec to append  
+            dofs = get!(out,E,Matrix{Int}(undef,0,0))
+            # make into vec to append
             dofs = vec(dofs)
             dof_per_el = size(elt2dof(m,E),1)
             append!(dofs,elt2dof(m,E)[:,v])
             # convert back to matrix shape
             dofs = reshape(dofs,dof_per_el,:)
             out[E] = dofs
-        end    
+        end
     end
-    return out        
-end    
+    return out
+end
 
 """
     near_interaction_list(pts,Y;atol)
@@ -261,16 +261,16 @@ Given a target points `pts` and a `Y::NystromMesh`, return a dictionary with key
 given by element types of the source mesh `Y`. To each key, which represents an
 element type, we associate a vector whose `i`-th entry encodes
 information about the points in `X` which are close to a given element of
-the key type. 
+the key type.
 """
 function near_interaction_list(pts,Y::NystromMesh;atol)
-    dict = OrderedDict{DataType,Vector{Vector{Tuple{Int,Int}}}}()    
+    dict = OrderedDict{DataType,Vector{Vector{Tuple{Int,Int}}}}()
     for (E,Q) in etypes(Y)
         ilist = _etype_near_interaction_list(pts,Y,E,atol)
         push!(dict,E=>ilist)
     end
     return dict
-end    
+end
 
 function _etype_near_interaction_list(pts,Y,E,atol)
     ilist = Vector{Vector{Tuple{Int,Int}}}()
@@ -280,19 +280,19 @@ function _etype_near_interaction_list(pts,Y,E,atol)
         ynodes = qnodes(Y)[e2n[:,n]]
         inear  = _near_interaction_list(pts,ynodes,atol)
         push!(ilist,inear)
-    end 
-    ilist       
-end    
+    end
+    ilist
+end
 
 function _near_interaction_list(pts,ynodes,atol)
     ilist    = Tuple{Int,Int}[]
-    for (i,x) in enumerate(pts)            
-        d,j = findmin([norm(x-y) for y in ynodes])        
+    for (i,x) in enumerate(pts)
+        d,j = findmin([norm(x-y) for y in ynodes])
         if d ≤ atol
-            push!(ilist,(i,j))    
+            push!(ilist,(i,j))
         end
-    end            
+    end
     return ilist
-end   
+end
 
 elements(m::NystromMesh,E::DataType) = m.elements[E]

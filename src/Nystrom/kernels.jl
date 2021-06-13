@@ -61,14 +61,13 @@ function return_type(K,X,Y)
         νy_type = eltype(qnormals(Y))
         return Base.promote_op(K,x_type,y_type,νy_type)
     elseif kernel_type(K) == AdjointDoubleLayer()
-        νx_type = eltype(qnormals(X))    
+        νx_type = eltype(qnormals(X))
         return Base.promote_op(K,x_type,y_type,νx_type)
     elseif kernel_type(K) == HyperSingular()
         νx_type = eltype(qnormals(X))
         νy_type = eltype(qnormals(Y))
         return Base.promote_op(K,x_type,y_type,νx_type,νy_type)
     else
-        error("unknown `kernel_type` trait")        
+        error("unknown `kernel_type` trait")
     end
-end    
-
+end

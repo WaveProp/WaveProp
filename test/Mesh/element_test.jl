@@ -56,7 +56,7 @@ end
     ## equilateral triangle
     F   = LagrangeTriangle((-1.,0),(1.,0),(0.,1.))
     x,w = qrule(F)
-    @test sum(w) ≈ 1 
+    @test sum(w) ≈ 1
 end
 
 @testset "Triangle surface quadrature" begin
@@ -67,7 +67,7 @@ end
     ## equilateral triangle
     F   = LagrangeTriangle((-1.,0.,1.),(1.,0.,1.),(0.,1.,1.))
     x,w = qrule(F)
-    @test sum(w) ≈ 1 
+    @test sum(w) ≈ 1
 end
 
 @testset "Tetrahedron quadrature" begin
@@ -79,11 +79,11 @@ end
     # dilate by 2x and translate by 1 along  the tetrahedron
     F   = LagrangeTetrahedron((1,0,0),(3,0,0),(1,2,0),(1,0,2))
     x,w = qrule(F)
-    @test sum(w) ≈ 1/6*2^3 
+    @test sum(w) ≈ 1/6*2^3
 end
 
 @testset "Curved lines" begin
-    qstd = GaussLegendre(20)    
+    qstd = GaussLegendre(20)
     el   = LagrangeLine((0,0),(1,1),(1/2,1/4))
     # simple test on smooth integrand
     f     = x->cos(x[1])
@@ -98,7 +98,7 @@ end
     f     = x -> log(abs(x[1])*cos(x[1]))
     Ie     = integrate(f,el)
     for shand in [IMT(), Kress()]
-        q     = SingularQuadratureRule(qstd,shand)    
+        q     = SingularQuadratureRule(qstd,shand)
         Ia    = integrate(f,q,el)
         @debug Ia - Ie
         @test isapprox(Ia,Ie,rtol=1e-5)
@@ -110,14 +110,14 @@ end
 end
 
 @testset "Curved line with singularity inside" begin
-    qstd = GaussLegendre(20)    
+    qstd = GaussLegendre(20)
     el   = LagrangeLine((0,0),(1,1),(1/2,1/4))
     vs   = 1/3
     xs   = el(vs)
     f    = x -> x == xs ? 0.0 : log(norm(x-xs)*cos(x[1]))
     Ie    = integrate(f,el)
     for shand in [IMT(), Kress()]
-        q     = SingularQuadratureRule(qstd,shand)    
+        q     = SingularQuadratureRule(qstd,shand)
         x,w   = q(el,vs)
         Ia    = integrate(f,x,w)
         @debug Ie-Ia

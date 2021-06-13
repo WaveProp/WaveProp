@@ -10,14 +10,14 @@ using StaticArrays
 
 using WaveProp
 
-export 
-    svector, 
+export
+    svector,
     matrix_to_blockmatrix,
     blockmatrix_to_matrix,
     blockvector_to_vector,
     vector_to_blockvector,
-    notimplemented, 
-    abstractmethod, 
+    notimplemented,
+    abstractmethod,
     assert_extension,
     assert_concrete_type
 
@@ -34,7 +34,7 @@ svector(f,n) = ntuple(f,n) |> SVector
 Convert a `Matrix{B}`, where `B<:SMatrix`, to the equivalent `Matrix{T}`, where `T = eltype(B)`
 """
 function blockmatrix_to_matrix(A::Matrix{B})  where B <: SMatrix
-    T = eltype(B) 
+    T = eltype(B)
     sblock = size(B)
     ss     = size(A).*sblock # matrix size when viewed as matrix over T
     Afull = Matrix{T}(undef,ss)
@@ -52,7 +52,7 @@ end
 Convert a `Vector{B}`, where `B<:SVector`, to the equivalent `Vector{T}`, where `T = eltype(B)`
 """
 function blockvector_to_vector(A::Vector{B})  where B <: SVector
-    T = eltype(B)     
+    T = eltype(B)
     reinterpret(T,A) |> collect
 end
 
@@ -61,7 +61,7 @@ end
 
 Convert a `Matrix{T}` to a `Matrix{B}`, where `B<:Type{SMatrix}`. The element
 type of `B` must match that of `A`, and the size of `A` must be divisible by the
-size of `B` along each dimension. 
+size of `B` along each dimension.
 """
 function matrix_to_blockmatrix(A::Matrix,B::Type{<:SMatrix})
     @assert eltype(A) == eltype(B)
@@ -86,12 +86,12 @@ end
 
 Convert a `Vector{T}` to a `Vector{B}`, where `B<:Type{SVector}`. The element
 type of `B` must match that of `A`, and the size of `A` must be divisible by the
-size of `B` along each dimension. 
+size of `B` along each dimension.
 """
 function vector_to_blockvector(A::Vector,B::Type{<:SVector})
     @assert eltype(A) == eltype(B)
     @assert sum(size(A) .% size(B)) == 0 "block size $(size(B)) not compatible with size of A=$(size(A))"
-    T = eltype(B)     
+    T = eltype(B)
     reinterpret(B,A) |> collect
 end
 
@@ -102,7 +102,7 @@ Things which should probably be implemented at some point.
 """
 function notimplemented()
     error("not (yet) implemented")
-end 
+end
 
 """
     abstractmethod
@@ -112,7 +112,7 @@ to provide an implementation.
 """
 function abstractmethod(T)
     error("this method needs to be implemented by the concrete subtype $T.")
-end 
+end
 
 """
     assert_extension(fname,ext,[msg])
@@ -120,12 +120,12 @@ end
 Check that `fname` is of extension `ext`. Print the message `msg` as an assertion error otherwise.
 """
 function assert_extension(fname::String,ext::String,msg="file extension must be $(ext)")
-    r = Regex("$(ext)\$")    
+    r = Regex("$(ext)\$")
     @assert occursin(r,fname) msg
 end
 
 function assert_concrete_type(T::DataType)
-    isconcretetype(T) || throw(ConcreteInferenceError(T)) 
+    isconcretetype(T) || throw(ConcreteInferenceError(T))
 end
 
 function debug(mod="WaveProp")

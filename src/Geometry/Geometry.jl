@@ -3,7 +3,7 @@
 
 This module defines basic geometrical objects.
 """
-module Geometry 
+module Geometry
 
 import Base: ==, length, in, iterate, getindex, lastindex, isempty, eltype, keys
 import Base: union, setdiff, intersect, issubset
@@ -16,59 +16,58 @@ using OrderedCollections
 
 using WaveProp.Utils
 
-include("point.jl")
 include("hyperrectangle.jl")
 include("referenceshapes.jl")
 include("entities.jl")
 include("domain.jl")
 include("parametricbody.jl")
 
-export 
+export
     # abstract types
     AbstractReferenceShape,
     AbstractEntity,
-    AbstractParametricBody, 
+    AbstractParametricBody,
     # types
-    ElementaryEntity, 
+    ElementaryEntity,
     ParametricEntity,
     ParametricCurve,
     ClosedEntity,
-    Circle, 
+    Circle,
     Kite,
     Domain,
-    ReferenceLine, 
-    ReferenceTriangle, 
-    ReferenceTetrahedron, 
+    ReferenceLine,
+    ReferenceTriangle,
+    ReferenceTetrahedron,
     ReferenceSquare,
-    HyperRectangle, 
-    SVector, 
+    HyperRectangle,
+    SVector,
     # functions
-    entities, 
-    key, 
-    remove, 
+    entities,
+    key,
+    remove,
     assertequaldim,
-    boundary, 
-    skeleton, 
-    internal_boundary, 
+    boundary,
+    skeleton,
+    internal_boundary,
     external_boundary,
-    domain, 
+    domain,
     parametrization,
-    jacobian, 
-    normal, 
-    ambient_dimension, 
-    geometric_dimension, 
-    bounding_box, 
-    center, 
-    diameter, 
-    radius, 
+    jacobian,
+    normal,
+    ambient_dimension,
+    geometric_dimension,
+    bounding_box,
+    center,
+    diameter,
+    radius,
     low_corner,
     high_corner,
     measure,
     number_of_nodes,
     vertices,
-    line,  
+    line,
     # global variables
     TAGS,
     ENTITIES
-        
+
 end # module

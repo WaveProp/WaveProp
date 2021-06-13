@@ -1,19 +1,19 @@
 """
     abstract type AbstractEntity
-    
+
 Entity of geometrical nature. Identifiable throught its `(dim,tag)` key.
 """
 abstract type AbstractEntity end
 
 """
     struct ElementaryEntity <: AbstractEntity
-    
-The most basic representation of an `AbstractEntity`. 
+
+The most basic representation of an `AbstractEntity`.
 
 # Fields:
 - `dim::UInt8`: the geometrical dimension of the entity (e.g. line has `dim=1`, surface has `dim=2`, etc)
 - `tag::Int64`: an integer tag associated to the entity
-- `boundary::Vector{ElementaryEntity}`: the entities of dimension `dim-1` forming the entity's boundary  
+- `boundary::Vector{ElementaryEntity}`: the entities of dimension `dim-1` forming the entity's boundary
 """
 struct ElementaryEntity <: AbstractEntity
     dim::UInt8
@@ -27,7 +27,7 @@ struct ElementaryEntity <: AbstractEntity
         ent = new(d, t, boundary)
         # every entity gets added to a global variable ENTITIES so that we can
         # ensure the (d,t) pair is a UUID for an entity, and to easily retrieve
-        # different entities. 
+        # different entities.
         _global_add_entity!(ent)
         return ent
     end
@@ -60,14 +60,14 @@ Return the vector of elementary entities making the boundary.
 boundary(ω::ElementaryEntity) = ω.boundary
 
 """
-    ==(Ω1::ElementaryEntity,Ω2::ElementaryEntity) 
+    ==(Ω1::ElementaryEntity,Ω2::ElementaryEntity)
 
 Two elementary entities are considered equal if their `dim` and `tag` fields
 match.
 
 Notice that this implies `dim` and `tag` of an elementary entity should uniquely
 define it, and therefore global variables like [`TAGS`](@ref) are needed to make
-sure newly created `AbstractEntities` have a new `(dim,tag)` identifier. 
+sure newly created `AbstractEntities` have a new `(dim,tag)` identifier.
 """
 function Base.:(==)(Ω1::AbstractEntity, Ω2::AbstractEntity)
     d1,t1 = key(Ω1)
@@ -86,20 +86,20 @@ A geometric entity given by an explicit `parametrization::F` with domain given
 by a singleton type `D`.
 
 This differs from an `ElementaryEntity` in that the underlying representation of
-the geometric entity is available. 
+the geometric entity is available.
 """
 struct ParametricEntity{D,F} <: AbstractEntity
     dim::UInt8
-    tag::Int 
+    tag::Int
     parametrization::F
     function ParametricEntity{D,F}(dim,tag,f::F) where {D,F}
         ent = new{D,F}(dim,tag,f)
         # every entity gets added to a global variable ENTITIES so that we can
         # ensure the (d,t) pair is a UUID for an entity, and to easily retrieve
-        # different entities. 
-        _global_add_entity!(ent)        
+        # different entities.
+        _global_add_entity!(ent)
         return ent
-    end    
+    end
 end
 
 """
@@ -107,7 +107,7 @@ end
 
 A curve defined by the function `f::F`.
 """
-const ParametricCurve{F} = ParametricEntity{ReferenceLine,F} 
+const ParametricCurve{F} = ParametricEntity{ReferenceLine,F}
 
 function Base.reverse(ent::ParametricEntity{D,F}) where {D,F}
     ParametricEntity{D,F}(ent.dim,-ent.tag,ent.parametrization)
@@ -117,17 +117,17 @@ function ParametricEntity{D,F}(f::F) where {D,F}
     d = geometric_dimension(D)
     t = _new_tag(d) # automatically generate a new (valid) tag
     ParametricEntity{D,F}(d,t,f)
-end       
+end
 
 function ParametricEntity(f,d::AbstractReferenceShape)
     F = typeof(f)
     D = typeof(d)
     return ParametricEntity{D,F}(f)
-end  
+end
 ParametricEntity{D}(f) where {D} = ParametricEntity(f,D())
 
 domain(p::ParametricEntity{D}) where {D<:AbstractReferenceShape} = D()
-parametrization(p::ParametricEntity) = p.parametrization 
+parametrization(p::ParametricEntity) = p.parametrization
 
 key(ent::ParametricEntity) = (ent.dim,ent.tag)
 
@@ -136,11 +136,11 @@ boundary(ent::ParametricEntity) = ElementaryEntity[]
 
 function Base.eltype(p::ParametricEntity)
     # NOTE: this relies on the brittle promote_op
-    d = domain(p)    
+    d = domain(p)
     x = center(d)
     f = parametrization(p)
     T = Base.promote_op(f,typeof(x))
-end    
+end
 
 ambient_dimension(p::ParametricEntity)   = length(eltype(p))
 geometric_dimension(p::ParametricEntity) = geometric_dimension(domain(p))
@@ -150,7 +150,7 @@ geometric_dimension(p::ParametricEntity) = geometric_dimension(domain(p))
 jacobian(psurf::ParametricEntity,s::SVector)  = ForwardDiff.jacobian(psurf.parametrization,s::SVector)
 jacobian(psurf::ParametricEntity,s)           = jacobian(psurf,SVector(s))
 
-function normal(ent::AbstractEntity,u)  
+function normal(ent::AbstractEntity,u)
     dim,tag = key(ent)
     s = sign(tag)
     N    = ambient_dimension(ent)
@@ -162,13 +162,13 @@ function normal(ent::AbstractEntity,u)
         ν = SVector(t[2],-t[1])
         return s*ν/norm(ν)
     elseif M == 2 # a surface in 3d
-        j  = jacobian(ent,u)    
+        j  = jacobian(ent,u)
         t₁ = j[:,1]
         t₂ = j[:,2]
         ν  = s*cross(t₁,t₂)
         return ν/norm(ν)
     else
-        notimplemented()    
+        notimplemented()
     end
 end
 
@@ -178,7 +178,7 @@ end
 Create a straight line connecting points `a` and `b`. This returns an instance
 of [`ParametricCurve`](@ref).
 """
-function line(a::SVector,b::SVector) 
+function line(a::SVector,b::SVector)
     f = (u) -> a + u[1]*(b-a)
     ParametricCurve(f)
 end
@@ -189,7 +189,7 @@ line(a,b) = line(SVector(a),SVector(b))
 """
 struct Point{N,T} <: AbstractEntity
     coords::SVector{N,T}
-end    
+end
 
 geometric_dimension(::Type{<:Point}) = 0
 geometric_dimension(pt::Point) = geometric_dimension(typeof(pt))
@@ -212,7 +212,7 @@ ambient_dimension(::Type{<:SVector{N}}) where N = N
 
 Global dictionary storing the used entity tags (the value) for a given dimension
 (the key).
-"""    
+"""
 const TAGS     = OrderedDict{Int,Vector{Int}}()
 
 """
@@ -220,7 +220,7 @@ const TAGS     = OrderedDict{Int,Vector{Int}}()
 
 Global dictionary storing the used entity tags (the value) for a given dimension
 (the key).
-"""    
+"""
 const ENTITIES = OrderedDict{Tuple{Int,Int},AbstractEntity}()
 
 function _global_add_entity!(ent::AbstractEntity)
@@ -230,7 +230,7 @@ function _global_add_entity!(ent::AbstractEntity)
     haskey(ENTITIES,(d,t)) && (@warn msg)
     ENTITIES[(d,t)] = ent
     return d,t
-end    
+end
 
 """
     _new_tag(dim)
@@ -243,40 +243,40 @@ The implementation consists of adding one to the maximum value of `TAGS[dim]`
 
 """
 function _new_tag(dim)
-    if !haskey(TAGS,dim) 
+    if !haskey(TAGS,dim)
         return 1
     else
         tnew = maximum(TAGS[dim]) + 1
-        return tnew    
+        return tnew
     end
 end
 
 function _add_tag!(dim,tag)
     if is_new_tag(dim,tag)
         # now add key
-        if haskey(TAGS,dim)   
+        if haskey(TAGS,dim)
             push!(TAGS[dim],tag)
         else
             TAGS[dim] = [tag,]
         end
     else
         # print warning but don't add duplicate tag
-        msg  = "entity of dimension $dim and tag $tag already exists in TAGS. 
-        Creating a possibly duplicate entity."        
+        msg  = "entity of dimension $dim and tag $tag already exists in TAGS.
+        Creating a possibly duplicate entity."
         @warn msg
-    end    
-    return TAGS    
-end 
+    end
+    return TAGS
+end
 
 function is_new_tag(dim,tag)
     if haskey(TAGS,dim)
         existing_tags = TAGS[dim]
-        if in(tag,existing_tags) 
+        if in(tag,existing_tags)
             return false
         end
     end
     return true
-end  
+end
 
 clear_tags!() = empty!(TAGS)
 clear_entities!() = empty!(ENTITIES)
@@ -285,4 +285,3 @@ function clear!()
     clear_entities!()
     nothing
 end
-

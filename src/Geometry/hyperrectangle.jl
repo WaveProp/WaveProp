@@ -9,7 +9,7 @@ struct HyperRectangle{N,T}
     high_corner::SVector{N,T}
 end
 
-# promote 
+# promote
 HyperRectangle(l::Tuple,h::Tuple) = HyperRectangle(SVector(l),SVector(h))
 HyperRectangle(l::SVector,h::SVector) = HyperRectangle(promote(l,h)...)
 # 1d case

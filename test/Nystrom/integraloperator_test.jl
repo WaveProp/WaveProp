@@ -36,7 +36,7 @@ end
     γ₁u   = γ₁(dudn,mesh)
     𝐒     = SingleLayerOperator(pde,mesh) |> Matrix
     𝐃     = DoubleLayerOperator(pde,mesh) |> Matrix
-    ee    = WaveProp.Nystrom.error_interior_green_identity(𝐒,𝐃,γ₀u,γ₁u) / norm(γ₀u,Inf)  
+    ee    = WaveProp.Nystrom.error_interior_green_identity(𝐒,𝐃,γ₀u,γ₁u) / norm(γ₀u,Inf)
     @test norm(ee,Inf) < 5e-2
 end
 
@@ -52,8 +52,8 @@ end
     mesh = NystromMesh(view(M,Γ);order=1)
     γ₀u   = γ₀(u,mesh)
     γ₁u   = γ₁(dudn,mesh)
-    𝐒     = SingleLayerOperator(pde,mesh) 
-    𝐃     = DoubleLayerOperator(pde,mesh) 
-    ee = WaveProp.Nystrom.error_interior_green_identity(𝐒,𝐃,γ₀u,γ₁u) / norm(γ₀u,Inf)  
+    𝐒     = SingleLayerOperator(pde,mesh)
+    𝐃     = DoubleLayerOperator(pde,mesh)
+    ee = WaveProp.Nystrom.error_interior_green_identity(𝐒,𝐃,γ₀u,γ₁u) / norm(γ₀u,Inf)
     @test norm(ee,Inf) < 5e-2
 end

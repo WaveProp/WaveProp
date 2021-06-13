@@ -20,7 +20,7 @@ entities(Ω::Domain) = Ω.entities
     geometric_dimension(Ω::Domain)
 
 If all entities forming the domain have the same `geometric_dimension`, return
-that value; otherwise throw an assertion error. 
+that value; otherwise throw an assertion error.
 """
 function geometric_dimension(Ω::Domain)
     dims = [geometric_dimension(ent) for ent in entities(Ω)] |> unique!
@@ -47,7 +47,7 @@ skeleton(Ω::Domain) = union(Domain.(boundary.(entities(Ω)))...)
 """
     ===(Ω1::Domain,Ω2::Domain)
 
-Two `Domain`s are equal if all their entities are equal (regardless of order). 
+Two `Domain`s are equal if all their entities are equal (regardless of order).
 """
 function Base.:(==)(Ω1::Domain, Ω2::Domain)
     return issetequal(entities(Ω1),entities(Ω2))
@@ -70,7 +70,7 @@ Base.lastindex(Ω::Domain) = length(Ω)
 """
     iterate()
 
-Iterating over domain means iterating over its entities. 
+Iterating over domain means iterating over its entities.
 """
 function Base.iterate(Ω::Domain, state=1)
     # Check if we are done iterating
@@ -97,11 +97,11 @@ end
     union(Ωs::Domain...)
 
 Union of domains. This does not perform a union on the true geometric objects in
-`entities(Ω)`, but simply on their identification through `(dim,tag)`. 
+`entities(Ω)`, but simply on their identification through `(dim,tag)`.
 """
 function Base.union(Ω1::Domain,Ωs::Domain...)
     Domain(Vector{AbstractEntity}(unique(vcat(entities(Ω1),entities.(Ωs)...))))
-end    
+end
 Base.union(Ω::Domain) = Domain(unique(entities(Ω)))
 
 # NOTE: this version was replaced due to type piracy
@@ -142,7 +142,7 @@ end
 
 function Base.push!(Ω::Domain,ent::ElementaryEntity)
     push!(entities(Ω),ent)
-end    
+end
 
 """
 Determine whether every element of domain Ω1 is also in domain Ω2.
@@ -182,7 +182,7 @@ end
 """
     boundary(Ω)
 
-Return a domain comprising the external boundary of Ω. 
+Return a domain comprising the external boundary of Ω.
 
 See also: [`external_boundary`](@ref)
 """

@@ -35,14 +35,14 @@ end
     T = SVector{3,Float64}
     @test etypes(M) == [LagrangeLine{2,T},LagrangeTriangle{3,T},LagrangeTetrahedron{4,T},T] # mesh composed of gmsh simplices
     # Test internal creation of sphere
-    Ω, M = WaveProp.IO.gmsh_sphere()    
+    Ω, M = WaveProp.IO.gmsh_sphere()
     @test etypes(M) == [LagrangeLine{2,T},LagrangeTriangle{3,T},LagrangeTetrahedron{4,T},T] # mesh composed of gmsh simplices
 end
 
 @testset "Disk" begin
     # Test internal creation of disk
     Geometry.clear!()
-    Ω, M = WaveProp.IO.gmsh_disk()    
+    Ω, M = WaveProp.IO.gmsh_disk()
     T = SVector{2,Float64}
     @test etypes(M) == [LagrangeLine{2,T},LagrangeTriangle{3,T},T] # mesh composed of gmsh simplices
 end

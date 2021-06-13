@@ -2,7 +2,7 @@ using Artifacts
 
 const gmsh_path = artifact"gmsh4.7.0"
 
-const gmsh_dirs      = readdir(gmsh_path,join=true)
+const gmsh_dirs = readdir(gmsh_path,join=true)
 
 @assert length(gmsh_dirs)==1 "there should be only one directory for the untared gmsh file. Got $dirs"
 
@@ -20,7 +20,7 @@ macro gmsh(ex)
     return quote
         gmsh.initialize()
         $(esc(ex))
-        gmsh.finalize()    
+        gmsh.finalize()
     end
 end
 
@@ -31,15 +31,15 @@ Read a `.geo` file and generate a [`GenericMesh`](@ref) together with a
 [`Domain`](@ref) for it using `gmsh`.
 """
 function read_geo(fname;dim=3,h=nothing,order=nothing)
-    assert_extension(fname, ".geo")    
+    assert_extension(fname, ".geo")
     gmsh.initialize()
-    gmsh.open(fname)    
+    gmsh.open(fname)
     h     === nothing || _gmsh_set_meshsize(h)
     order === nothing || _gmsh_set_meshorder(order)
     gmsh.model.mesh.generate(dim)
     Ω = _initialize_domain(dim)
     M = _initialize_mesh(Ω)
-    if dim == 2 
+    if dim == 2
         M = convert_to_2d(M)
     end
     gmsh.finalize()
@@ -50,22 +50,22 @@ end
     read_msh(fname::String)
 
 Similar to [`read_geo`](@ref), but the mesh is simply read from the input file
-instead of generated. 
+instead of generated.
 """
 function read_msh(fname;dim=3)
-    assert_extension(fname, ".msh")    
-    gmsh.initialize()    
+    assert_extension(fname, ".msh")
+    gmsh.initialize()
     gmsh.open(fname)
     Ω = _initialize_domain(dim)
     M = _initialize_mesh(Ω)
-    gmsh.finalize()    
+    gmsh.finalize()
     return Ω, M
-end    
+end
 
 """
     _initialize_domain(d)
 
-Construct a `Domain` from the current `gmsh` model, starting from entities of dimension `d`. 
+Construct a `Domain` from the current `gmsh` model, starting from entities of dimension `d`.
 
 This is a helper function, and should not be called by itself since it assumes that `gmsh` has been initialized.
 """
@@ -75,19 +75,19 @@ function _initialize_domain(dim)
     for (_, tag) in dim_tags
         if haskey(ENTITIES,(dim,tag))
             ent = ENTITIES[(dim,tag)]
-        else    
+        else
             ent = ElementaryEntity(dim, tag)
             _fill_entity_boundary!(ent)
         end
         push!(Ω, ent)
-    end        
+    end
     return Ω
 end
 
 """
     _fill_entity_boundary!
 
-Use the `gmsh` API to add the boundary of an `ElementaryEntity`. 
+Use the `gmsh` API to add the boundary of an `ElementaryEntity`.
 
 This is a helper function, and should not be called by itself since it assumes that `gmsh` has been initialized.
 """
@@ -100,12 +100,12 @@ function _fill_entity_boundary!(ent)
             bnd = ENTITIES[(d,t)]
         else
             bnd = ElementaryEntity(d, t)
-            _fill_entity_boundary!(bnd)    
-        end    
+            _fill_entity_boundary!(bnd)
+        end
         push!(ent.boundary, bnd)
-    end    
+    end
     return ent
-end    
+end
 
 """
     _initialize_mesh(Ω::Domain)
@@ -134,7 +134,7 @@ function _domain_to_mesh!(elements, ent2tag, Ω::Domain)
     isempty(Ω) && (return elements, ent2tag)
     for ω in Ω
         _ent_to_mesh!(elements, ent2tag, ω)
-    end    
+    end
     Γ = skeleton(Ω)
     _domain_to_mesh!(elements, ent2tag, Γ)
 end
@@ -170,10 +170,10 @@ function _ent_to_mesh!(elements, ent2tag, ω::ElementaryEntity)
         end
         push!(elements, etype => ntags)
         push!(etypes_to_etags, etype => etag)
-    end    
+    end
     push!(ent2tag, ω => etypes_to_etags)
     return elements, ent2tag
-end    
+end
 
 """
     gmsh_disk(;rx=0.5,ry=0.5,center=(0,0,0)) -> Ω, M
@@ -193,7 +193,7 @@ function gmsh_disk(;rx=0.5,ry=0.5,center=(0.,0.,0.),dim=2,h=min(rx,ry)/10,order=
     M = convert_to_2d(M)
     gmsh.finalize()
     return Ω,M
-end    
+end
 
 """
     gmsh_sphere(;radius=0.5,center=(0,0,0),dim=3,h=radius/10,order=1) -> Ω, M
@@ -213,7 +213,7 @@ function gmsh_sphere(;radius=0.5,center=(0., 0., 0.),dim=3,h=radius/10,order=1,r
     M = _initialize_mesh(Ω)
     gmsh.finalize()
     return Ω, M
-end    
+end
 
 """
     gmsh_box(;origin=(0,0,0),widths=(0,0,0)) -> Ω, M
@@ -230,9 +230,9 @@ function gmsh_box(;origin=(0., 0., 0.),widths=(1., 1., 1.),h=0.1)
         M = _initialize_mesh(Ω)
     end
     return Ω, M
-end    
+end
 
-""" 
+"""
     gmsh_rectangle(;origin,widths)
 """
 function gmsh_rectangle(;origin=(0.,0.,0.),dx=1,dy=1,dim=2,h=0.1)
@@ -243,7 +243,7 @@ function gmsh_rectangle(;origin=(0.,0.,0.),dx=1,dy=1,dim=2,h=0.1)
         gmsh.model.mesh.generate(dim)
         Ω = _initialize_domain(dim)
         M = _initialize_mesh(Ω)
-        if dim == 2 
+        if dim == 2
             M = convert_to_2d(M)
         end
     end
@@ -259,7 +259,7 @@ function _gmsh_set_meshorder(order)
     gmsh.option.setNumber("Mesh.ElementOrder", order)
 end
 
-function _gmsh_set_verbosity(i) 
+function _gmsh_set_verbosity(i)
     gmsh.option.setNumber("General.Verbosity",i)
 end
 
@@ -291,24 +291,24 @@ Mapping of `gmsh` element types, encoded as an integer, to the internal
 equivalent of those. This function assumes `gmsh` has been initilized.
 """
 function _type_tag_to_etype(tag)
-    T = Float64    
+    T = Float64
     name,dim,order,num_nodes,ref_nodes,num_primary_nodes  = gmsh.model.mesh.getElementProperties(tag)
     num_nodes = Int(num_nodes) #convert to Int64
     if occursin("Point",name)
-        etype = SVector{3,T}    
+        etype = SVector{3,T}
     elseif occursin("Line",name)
-    etype = LagrangeLine{num_nodes,SVector{3,T}} 
-    elseif occursin("Triangle",name)            
+    etype = LagrangeLine{num_nodes,SVector{3,T}}
+    elseif occursin("Triangle",name)
         etype = LagrangeTriangle{num_nodes,SVector{3,T}}
     elseif occursin("Quadrilateral",name)
         etype = LagrangeRectangle{num_nodes,SVector{3,T}}
     elseif occursin("Tetrahedron",name)
         etype = LagrangeTetrahedron{num_nodes,SVector{3,T}}
     else
-        error("gmsh element of family $name does not an internal equivalent")    
-    end    
-    return etype 
-end    
+        error("gmsh element of family $name does not an internal equivalent")
+    end
+    return etype
+end
 
 """
     _etype_to_type_tag(etype)
@@ -323,12 +323,12 @@ function _etype_to_type_tag(el::LagrangeElement)
         E   = _type_tag_to_etype(tag)
         E === etype && (return tag)
         tag = tag + 1
-    end    
-end    
+    end
+end
 
 # use gmsh API to extract the reference nodes
 # TODO: we should just code these internally at some point instead of relying on
-# gmsh. 
+# gmsh.
 @generated function reference_nodes(el::LagrangeElement{ReferenceLine})
     gmsh.initialize()
     p           = Geometry.order(el)
@@ -339,7 +339,7 @@ end
     gmsh.finalize()
     ref_nodes = SVector{num_nodes}(ref_nodes)
     return :($ref_nodes)
-end    
+end
 
 @generated function reference_nodes(el::LagrangeElement{ReferenceTriangle})
     gmsh.initialize()
@@ -352,9 +352,9 @@ end
     gmsh.finalize()
     sref_nodes = svector(num_nodes) do i
         SVector{2}(ref_nodes[:,i])
-    end    
+    end
     return :($sref_nodes)
-end    
+end
 
 
 """
@@ -375,22 +375,22 @@ Some important points to keep in mind (which makes this *hacky*):
 - **No guarantee is given on the quality of the parametrization**. For instance, a
   sphere may be parametrized using spherical coordinates, for which a geometric
   singularity exists at the poles. For complex surfaces, it is typically much
-  better to simply mesh the surface using `gmsh` and then import the file. 
+  better to simply mesh the surface using `gmsh` and then import the file.
 
 Conclusion: although I expect this functionality to become more useful in the
 future for e.g. doing isogeometric analysis, for the moment **it should be used
-with extreme caution**.  
+with extreme caution**.
 """
 struct GmshParametricEntity{M} <: AbstractEntity
     tag::Int
     domain::HyperRectangle{M,Float64}
     function GmshParametricEntity{M}(tag,domain) where {M}
-        dim = M    
+        dim = M
         ent = new{M}(dim,domain)
         _global_add_entity!(ent)
         return ent
     # TODO: throw a warning if the surface is trimmed
-    end    
+    end
 end
 
 function GmshParametricEntity(dim::Int,tag::Int,model=gmsh.model.getCurrent())

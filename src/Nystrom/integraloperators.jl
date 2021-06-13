@@ -55,19 +55,19 @@ AdjointDoubleLayerOperator(op::AbstractPDE,X,Y=X) = IntegralOperator(AdjointDoub
 HyperSingularOperator(op::AbstractPDE,X,Y=X)      = IntegralOperator(HyperSingularKernel(op),X,Y)
 
 ambient_dimension(iop::IntegralOperator) = ambient_dimension(iop.kernel)
- 
+
 
 function isinside(x::SVector,mesh::NystromMesh)
-    N   = ambient_dimension(mesh)     
+    N   = ambient_dimension(mesh)
     pde = Laplace(dim=N)
     K   = DoubleLayerKernel(pde)
     y   = qnodes(mesh)
-    ν   = qnormals(mesh)   
-    w   = qweights(mesh)  
+    ν   = qnormals(mesh)
+    w   = qweights(mesh)
     u   = sum(zip(y,ν,w)) do (y,ν,w)
          K(x,y,ν)*w
-    end  
-    u + 0.5 < 0 
+    end
+    u + 0.5 < 0
 end
 isinside(x::Tuple,mesh::NystromMesh) = isinside(SVector(x),mesh)
 

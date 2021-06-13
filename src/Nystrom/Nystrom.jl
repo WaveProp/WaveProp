@@ -11,8 +11,8 @@ using OrderedCollections
 
 using WaveProp.Utils
 using WaveProp.Geometry
-using WaveProp.Integration 
-using WaveProp.Integration 
+using WaveProp.Integration
+using WaveProp.Integration
 using WaveProp.Mesh
 using WaveProp.PhysicalProblem
 
@@ -20,30 +20,30 @@ import WaveProp.Geometry: geometric_dimension, ambient_dimension, domain, range
 import WaveProp.Integration: singular_weights, qnodes, qweights, qnormals
 import WaveProp.Mesh: etypes, elements
 
-export 
-    Laplace, 
-    Helmholtz, 
+export
+    Laplace,
+    Helmholtz,
     Elastostatic,
     Stokes,
     Maxwell,
-    SingleLayerKernel, 
-    DoubleLayerKernel, 
-    IntegralOperator, 
-    NystromMesh, 
-    Density, 
-    γ₀, 
-    γ₁, 
-    SingleLayerPotential, 
-    DoubleLayerPotential, 
-    SingleLayerOperator, 
-    DoubleLayerOperator, 
+    SingleLayerKernel,
+    DoubleLayerKernel,
+    IntegralOperator,
+    NystromMesh,
+    Density,
+    γ₀,
+    γ₁,
+    SingleLayerPotential,
+    DoubleLayerPotential,
+    SingleLayerOperator,
+    DoubleLayerOperator,
     AdjointDoubleLayerOperator,
     HyperSingularOperator,
-    GreensCorrection, 
-    singular_weights_dim, 
-    single_double_layer, 
-    isinside, 
-    NystromMesh, 
+    GreensCorrection,
+    singular_weights_dim,
+    single_double_layer,
+    isinside,
+    NystromMesh,
     dom2dof,
     assemble
 

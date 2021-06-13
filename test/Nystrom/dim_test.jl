@@ -18,8 +18,8 @@ using WaveProp.Mesh
         mesh = NystromMesh(view(M,Γ);order=2)
         γ₀u   = γ₀(u,mesh)
         γ₁u   = γ₁(dudn,mesh)
-        S     = SingleLayerOperator(pde,mesh) 
-        D     = DoubleLayerOperator(pde,mesh) 
+        S     = SingleLayerOperator(pde,mesh)
+        D     = DoubleLayerOperator(pde,mesh)
         e0    = WaveProp.Nystrom.error_interior_green_identity(S,D,γ₀u,γ₁u)
         Sdim  = Nystrom.assemble_dim(S)
         Ddim  = Nystrom.assemble_dim(D)
@@ -49,8 +49,8 @@ using WaveProp.Mesh
         mesh = NystromMesh(view(M,Γ);order=2)
         γ₀u   = γ₀(u,mesh)
         γ₁u   = γ₁(dudn,mesh)
-        S     = SingleLayerOperator(pde,mesh) 
-        D     = DoubleLayerOperator(pde,mesh) 
+        S     = SingleLayerOperator(pde,mesh)
+        D     = DoubleLayerOperator(pde,mesh)
         e0    = WaveProp.Nystrom.error_interior_green_identity(S,D,γ₀u,γ₁u)
         Sdim  = Nystrom.assemble_dim(S)
         Ddim  = Nystrom.assemble_dim(D)
@@ -75,14 +75,16 @@ using WaveProp.Mesh
         u    = (x)   -> SingleLayerKernel(pde)(xout,x)*c
         dudn = (x,n) -> transpose(DoubleLayerKernel(pde)(xout,x,n))*c
         Geometry.clear!()
-        Ω,M  = WaveProp.IO.gmsh_sphere(dim=2,h=0.2)
-        Γ    = boundary(Ω)
-        mesh = NystromMesh(view(M,Γ);order=2)
+        geo    = WaveProp.Geometry.Sphere()
+        Ω   = Domain(geo)
+        Γ   = boundary(Ω)
+        M = meshgen(Ω;h=10,n=16)
+        mesh = NystromMesh(view(M,Γ);order=3)
         γ₀u   = γ₀(u,mesh)
         normals = mesh.qnormals
         γ₁u   = γ₁(dudn,mesh)
-        S     = SingleLayerOperator(pde,mesh) 
-        D     = DoubleLayerOperator(pde,mesh) 
+        S     = SingleLayerOperator(pde,mesh)
+        D     = DoubleLayerOperator(pde,mesh)
         e0    = WaveProp.Nystrom.error_interior_green_identity(S,D,γ₀u,γ₁u)
         Sdim  = Nystrom.assemble_dim(S)
         Ddim  = Nystrom.assemble_dim(D)
@@ -91,6 +93,7 @@ using WaveProp.Mesh
         S,D   = Nystrom.single_doublelayer_dim(pde,mesh)
         e2    = WaveProp.Nystrom.error_interior_green_identity(S,D,γ₀u,γ₁u)
         @test e1 ≈ e2
+        norm(norm.(e1,Inf),Inf) / norm(norm(γ₀u,Inf),Inf)
     end
 end
 
@@ -112,11 +115,11 @@ end
     mesh    = NystromMesh(M,Γ,e2qrule)
     γ₀u   = γ₀(u,mesh)
     γ₁u   = γ₁(dudn,mesh)
-    S     = SingleLayerOperator(pde,mesh) 
-    D     = DoubleLayerOperator(pde,mesh) 
+    S     = SingleLayerOperator(pde,mesh)
+    D     = DoubleLayerOperator(pde,mesh)
     Smk   = Nystrom.assemble_dim(S)
     Dmk   = Nystrom.assemble_dim(D)
-    e0    = WaveProp.Nystrom.error_interior_green_identity(S,D,γ₀u,γ₁u)    
+    e0    = WaveProp.Nystrom.error_interior_green_identity(S,D,γ₀u,γ₁u)
     e1 = WaveProp.Nystrom.error_interior_green_identity(Smk,Dmk,γ₀u,γ₁u)
     @test norm(e0,Inf) > 1e-5
     @test norm(e1,Inf) < 1e-5
@@ -144,11 +147,11 @@ end
     Γ2_mesh   = Γ_mesh[Γ[2]]
     γ₀u   = γ₀(u,Γ2_mesh)
     γ₁u   = γ₁(dudn,Γ2_mesh)
-    S     = SingleLayerOperator(pde,Γ2_mesh) 
-    D     = DoubleLayerOperator(pde,Γ2_mesh) 
+    S     = SingleLayerOperator(pde,Γ2_mesh)
+    D     = DoubleLayerOperator(pde,Γ2_mesh)
     Smk   = Nystrom.assemble_dim(S)
     Dmk   = Nystrom.assemble_dim(D)
-    e0    = WaveProp.Nystrom.error_interior_green_identity(S,D,γ₀u,γ₁u)    
+    e0    = WaveProp.Nystrom.error_interior_green_identity(S,D,γ₀u,γ₁u)
     e1 = WaveProp.Nystrom.error_interior_green_identity(Smk,Dmk,γ₀u,γ₁u)
     @test norm(e0,Inf) > 1e-5
     @test norm(e1,Inf) < 1e-5

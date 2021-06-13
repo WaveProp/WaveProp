@@ -1,21 +1,21 @@
 """
     abstract type AbstractParametricBody <: AbstractEntity
-    
+
 An `AbstractEntity` for which a parametric representation of the boundary is
-available. 
+available.
 """
 abstract type AbstractParametricBody <: AbstractEntity end
 
 boundary(ent::AbstractParametricBody) = ent.boundary
 
 function ambient_dimension(ent::AbstractParametricBody)
-    bnd = boundary(ent)    
+    bnd = boundary(ent)
     d   = ambient_dimension(first(bnd))
-    msg = "all entities on the boundary of a body must 
+    msg = "all entities on the boundary of a body must
             have the same ambient dimension"
     @assert all(b->ambient_dimension(b)==d,bnd) msg
     return d
-end    
+end
 
 """
     ClosedEntity <: AbstractParametricBody
@@ -30,17 +30,17 @@ struct ClosedEntity <: AbstractParametricBody
         ent = new(d, t, bnd)
         _global_add_entity!(ent)
         return ent
-    end        
+    end
 end
 
 function ClosedEntity(boundary::Vector{<:ParametricEntity})
-    dims = geometric_dimension.(boundary) 
+    dims = geometric_dimension.(boundary)
     d    = dims[1]
     @assert all(i->i==d,dims)
     d = d+1 # dimension of body is one greater than dimension of its boundary
     t = _new_tag(d)
     ClosedEntity(d, t, boundary)
-end    
+end
 ClosedEntity(boundary::ParametricEntity) = ClosedEntity([boundary,])
 ClosedEntity(;boundary::Vector{<:ParametricEntity}) = ClosedEntity(boundary)
 
@@ -56,10 +56,10 @@ struct Circle <: AbstractParametricBody
     boundary::Vector{ParametricEntity}
     function Circle(t,c,r,bnd)
         d = 2
-        ent = new(t,c,r,bnd)    
+        ent = new(t,c,r,bnd)
         _global_add_entity!(ent)
         return ent
-    end    
+    end
 end
 
 function Circle(;center=(0, 0),radius=1)
@@ -75,16 +75,16 @@ geometric_dimension(ent::Circle) = 2
 
 struct Kite <: AbstractParametricBody
     # dim = 2
-    tag::Int    
+    tag::Int
     center::SVector{2,Float64}
     radius::Float64
     boundary::Vector{ParametricEntity}
     function Kite(t,c,r,bnd)
         d   = 2
-        ent = new(t,c,r,bnd)    
+        ent = new(t,c,r,bnd)
         _global_add_entity!(ent)
         return ent
-    end    
+    end
 end
 
 function Kite(;radius=1,center=(0, 0))
@@ -100,16 +100,16 @@ geometric_dimension(ent::Kite) = 2
 
 struct Droplet <: AbstractParametricBody
     # dim = 2
-    tag::Int    
+    tag::Int
     center::SVector{2,Float64}
     radius::Float64
     boundary::Vector{ParametricEntity}
     function Droplet(t,c,r,bnd)
         d   = 2
-        ent = new(t,c,r,bnd)    
+        ent = new(t,c,r,bnd)
         _global_add_entity!(ent)
         return ent
-    end    
+    end
 end
 
 function Droplet(;radius=1,center=(0,0))
@@ -118,22 +118,22 @@ function Droplet(;radius=1,center=(0,0))
     surf   = ParametricEntity(f, domain)
     t      = _new_tag(2)
     return Droplet(t,center, radius, [surf])
-end    
+end
 key(ent::Droplet) = (2,ent.tag)
 geometric_dimension(ent::Droplet) = 2
 
 struct Boomerang <: AbstractParametricBody
     # dim = 2
-    tag::Int    
+    tag::Int
     center::SVector{2,Float64}
     radius::Float64
     boundary::Vector{ParametricEntity}
     function Boomerang(t,c,r,bnd)
         d   = 2
-        ent = new(t,c,r,bnd)    
+        ent = new(t,c,r,bnd)
         _global_add_entity!(ent)
         return ent
-    end    
+    end
 end
 
 function Boomerang(;radius=1,center=(0,0))
@@ -142,7 +142,7 @@ function Boomerang(;radius=1,center=(0,0))
     surf   = ParametricEntity(f, domain)
     t      = _new_tag(2)
     return Droplet(t,center, radius, [surf])
-end    
+end
 key(ent::Boomerang) = (2,ent.tag)
 geometric_dimension(ent::Boomerang) = 2
 
@@ -172,10 +172,10 @@ struct Sphere <: AbstractParametricBody
     boundary::Vector{ParametricEntity}
     function Sphere(t,c,r,bnd)
         d = 3
-        ent = new(t,c,r,bnd)    
+        ent = new(t,c,r,bnd)
         _global_add_entity!(ent)
         return ent
-    end    
+    end
 end
 
 function Sphere(;center=(0, 0,0),radius=1)
@@ -201,10 +201,10 @@ struct Cube <: AbstractParametricBody
     boundary::Vector{ParametricEntity}
     function Cube(t,c,p,bnd)
         d = 3
-        ent = new(t,c,p,bnd)    
+        ent = new(t,c,p,bnd)
         _global_add_entity!(ent)
         return ent
-    end    
+    end
 end
 
 function Cube(;origin=SVector(0,0,0),paxis=(1,1,1))

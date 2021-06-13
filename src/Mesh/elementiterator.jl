@@ -6,7 +6,7 @@ type `M`.
 """
 struct ElementIterator{E,M} <: AbstractVector{E}
     mesh::M
-end  
+end
 
 ElementIterator{E}(mesh::M) where {E,M <: AbstractMesh} = ElementIterator{E,M}(mesh)
 ElementIterator(mesh,E) = ElementIterator{E}(mesh)
@@ -15,48 +15,48 @@ mesh(iter::ElementIterator) = iter.mesh
 
 function Base.getindex(iter::ElementIterator,I)
     @assert eltype(I) <: Integer
-    map(i->iter[i],I)    
-end    
+    map(i->iter[i],I)
+end
 
 function Base.size(iter::ElementIterator{<:LagrangeElement,<:GenericMesh})
-    msh               = mesh(iter)    
-    E                 = eltype(iter)    
+    msh               = mesh(iter)
+    E                 = eltype(iter)
     tags::Matrix{Int} = msh.elements[E]
     Np, Nel           = size(tags)
     return (Nel,)
-end    
+end
 
 function Base.getindex(iter::ElementIterator{<:LagrangeElement,<:GenericMesh},i::Int)
-    E                   = eltype(iter)    
-    mesh                = iter.mesh    
+    E                   = eltype(iter)
+    mesh                = iter.mesh
     tags::Matrix{Int}   = mesh.elements[E]
     node_tags           = view(tags,:,i)
     vtx                 = view(mesh.nodes,node_tags)
-    el                  = E(vtx)    
+    el                  = E(vtx)
     return el
-end    
+end
 
 function Base.size(iter::ElementIterator{<:ParametricElement,<:GenericMesh})
     E               = eltype(iter)
-    mesh            = iter.mesh    
-    tags::Vector{E} = mesh.elements[E]    
+    mesh            = iter.mesh
+    tags::Vector{E} = mesh.elements[E]
     return (length(iter.mesh.elements[E]),)
-end    
+end
 
 function Base.getindex(iter::ElementIterator{<:ParametricElement,<:GenericMesh},i::Int)
     E               = eltype(iter)
-    mesh            = iter.mesh    
-    els::Vector{E} = mesh.elements[E]    
+    mesh            = iter.mesh
+    els::Vector{E} = mesh.elements[E]
     return els[i]
-end    
+end
 
 # iterator for submesh
 function Base.size(iter::ElementIterator{<:AbstractElement,<:SubMesh})
-    E          = eltype(iter)        
+    E          = eltype(iter)
     submesh    = iter.mesh
     idxs       = dom2elt(submesh,E)
     return (length(idxs),)
-end  
+end
 
 function Base.getindex(iter::ElementIterator{<:AbstractElement,<:SubMesh},i::Int)
     E      = eltype(iter)
@@ -65,7 +65,7 @@ function Base.getindex(iter::ElementIterator{<:AbstractElement,<:SubMesh},i::Int
     iglob  = dom2elt(msh,E)[i] # global index of element in parent mesh
     iter = ElementIterator(p_msh,E)
     return iter[iglob]
-end    
+end
 
 ElementIterator(m::CartesianMesh) = ElementIterator(m,etype(m))
 
@@ -74,11 +74,11 @@ ElementIterator(m::CartesianMesh) = ElementIterator(m,etype(m))
 # AbstractMatrix and not AbstractVector since these are more naturally indexed
 # as matrices. Also this should be made generic on the dimension
 function Base.size(iter::ElementIterator{<:Any,<:CartesianMesh})
-    E       = eltype(iter)    
+    E       = eltype(iter)
     grids   = grid1d(iter.mesh)
     sz      = size(iter.mesh) .- 1
     return (prod(sz),)
-end    
+end
 
 # 1d case
 function Base.getindex(iter::ElementIterator{<:Any,<:CartesianMesh{1}}, i::Int)
@@ -88,18 +88,18 @@ function Base.getindex(iter::ElementIterator{<:Any,<:CartesianMesh{1}}, i::Int)
     high_corner = (xx[i+1], )
     el          = E(low_corner,high_corner) # construct the element
     return el
-end    
+end
 
 # 2d case
 function Base.getindex(iter::ElementIterator{<:Any,<:CartesianMesh{2}}, i::Int,j::Int)
-    E      = eltype(iter)    
+    E      = eltype(iter)
     xx     = xgrid(iter.mesh)
     yy     = ygrid(iter.mesh)
     low_corner = (xx[i],yy[j])
     high_corner = (xx[i+1],yy[j+1])
     el  = E(low_corner,high_corner) # construct the element
     return el
-end    
+end
 
 function Base.getindex(iter::ElementIterator{<:Any,<:CartesianMesh{2}}, I::Int)
     sz  = size(iter.mesh) .- 1
@@ -107,11 +107,11 @@ function Base.getindex(iter::ElementIterator{<:Any,<:CartesianMesh{2}}, I::Int)
     iter[idx[1],idx[2]]
 end
 
-function Base.iterate(iter::ElementIterator{<:Any,<:CartesianMesh},state=1) 
-    n = length(iter)    
+function Base.iterate(iter::ElementIterator{<:Any,<:CartesianMesh},state=1)
+    n = length(iter)
     if state > n
-        return nothing    
-    else    
+        return nothing
+    else
         iter[state],state+1
-    end    
-end    
+    end
+end

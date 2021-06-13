@@ -1,11 +1,11 @@
 function (SL::SingleLayerKernel{T,S})(x,y)::T  where {T,S<:Maxwell}
-    N = ambient_dimension(S)    
+    N = ambient_dimension(S)
     x==y && return zero(T)
     k = SL.op.k
     r = x - y
     d = norm(r)
     if N==2
-        return error("Maxwell operator not implemented in 2d")
+        return error("Maxwell operator only valid in 3d")
     elseif N==3
         g   = 1/(4π)/d * exp(im*k*d)
         gp  = im*k*g - g/d
@@ -19,7 +19,7 @@ end
 # Double Layer Kernel
 # n × ∇ × G = γ₁ G
 function (DL::DoubleLayerKernel{T,S})(x,y,ny)::T where {T,S<:Maxwell}
-    N = ambient_dimension(S)    
+    N = ambient_dimension(S)
     x==y && return zero(T)
     k = DL.op.k
     r = x - y
@@ -37,6 +37,6 @@ function (DL::DoubleLayerKernel{T,S})(x,y,ny)::T where {T,S<:Maxwell}
                                          r[3],0,-r[1],
                                          -r[2],r[1],0))
         # return -gp/d*ncross*rcross
-        return gp/d*rcross*ncross
+        return -gp/d*rcross*ncross
     end
 end

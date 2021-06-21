@@ -3,8 +3,8 @@
 
 Methods for integrating over instances of [`AbstractReferenceShape`](@ref).
 
-Besides some standard quadrature rules used in the `FEM` module, this module also
-defines singular integration routines useful for (weakly) singular integrands.
+Besides some standard quadrature rules used in the `FEM` module, also defines
+singular integration routines useful for (weakly) singular integrands.
 
 Exports:
 $(EXPORTS)
@@ -16,21 +16,13 @@ using StaticArrays
 using QuadGK
 using LinearAlgebra
 
-import QuadGK: quadgk
-import HCubature: hcubature
-
 using WaveProp.Utils
 using WaveProp.Geometry
 using WaveProp.Interpolation
 
-import WaveProp.Geometry:
-    domain,
-    range,
-    ambient_dimension,
-    geometric_dimension,
-    jacobian
-
-import WaveProp.Interpolation: barycentric_lagrange_weights
+# import all methods in WaveProp.INTERFACE_METHODS
+using WaveProp
+WaveProp.@import_interface
 
 export
     # abstract types
@@ -57,9 +49,8 @@ export
     singular_quadrature,
     TensorProductSingularityHandler
 
+include("quadrulestables.jl")
 include("quadrule.jl")
-include("quadgk.jl")
-include("hcubature.jl")
 include("singularityhandler.jl")
 include("singularquadrule.jl")
 

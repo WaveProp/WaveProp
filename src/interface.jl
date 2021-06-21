@@ -39,6 +39,15 @@ function geometric_dimension end
 push!(INTERFACE_METHODS,:geometric_dimension)
 
 """
+    dimension(space)
+
+The length of a basis for `space`; i.e. the number of linearly independent elements
+required to span `space`.
+"""
+function dimension end
+push!(INTERFACE_METHODS,:dimension)
+
+"""
     tag(::AbstractEntity)
 
 Integer tag commonly used to idetify geometrical entities.
@@ -97,6 +106,7 @@ push!(INTERFACE_METHODS,:jacobian)
 
 """
     normal(el,x̂)
+    normal(jac::SMatrix)
 
 The unit normal vector at coordinate `x̂`, guaranteed to be orthogonal to all
 columns of `jacobian(el,x)`.

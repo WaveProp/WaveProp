@@ -13,7 +13,7 @@ include("Geometry/Geometry.jl")
 
 include("Interpolation/Interpolation.jl")
 
-# include("Integration/Integration.jl")
+include("Integration/Integration.jl")
 
 # include("Mesh/Mesh.jl")
 

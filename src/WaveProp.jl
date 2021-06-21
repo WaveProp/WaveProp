@@ -9,9 +9,9 @@ include("interface.jl")
 
 include("Utils/Utils.jl")
 
-# include("Geometry/Geometry.jl")
+include("Geometry/Geometry.jl")
 
-# include("Interpolation/Interpolation.jl")
+include("Interpolation/Interpolation.jl")
 
 # include("Integration/Integration.jl")
 
@@ -24,5 +24,8 @@ include("Utils/Utils.jl")
 # include("FEM/FEM.jl")
 
 # include("IO/IO.jl")
+
+# export all methods in INTERFACE_METHODS
+@export_interface
 
 end # module

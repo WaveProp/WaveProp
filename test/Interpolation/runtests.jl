@@ -1,4 +1,6 @@
 using Test
 using SafeTestsets
 
-@safetestset "Polynomial basis" begin include("polynomialbasis_test.jl") end
+@safetestset "Polynomials" begin include("polynomials_test.jl") end
+
+@safetestset "Tensor lagrange interpolant" begin include("tensorlaginterp_test.jl") end

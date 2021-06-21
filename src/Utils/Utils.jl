@@ -10,7 +10,13 @@ using StaticArrays
 
 using WaveProp
 
+# import all methods in WaveProp.INTERFACE_METHODS
+WaveProp.@import_interface
+
 export
+    # Type alises
+    SType,
+    # methods
     svector,
     matrix_to_blockmatrix,
     blockmatrix_to_matrix,
@@ -91,7 +97,6 @@ size of `B` along each dimension.
 function vector_to_blockvector(A::Vector,B::Type{<:SVector})
     @assert eltype(A) == eltype(B)
     @assert sum(size(A) .% size(B)) == 0 "block size $(size(B)) not compatible with size of A=$(size(A))"
-    T = eltype(B)
     reinterpret(B,A) |> collect
 end
 
@@ -110,9 +115,10 @@ end
 A method of an `abstract type` for which concrete subtypes are expected
 to provide an implementation.
 """
-function abstractmethod(T)
+function abstractmethod(T::DataType)
     error("this method needs to be implemented by the concrete subtype $T.")
 end
+abstractmethod(x) = abstractmethod(typeof(x))
 
 """
     assert_extension(fname,ext,[msg])
@@ -128,13 +134,160 @@ function assert_concrete_type(T::DataType)
     isconcretetype(T) || throw(ConcreteInferenceError(T))
 end
 
-function debug(mod="WaveProp")
-    @eval ENV["JULIA_DEBUG"] = $(mod)
+"""
+    enable_debug(mname)
+
+Activate debugging messages.
+"""
+function enable_debug()
+    ENV["JULIA_DEBUG"] = WaveProp
 end
 
 struct ConcreteInferenceError <: Exception
     T
 end
+
 Base.showerror(io::IO, e::ConcreteInferenceError) = print(io, "unable to infer concrete type from function signature: T=$(e.T)" )
+
+"""
+    print_threads_info()
+
+Prints in console the total number of threads.
+"""
+function print_threads_info()
+    @info "Number of threads: $(Threads.nthreads())"
+end
+
+"""
+    const Point1D
+    const Point1D(x1)
+
+A point in 1D space, stored in a StaticArray.
+Point1D = SVector{1, Float64}.
+"""
+const Point1D = SVector{1, Float64}
+
+"""
+    const Point2D
+    const Point2D(x1, x2)
+    const Point2D(x::NTuple{2, Float64})
+
+A point in 2D space, stored in a StaticArray.
+Point2D = SVector{2, Float64}.
+"""
+const Point2D = SVector{2, Float64}
+
+"""
+    const Point3D
+    const Point3D(x1, x2, x3)
+    const Point3D(x::NTuple{3, Float64})
+
+A point in 3D space, stored in a StaticArray.
+Point3D = SVector{3, Float64}.
+"""
+const Point3D = SVector{3, Float64}
+
+"""
+    const ComplexPoint3D
+    const ComplexPoint3D(x1, x2, x3)
+    const ComplexPoint3D(x::NTuple{3, ComplexF64})
+
+A complex 3D point, stored in a StaticArray.
+ComplexPoint3D = SVector{3, ComplexF64}.
+"""
+const ComplexPoint3D = SVector{3, ComplexF64}
+
+"""
+    const ComplexPoint2D
+    const ComplexPoint2D(x1, x2)
+    const ComplexPoint2D(x::NTuple{2, ComplexF64})
+
+A complex 2D point, stored in a StaticArray.
+ComplexPoint2D = SVector{2, ComplexF64}.
+"""
+const ComplexPoint2D = SVector{2, ComplexF64}
+
+"""
+    const SType{T} = Union{T,Type{T}}
+
+Union type of `T` and its data type `Type{T}`. Used to simplify methods defined
+on singleton types where both `foo(::T)` and `foo(::Type{T})` are required.
+"""
+const SType{T} = Union{T,Type{T}}
+
+"""
+    sort_by_type(v)
+
+Sort the elements of `v` into vectors `vi` according to their type. Return a
+`Dict{DataType,Vector}` mapping each type to a vector of that type.
+
+# Examples
+```julia
+v = [1,"a",3,"b"]
+dict = sort_by_type(v)
+```
+"""
+function sort_by_type(v)
+    dict = Dict{DataType,Vector}()
+    for el in v
+        T = typeof(el)
+        vi = get!(dict,T) do
+            T[]
+        end
+        push!(vi,el)
+    end
+    return dict
+end
+
+"""
+    @interface f [n=1]
+
+Declare that the function `f` is an interface function. The call
+`f(args...)` resolves to `M.f(args...)` where `M` is parent module of the
+`args[n]` object.
+
+The somewhat contrived example below illustrates how this can be used to have a
+generic method defined in module `A` applied to a type defined on module `B`
+which is independent of `A` but which implements the interface
+function `f`:
+```jldoctest
+module A
+    using WavePropBase
+    WavePropBase.@interface foo
+    # a method which works on any type `x` implementing the `foo` function
+    do_work(x) = 2*foo(x)
+end
+
+module B
+    struct Foo end
+    foo(x::Foo) = 1
+end
+
+using .A
+using .B
+foo = B.Foo()
+A.do_work(foo)
+
+# output
+
+2
+```
+
+Note that if in the example above module `A` implements a generic version of
+`foo`, the call `A.do_work(foo)` would use that method instead based on the
+dispatch rules.
+"""
+macro interface(f,n=1)
+    ex = quote
+        @generated function $f(args...)
+            M = parentmodule(args[$n])
+            hasmethod(M.$f,args) || error("function `$(M.$f)` must be implemented in module `$M`")
+            return quote
+                $(M.$f)(args...)
+            end
+        end
+    end
+    return esc(ex)
+end
 
 end # module

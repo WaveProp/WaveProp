@@ -7,7 +7,7 @@ using DocStringExtensions
 
 include("interface.jl")
 
-# include("Utils/Utils.jl")
+include("Utils/Utils.jl")
 
 # include("Geometry/Geometry.jl")
 

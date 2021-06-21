@@ -5,22 +5,24 @@ module WaveProp
 
 using DocStringExtensions
 
-include("Utils/Utils.jl")
+include("interface.jl")
 
-include("Geometry/Geometry.jl")
+# include("Utils/Utils.jl")
 
-include("Interpolation/Interpolation.jl")
+# include("Geometry/Geometry.jl")
 
-include("Integration/Integration.jl")
+# include("Interpolation/Interpolation.jl")
 
-include("Mesh/Mesh.jl")
+# include("Integration/Integration.jl")
 
-include("PhysicalProblem/PhysicalProblem.jl")
+# include("Mesh/Mesh.jl")
 
-include("FEM/FEM.jl")
+# include("PhysicalProblem/PhysicalProblem.jl")
 
-include("Nystrom/Nystrom.jl")
+# include("Nystrom/Nystrom.jl")
 
-include("IO/IO.jl")
+# include("FEM/FEM.jl")
+
+# include("IO/IO.jl")
 
 end # module

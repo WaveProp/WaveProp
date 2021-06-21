@@ -12,7 +12,7 @@ function elementary_matrix!(A,el::AbstractElement, u::PolynomialBasis,
         end
     end
     return A
-end   
+end
 
 function elementary_matrix_new!(A,el::AbstractElement, u::PolynomialBasis,
                            v::PolynomialBasis, q::AbstractQuadratureRule;
@@ -28,7 +28,7 @@ function elementary_matrix_new!(A,el::AbstractElement, u::PolynomialBasis,
         end
     end
     return A
-end  
+end
 
 function elementary_matrix(el::AbstractElement, u::PolynomialBasis,
     v::PolynomialBasis, q::AbstractQuadratureRule;
@@ -53,14 +53,14 @@ function elementary_matrix(el::AbstractElement, v::PolynomialBasis,
         end
     end
     return b
-end    
+end
 
 # NOTE: for testing purposes regarding speed differences between generic and a
 # specific elementary matrix kernel
 function (u::LagrangeBasis)(q::AbstractQuadratureRule)
     x̂,_ = q()
     mapreduce(x->u(x),hcat,x̂)
-end    
+end
 
 function mass_matrix(el::AbstractElement,u::PolynomialBasis,v::PolynomialBasis,q::AbstractQuadratureRule)
     x̂,ŵ = q()
@@ -69,7 +69,7 @@ function mass_matrix(el::AbstractElement,u::PolynomialBasis,v::PolynomialBasis,q
     μ = map(u->measure(el,u),x̂)
     Σ = diagm(μ)*diagm(ŵ)
     return V*Σ*transpose(U)
-end    
+end
 
 function mass_matrix_unrolled!(A,el::AbstractElement,u::PolynomialBasis,v::PolynomialBasis,q::AbstractQuadratureRule)
     x̂,ŵ = q()
@@ -80,19 +80,19 @@ function mass_matrix_unrolled!(A,el::AbstractElement,u::PolynomialBasis,v::Polyn
         J = @inbounds jacobian(el,x̂[k])
         μ = abs(det(J))
         for j in 1:size(U,2)
-            @inbounds uj = U[j,k]*μ    
+            @inbounds uj = U[j,k]*μ
             for i in 1:size(V,2)
                 @inbounds A[i,j] += uj*V[i,k]
-            end    
+            end
         end
-    end    
+    end
     return A
-end    
+end
 
 function (gu::gradLagrangeBasis)(q::AbstractQuadratureRule)
     x̂,_ = q()
-    mapreduce(x->gu(x),hcat,x̂) 
-end    
+    mapreduce(x->gu(x),hcat,x̂)
+end
 
 function stiffness_matrix_unrolled!(A,el::AbstractElement,u::PolynomialBasis,v::PolynomialBasis,q::AbstractQuadratureRule)
     x̂,ŵ = q()
@@ -105,10 +105,10 @@ function stiffness_matrix_unrolled!(A,el::AbstractElement,u::PolynomialBasis,v::
         μ  = abs(det(J))
         Σ  = iJ*transpose(iJ)*μ
         for i in 1:size(∇V,2)
-            for j in 1:size(∇U,2)    
+            for j in 1:size(∇U,2)
                 A[i,j] += transpose(∇V[i,k]) * Σ * ∇U[j,k]
-            end    
+            end
         end
-    end    
+    end
     return A
-end    
+end

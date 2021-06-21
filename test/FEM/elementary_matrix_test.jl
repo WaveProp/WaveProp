@@ -22,7 +22,7 @@ M2  = FEM.mass_matrix(el,u,v,q)
 @test M ≈ M2
 M3 = zeros(3,3)
 FEM.mass_matrix_unrolled!(M3,el,u,v,q)
-@test M3 ≈ M 
+@test M3 ≈ M
 
 @btime FEM.elementary_matrix!($M,$el,$u,$v,$q)
 @btime FEM.mass_matrix($el,$u,$v,$q)
@@ -33,12 +33,7 @@ ak(u, v) = (i,j,x̂,el,x) -> (inv(transpose(jacobian(el,x̂))) * grad(u)(x̂)[j]
 FEM.elementary_matrix!(M,el,u,v,q;f=ak)
 M2 = zeros(3,3)
 FEM.stiffness_matrix_unrolled!(M2,el,u,v,q)
-@test M2 ≈ M 
+@test M2 ≈ M
 
 @btime FEM.elementary_matrix!($M,$el,$u,$v,$q;f=$ak)
 @btime FEM.stiffness_matrix_unrolled!($M2,$el,$u,$v,$q)
-
-
-
-
-

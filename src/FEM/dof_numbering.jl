@@ -109,9 +109,9 @@ function assembly(mesh, Ω, u, v; order=1,
                 push!(Js, jglob)
                 push!(Vs, M[iloc,jloc])
             end
-        end    
+        end
         fill!(M,0)
-    end    
+    end
     A = sparse(Is,Js,Vs,m,n)
     return A
 end
@@ -130,7 +130,7 @@ function assembly(mesh, Ω, v; order=1,
         M = elementary_matrix(el, v, qrule; f=f)
         for (iloc, iglob) in enumerate(vtags)
             b[iglob] += M[iloc]
-        end    
-    end    
+        end
+    end
     return b
 end

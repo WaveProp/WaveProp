@@ -13,7 +13,7 @@ using WaveProp.IO
 ## Assembly test
 @testset "Mass matrix 1-2-3D Lagrange P0 P1" begin
     ## 2D
-    Geometry.clear!()
+    Geometry.clear_entities!()
     Ω, mesh2d = WaveProp.IO.gmsh_rectangle(;h=0.1);
     for ord in [1,2,]
         ## matrix assembly
@@ -35,7 +35,7 @@ using WaveProp.IO
         end
     end
     ## 3D
-    Geometry.clear!()
+    Geometry.clear_entities!()
     Ω, mesh3d = WaveProp.IO.gmsh_box(;h=0.5);
     for ord in [1,2,]
         ## matrix assembly
@@ -72,7 +72,7 @@ k = 1
 a_helmholtz(u, v) = (i,j,x̂,el,x) -> (inv(transpose(jacobian(el,x̂))) * grad(u)(x̂)[j]) ⋅ (inv(transpose(jacobian(el,x̂))) *  grad(v)(x̂)[i]) - k^2 * u(x̂)[j] * v(x̂)[i]
 @testset "Helmholtz matrix 1-2-3D Lagrange P1" begin
     ## 2D
-    Geometry.clear!()
+    Geometry.clear_entities!()
     Ω, mesh2d = WaveProp.IO.gmsh_rectangle(;h=0.1);
     for ord in [1,2,]
         ## matrix assembly
@@ -106,7 +106,7 @@ f(x,y) = (p^2 + q^2) * π^2 * sol(x,y)
 am(u, v) = (i,j,x̂,el,x) -> u(x̂)[j] * v(x̂)[i]
 a_poisson(u, v) = (i,j,x̂,el,x) -> (inv(transpose(jacobian(el,x̂))) * grad(u)(x̂)[j]) ⋅ (inv(transpose(jacobian(el,x̂))) *  grad(v)(x̂)[i])
 l_poisson(v) = (i,x̂,el,x) -> f(x...) * v(x̂)[i]
-Geometry.clear!()
+Geometry.clear_entities!()
 Ω, mesh2d = WaveProp.IO.gmsh_rectangle(;h=0.05);
 u = LagrangeBasis{ReferenceTriangle,1}()
 v = LagrangeBasis{ReferenceTriangle,1}()
@@ -179,7 +179,7 @@ err = sqrt(transpose(e) * (M * e)) / sqrt(transpose(uref) * (M * uref))
 # ## Modes for 2D Neumann Laplacian
 # ak(u, v) = (i,j,x̂,el,x) -> (inv(transpose(jacobian(el,x̂))) * grad(u)(x̂)[j]) ⋅ (inv(transpose(jacobian(el,x̂))) *  grad(v)(x̂)[i])
 # am(u, v) = (i,j,x̂,el,x) -> u(x̂)[j] * v(x̂)[i]
-# Geometry.clear!()
+# Geometry.clear_entities!()
 # Ω, mesh2d = WaveProp.IO.gmsh_disk(;h=0.01)
 # u = LagrangeBasis{ReferenceTriangle,1}()
 # v = LagrangeBasis{ReferenceTriangle,1}()

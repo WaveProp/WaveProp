@@ -4,11 +4,20 @@ using WaveProp.Geometry
 using WaveProp.Integration
 using WaveProp.Mesh
 
-@testset "Circle" begin
-    geo = Circle()
-    bnd = boundary(geo)
-    @test length(bnd) == 1
-    Ω    = Domain([geo])
-    mesh =  Mesh.meshgen(Ω;h=0.1)
-    @test ambient_dimension(mesh) == 2
+@testset "Disk" begin
+    disk = Geometry.Circle() # abstract entity
+    Γ = boundary(disk) |> Domain
+    M = meshgen(Γ,(10,))
+    # plot(M,Γ)
+    @test entities(Γ) == boundary(disk)
+    @test geometric_dimension(disk) == 2
+end
+
+@testset "Ball" begin
+    ball = Geometry.Sphere() # abstract entity
+    Γ = boundary(ball) |> Domain
+    M = meshgen(Γ,(1,1))
+    # plot(M,Γ)
+    @test entities(Γ) == boundary(ball)
+    @test geometric_dimension(ball) == 3
 end

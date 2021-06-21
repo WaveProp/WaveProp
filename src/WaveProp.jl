@@ -15,7 +15,7 @@ include("Interpolation/Interpolation.jl")
 
 include("Integration/Integration.jl")
 
-# include("Mesh/Mesh.jl")
+include("Mesh/Mesh.jl")
 
 # include("PhysicalProblem/PhysicalProblem.jl")
 

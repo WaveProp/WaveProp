@@ -16,20 +16,45 @@ using OrderedCollections
 
 using WaveProp.Utils
 using WaveProp.Geometry
+using WaveProp.Interpolation
 using WaveProp.Integration
 
-import WaveProp.Geometry:    ambient_dimension, geometric_dimension, domain, range, boundary, parametrization
-import WaveProp.Integration: qnodes, qweights, qnormals, integrate, normal, jacobian, singular_quadrature
+# import all methods in WaveProp.INTERFACE_METHODS
+using WaveProp
+WaveProp.@import_interface
 
-export GenericMesh, ElementIterator, nodes, etypes, elements, ent2tags, el2qnodes, elements, near_interaction_list, nodes,
-    compute_quadrature!,SubMesh, AbstractMesh, CartesianMesh, meshgen, NystromMesh, dof, AbstractElement, LagrangeLine, LagrangeTriangle, LagrangeRectangle, LagrangeTetrahedron, LagrangeElement, ParametricElement, derivative, derivative2, measure, convert_to_2d, decompose
+export
+    # abstract types
+    AbstractMesh,
+    # structs
+    GenericMesh,
+    ElementIterator,
+    NodeIterator,
+    SubMesh,
+   UniformCartesianMesh,
+    ParametricElement,
+    # methods
+    nodes,
+    elements,
+    ent2tags,
+    el2qnodes,
+    elements,
+    near_interaction_list,
+    nodes,
+    compute_quadrature!,
+    meshgen,
+    dof,
+    derivative,
+    derivative2,
+    measure,
+    convert_to_2d,
+    decompose
 
-include("element.jl")
-include("meshes.jl")
-include("submesh.jl")
+include("abstractmesh.jl")
+include("genericmesh.jl")
 include("cartesianmesh.jl")
+include("submesh.jl")
 include("meshgen.jl")
 include("decompose.jl")
-include("elementiterator.jl")
 
 end

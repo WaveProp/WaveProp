@@ -192,9 +192,9 @@ const LagrangeTriangle    = LagrangeElement{ReferenceTriangle}
 const LagrangeTetrahedron = LagrangeElement{ReferenceTetrahedron}
 
 """
-    const LagrangeRectangle = LagrangeElement{ReferenceSquare}
+    const LagrangeSquare = LagrangeElement{ReferenceSquare}
 """
-const LagrangeRectangle   = LagrangeElement{ReferenceSquare}
+const LagrangeSquare   = LagrangeElement{ReferenceSquare}
 
 nodes(el::LagrangeElement) = el.nodes
 

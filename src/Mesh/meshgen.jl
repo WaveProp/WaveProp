@@ -1,14 +1,18 @@
+# Basic utilities for meshing parametric surfaces. Produces a `GenericMesh`
+
 """
     meshgen(Ω::Domain;h::Tuple)
 
-Generate a `GenericMesh` for the domain `Ω`. Requires the entities forming `Ω` to
-`ParametricEntity` or `ClosedEntity`.
+Generate a `GenericMesh` for the domain `Ω`. Requires the entities forming `Ω`
+to `ParametricEntity`.
 """
-function meshgen(Ω::Domain;h=floatmax(),n=1)
-    N       = ambient_dimension(first(Ω))
-    @assert all(p->ambient_dimension(p)==N,Ω) # check that ambient dimensions are consistent
+function meshgen(Ω::Domain,sz)
+    # extract the ambient dimension for these entities (i.e. are we in 2d or
+    # 3d). Only makes sense if all entities have the same ambient dimension.
+    N  = ambient_dimension(first(Ω))
+    @assert all(p->ambient_dimension(p)==N,entities(Ω))
     mesh = GenericMesh{N,Float64}()
-    meshgen!(mesh,Ω;h,n) # fill in
+    meshgen!(mesh,Ω,sz) # fill in
     return mesh
 end
 
@@ -17,51 +21,63 @@ end
 
 Similar to [`meshgen`](@ref), but append entries to `mesh`.
 """
-function meshgen!(mesh::GenericMesh,Ω::Domain;h,n)
+function meshgen!(mesh::GenericMesh,Ω::Domain,sz)
     for ent in Ω
-        ent isa ParametricEntity || ent isa AbstractParametricBody || error("unable to generate mesh for entity of type $(typeof(ent))")
-        _meshgen!(mesh,ent;h,n)
+        ent isa ParametricEntity || error("meshgen! only works on parametric entites")
+        _meshgen!(mesh,ent,sz)
     end
     return mesh
 end
 
-function _meshgen!(mesh::GenericMesh,ent::ParametricEntity;h,n)
-    # mesh the entity
-    els = _meshgen(ent;h,n)
+function _meshgen!(mesh::GenericMesh,ent::ParametricEntity,sz)
+    # extract relevant fields and mesh the entity
+    f = parametrization(ent)
+    d = domain(ent)
+    els    = _meshgen(f,d,sz)
     # push related information to mesh
-    E   = eltype(els)
-    E in etypes(mesh) || push!(etypes(mesh),E)
+    E      = eltype(els)
     vals   = get!(mesh.elements,E,Vector{E}())
     istart = length(vals) + 1
     append!(vals,els)
     iend   = length(vals)
     haskey(mesh.ent2tags,ent) && @debug "skipping entity $(key(ent)): already present in mesh"
-    mesh.ent2tags[ent] = OrderedDict(E=>collect(istart:iend)) # add key
-    return mesh
-end
-
-function _meshgen!(mesh::GenericMesh,p::AbstractParametricBody;h,n)
-    mesh.ent2tags[p] = OrderedDict{DataType,Vector{Int}}() # no mesh is generated for ClosedEntity, only its boundary, so empty entry
-    for ent in boundary(p)
-        _meshgen!(mesh,ent;h,n)
-    end
+    mesh.ent2tags[ent] = Dict(E=>collect(istart:iend)) # add key
     return mesh
 end
 
 """
-    _meshgen(p::ParametricEntity;h)
+    _meshgen(f,d,sz)
 
-Mesh `p` by creating a `CartesianMesh` for its parameter space followed by the
-push-forward map. Note that `h` specifies the size in parameter space;
-for parametrizations with large `jacobian` this is poor indication of the
-mesh-size in real space.
+Create a UniformCartesianMesh` of `d` push-forward map. The cartesian mesh has size `sz`, and is uniform in parameter
+space.
+
+!!! warning
+    For parametrizations with large `jacobian`, the mesh size in physical space can
+    be far from uniform.
 """
-function _meshgen(p::ParametricEntity;h,n)
-    # mesh the domain of p
-    f    = parametrization(p)
-    d    = domain(p)
-    grid = CartesianMesh(d;h,n)
+function _meshgen(f,d,sz)
+    grid =UniformCartesianMesh(d,sz)
     iter = ElementIterator(grid)
     els = [ParametricElement(f,d) for d in iter]
     return els
+end
+
+# Element iterator interface
+function Base.size(iter::ElementIterator{<:ParametricElement,<:GenericMesh})
+    E = eltype(iter)
+    M = mesh(iter)
+    els::Vector{E} = M.elements[E]
+    return (length(els),)
+end
+
+function Base.getindex(iter::ElementIterator{<:ParametricElement,<:GenericMesh},i::Int)
+    E = eltype(iter)
+    M = mesh(iter)
+    els::Vector{E} = M.elements[E]
+    return els[i]
+end
+
+function Base.iterate(iter::ElementIterator{<:ParametricElement,<:GenericMesh}, state=1)
+    state > length(iter) && (return nothing)
+    iter[state], state + 1
 end

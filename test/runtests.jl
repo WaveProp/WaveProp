@@ -7,7 +7,7 @@ using SafeTestsets
 
 @safetestset "Integration" begin include("Integration/runtests.jl") end
 
-# @safetestset "Mesh" begin include("Mesh/runtests.jl") end
+@safetestset "Mesh" begin include("Mesh/runtests.jl") end
 
 # @safetestset "FEM" begin include("FEM/runtests.jl") end
 

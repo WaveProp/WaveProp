@@ -67,13 +67,13 @@ function Base.getindex(iter::ElementIterator{<:AbstractElement,<:SubMesh},i::Int
     return iter[iglob]
 end
 
-ElementIterator(m::CartesianMesh) = ElementIterator(m,etype(m))
+ElementIterator(m::UniformCartesianMesh) = ElementIterator(m,etype(m))
 
 # element iterator for cartesian mesh
-# FIXME: the ElementIterator for a CartesianMesh should inherit from
+# FIXME: the ElementIterator for a UniformCartesianMesh should inherit from
 # AbstractMatrix and not AbstractVector since these are more naturally indexed
 # as matrices. Also this should be made generic on the dimension
-function Base.size(iter::ElementIterator{<:Any,<:CartesianMesh})
+function Base.size(iter::ElementIterator{<:Any,<:UniformCartesianMesh})
     E       = eltype(iter)
     grids   = grid1d(iter.mesh)
     sz      = size(iter.mesh) .- 1
@@ -81,7 +81,7 @@ function Base.size(iter::ElementIterator{<:Any,<:CartesianMesh})
 end
 
 # 1d case
-function Base.getindex(iter::ElementIterator{<:Any,<:CartesianMesh{1}}, i::Int)
+function Base.getindex(iter::ElementIterator{<:Any,<UniformCartesianMesh{1}}, i::Int)
     E           = eltype(iter)
     xx          = xgrid(iter.mesh)
     low_corner  = (xx[i], )
@@ -91,7 +91,7 @@ function Base.getindex(iter::ElementIterator{<:Any,<:CartesianMesh{1}}, i::Int)
 end
 
 # 2d case
-function Base.getindex(iter::ElementIterator{<:Any,<:CartesianMesh{2}}, i::Int,j::Int)
+function Base.getindex(iter::ElementIterator{<:Any,<UniformCartesianMesh{2}}, i::Int,j::Int)
     E      = eltype(iter)
     xx     = xgrid(iter.mesh)
     yy     = ygrid(iter.mesh)
@@ -101,13 +101,13 @@ function Base.getindex(iter::ElementIterator{<:Any,<:CartesianMesh{2}}, i::Int,j
     return el
 end
 
-function Base.getindex(iter::ElementIterator{<:Any,<:CartesianMesh{2}}, I::Int)
+function Base.getindex(iter::ElementIterator{<:Any,<UniformCartesianMesh{2}}, I::Int)
     sz  = size(iter.mesh) .- 1
     idx = CartesianIndices(sz)[I]
     iter[idx[1],idx[2]]
 end
 
-function Base.iterate(iter::ElementIterator{<:Any,<:CartesianMesh},state=1)
+function Base.iterate(iter::ElementIterator{<:Any,<UniformCartesianMesh},state=1)
     n = length(iter)
     if state > n
         return nothing

@@ -1,7 +1,7 @@
 """
     module Geometry
 
-This module defines basic geometrical objects.
+Module defines basic geometrical concepts.
 """
 module Geometry
 
@@ -14,13 +14,17 @@ using LinearAlgebra
 using ForwardDiff # for computing derivatives of parametric elements
 using OrderedCollections
 
+# import all methods in WaveProp.INTERFACE_METHODS
+using WaveProp
+WaveProp.@import_interface
+
 using WaveProp.Utils
 
 include("hyperrectangle.jl")
 include("referenceshapes.jl")
 include("entities.jl")
 include("domain.jl")
-include("parametricbody.jl")
+include("simpleshapes.jl")
 
 export
     # abstract types
@@ -42,7 +46,8 @@ export
     HyperRectangle,
     SVector,
     # functions
-    entities,
+    clear_entities!,
+    tag,
     key,
     remove,
     assertequaldim,
@@ -54,6 +59,7 @@ export
     parametrization,
     jacobian,
     normal,
+    flip_normal,
     ambient_dimension,
     geometric_dimension,
     bounding_box,

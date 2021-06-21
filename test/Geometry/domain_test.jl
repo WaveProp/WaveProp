@@ -3,8 +3,11 @@ using WaveProp
 using WaveProp.Geometry
 
 # Two points
+clear_entities!()
 p1 = ElementaryEntity(0, 1, ElementaryEntity[])
 p2 = ElementaryEntity(0, 2, ElementaryEntity[])
+@test p1 == p1
+@test p1 != p2
 points = [p1, p2]
 # Three lines
 l1 = ElementaryEntity(1, 1, ElementaryEntity[p1, p2])
@@ -17,8 +20,8 @@ s2 = ElementaryEntity(2, 2, ElementaryEntity[l2, l3])
 surfaces = [s1, s2]
 
 @testset "ElementaryEntity" begin
-    @test key(p1) == (0,1)
     @test geometric_dimension(p1) == 0
+    @test tag(p1) == 1
     @test boundary(l1) == points
     for e in vcat(points, lines, surfaces)
         for b in boundary(e)
@@ -30,15 +33,16 @@ end
 # Domains
 Ω1 = Domain(s1)
 Ω2 = Domain(s2)
-Ω = Domain(surfaces)
+Ω  = Domain(surfaces)
 
 @testset "Domain" begin
     @test entities(Ω) == surfaces
     @test length(Ω) == 2
     @test !isempty(Ω)
     @test Ω2 == setdiff(Ω, Ω1)
-    @test Ω == union(Ω1, Ω2)
+    @test Ω  == union(Ω1, Ω2)
     @test s1 in Ω
+    @test l1 in Ω
     @test Ω[1] == s1
     @test Ω[end] == s2
     for ω in Ω
@@ -49,7 +53,7 @@ end
     @test Ω1 == intersect(Ω1, Ω)
     @test Domain(l2) == intersect(Ω1, Ω2)
     @test issubset(Ω1, Ω)
-    @test Ω2 == remove(Ω1, Ω)
+    @test Ω2 == setdiff(Ω, Ω1)
     @test union(Domain.(lines)...) == skeleton(Ω)
     @test Domain(l2) == internal_boundary(Ω)
     @test union(Domain(l1), Domain(l3)) == external_boundary(Ω)

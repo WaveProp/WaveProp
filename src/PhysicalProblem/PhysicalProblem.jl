@@ -2,22 +2,25 @@
     module PhysicalProblem
 """
 module PhysicalProblem
-    
-    using DocStringExtensions
 
-    using StaticArrays    
+using DocStringExtensions
 
-    import WaveProp.Geometry: ambient_dimension, geometric_dimension
+using StaticArrays
 
-    export 
-        AbstractPDE, 
-        Laplace, 
-        Helmholtz, 
-        Elastostatic, 
-        Maxwell,
-        default_density_eltype, 
-        default_kernel_eltype
+# import all methods in WaveProp.INTERFACE_METHODS
+using WaveProp
+WaveProp.@import_interface
 
-    include("pde.jl")    
+export
+    AbstractPDE,
+    Laplace,
+    Helmholtz,
+    Elastostatic,
+    Maxwell,
+    default_density_eltype,
+    default_kernel_eltype,
+    parameters
+
+include("pde.jl")
 
 end

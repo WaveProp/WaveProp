@@ -7,7 +7,7 @@ using WaveProp.Mesh
 
 @testset "Basic tests" begin
     pde   = Helmholtz(;dim=3,k=1)
-    Geometry.clear!()
+    Geometry.clear_entities!()
     Ω,M   = WaveProp.IO.gmsh_sphere(dim=2)
     Γ     = boundary(Ω)
     mesh  = NystromMesh(view(M,Γ),order=1)
@@ -24,19 +24,20 @@ end
 # diagonal will converge (albeit slowly).
 @testset "Greens identity test" begin
     # construct interior solution
-    pde  = Laplace(dim=3)
+    pde  = Helmholtz(;dim=3,k=1)
     xout = SVector(3,3,3)
     u    = (x)   -> SingleLayerKernel(pde)(xout,x)
     dudn = (x,n) -> DoubleLayerKernel(pde)(xout,x,n)
-    Geometry.clear!()
-    Ω,M   = WaveProp.IO.gmsh_sphere(dim=2,h=0.1)
+    Geometry.clear_entities!()
+    Ω,M   = WaveProp.IO.gmsh_sphere(dim=2,h=0.05)
     Γ     = boundary(Ω)
     mesh  = NystromMesh(view(M,Γ),order=1)
     γ₀u   = γ₀(u,mesh)
     γ₁u   = γ₁(dudn,mesh)
-    𝐒     = SingleLayerOperator(pde,mesh) |> Matrix
-    𝐃     = DoubleLayerOperator(pde,mesh) |> Matrix
-    ee    = WaveProp.Nystrom.error_interior_green_identity(𝐒,𝐃,γ₀u,γ₁u) / norm(γ₀u,Inf)
+    S     = SingleLayerOperator(pde,mesh) |> Matrix
+    D     = DoubleLayerOperator(pde,mesh) |> Matrix
+    ee    = WaveProp.Nystrom.error_interior_green_identity(S,D,γ₀u,γ₁u) / norm(γ₀u,Inf)
+    norm(ee,Inf)
     @test norm(ee,Inf) < 5e-2
 end
 
@@ -46,7 +47,7 @@ end
     xout = SVector(3,3)
     u    = (x)   -> SingleLayerKernel(pde)(xout,x)
     dudn = (x,n) -> DoubleLayerKernel(pde)(xout,x,n)
-    Geometry.clear!()
+    Geometry.clear_entities!()
     Ω,M   = WaveProp.IO.gmsh_disk(dim=1,h=0.01)
     Γ     = boundary(Ω)
     mesh = NystromMesh(view(M,Γ);order=1)

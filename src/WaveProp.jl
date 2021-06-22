@@ -17,13 +17,13 @@ include("Integration/Integration.jl")
 
 include("Mesh/Mesh.jl")
 
-# include("PhysicalProblem/PhysicalProblem.jl")
+include("PhysicalProblem/PhysicalProblem.jl")
 
-# include("Nystrom/Nystrom.jl")
+include("Nystrom/Nystrom.jl")
 
-# include("FEM/FEM.jl")
+include("FEM/FEM.jl")
 
-# include("IO/IO.jl")
+include("IO/IO.jl")
 
 # export all methods in INTERFACE_METHODS
 @export_interface

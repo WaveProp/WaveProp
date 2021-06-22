@@ -11,10 +11,18 @@ examples of concrete subtypes.
 """
 abstract type AbstractReferenceShape{N} end
 
-ambient_dimension(::Type{<:AbstractReferenceShape{N}}) where {N}    = N
-geometric_dimension(::Type{<:AbstractReferenceShape{N}}) where {N}  = N
-ambient_dimension(::AbstractReferenceShape{N}) where {N}            = N
-geometric_dimension(::AbstractReferenceShape{N}) where {N}          = N
+ambient_dimension(::SType{<:AbstractReferenceShape{N}}) where {N}    = N
+geometric_dimension(::SType{<:AbstractReferenceShape{N}}) where {N}  = N
+dimension(::SType{<:AbstractReferenceShape{N}}) where {N}  = N
+
+"""
+    struct ReferencePoint
+
+Singleton type representing a reference zero-dimensional entitty (i.e. a point).
+"""
+struct ReferencePoint <: AbstractReferenceShape{0}
+end
+number_of_nodes(::SType{ReferencePoint}) = 1
 
 """
     struct ReferenceLine

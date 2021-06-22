@@ -9,18 +9,20 @@ using Base.Threads
 using SpecialFunctions
 using OrderedCollections
 
+using WaveProp
 using WaveProp.Utils
 using WaveProp.Geometry
 using WaveProp.Integration
-using WaveProp.Integration
+using WaveProp.Interpolation
 using WaveProp.Mesh
 using WaveProp.PhysicalProblem
 
-import WaveProp.Geometry: geometric_dimension, ambient_dimension, domain, range
-import WaveProp.Integration: singular_weights, qnodes, qweights, qnormals
-import WaveProp.Mesh: etypes, elements
+WaveProp.@import_interface
 
 export
+    # abstract types
+    # types
+    NystromMesh,
     Laplace,
     Helmholtz,
     Elastostatic,
@@ -28,39 +30,43 @@ export
     Maxwell,
     SingleLayerKernel,
     DoubleLayerKernel,
+    AdjointDoubleLayerKernel,
+    HyperSingularKernel,
+    GenericKernel,
     IntegralOperator,
     NystromMesh,
     Density,
-    γ₀,
-    γ₁,
     SingleLayerPotential,
     DoubleLayerPotential,
     SingleLayerOperator,
     DoubleLayerOperator,
     AdjointDoubleLayerOperator,
     HyperSingularOperator,
-    GreensCorrection,
+    # methods
+    coords,
+    weight,
+    γ₀,
+    γ₁,
     singular_weights_dim,
     single_double_layer,
     isinside,
-    NystromMesh,
     dom2dof,
-    assemble
+    assemble,
+    qweights
 
 include("nystrommesh.jl")
+include("abstractkernel.jl")
 include("greensformulae.jl")
 include("lebedev.jl")
-include("kernels.jl")
 include("laplace.jl")
 include("helmholtz.jl")
 include("elastostatic.jl")
-include("maxwell.jl")
 include("density.jl")
 include("potential.jl")
 include("integraloperators.jl")
 include("dim.jl")
-include("ldim.jl")
-include("assemble.jl")
-include("martensen_kussmaul.jl")
+# include("ldim.jl")
+# include("assemble.jl")
+# include("martensen_kussmaul.jl")
 
 end # module

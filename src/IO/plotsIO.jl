@@ -54,18 +54,35 @@ end
 end
 
 # recipe for parametric line
-@recipe function f(ent::ParametricEntity{ReferenceLine};h=0.01)
-    par = ent.parametrization
-    grid   --> false
-    aspect_ratio --> :equal
-    s       = 0:h:1
-    pts     = [par(v) for v in s]
-    x       = [pt[1] for pt in pts]
-    y       = [pt[2] for pt in pts]
-    x,y
+@recipe function f(ent::ParametricEntity;h=0.1)
+    d =  domain(ent)
+    lc = low_corner(d)
+    hc = high_corner(d)
+    if d isa HyperRectangle{1}
+        par = ent.parametrization
+        grid   --> false
+        aspect_ratio --> :equal
+        s       = lc[1]:h:hc[1]
+        pts     = [par(v) for v in s]
+        x       = [pt[1] for pt in pts]
+        y       = [pt[2] for pt in pts]
+        x,y
+    elseif d isa HyperRectangle{2}
+        legend --> false
+        grid   --> false
+        # aspect_ratio --> :equal
+        seriestype := :surface
+        xrange = lc[1]:h:hc[1]
+        yrange = lc[2]:h:hc[2]
+        pts    = [ent.parametrization((x,y)) for x in xrange, y in yrange]
+        x      =  [pt[1] for pt in pts]
+        y      =  [pt[2] for pt in pts]
+        z      =  [pt[3] for pt in pts]
+        x,y,z
+    end
 end
 
-@recipe function f(ents::Vector{ParametricEntity{ReferenceLine}};h=0.01)
+@recipe function f(ents::Vector{ParametricEntity};h=0.1)
     grid   --> false
     aspect_ratio --> :equal
     for ent in ents
@@ -75,41 +92,41 @@ end
     end
 end
 
-# recipe for paramatric surface
-@recipe function f(ent::ParametricEntity{ReferenceSquare};h=0.1)
-    legend --> false
-    grid   --> false
-    # aspect_ratio --> :equal
-    seriestype := :surface
-    xrange = 0:h:1
-    yrange = 0:h:1
-    pts    = [ent.parametrization((x,y)) for x in xrange, y in yrange]
-    x      =  [pt[1] for pt in pts]
-    y      =  [pt[2] for pt in pts]
-    z      =  [pt[3] for pt in pts]
-    x,y,z
-end
+# # recipe for paramatric surface
+# @recipe function f(ent::ParametricEntity{ReferenceSquare};h=0.1)
+#     legend --> false
+#     grid   --> false
+#     # aspect_ratio --> :equal
+#     seriestype := :surface
+#     xrange = 0:h:1
+#     yrange = 0:h:1
+#     pts    = [ent.parametrization((x,y)) for x in xrange, y in yrange]
+#     x      =  [pt[1] for pt in pts]
+#     y      =  [pt[2] for pt in pts]
+#     z      =  [pt[3] for pt in pts]
+#     x,y,z
+# end
 
 # recipe for parametric body
-@recipe function f(bdy::AbstractParametricBody)
-    label --> ""
-    # aspect_ratio --> :equal
-    for patch in boundary(bdy)
-        @series begin
-            patch
-        end
-    end
-end
+# @recipe function f(bdy::AbstractParametricBody)
+#     label --> ""
+#     # aspect_ratio --> :equal
+#     for patch in boundary(bdy)
+#         @series begin
+#             patch
+#         end
+#     end
+# end
 
-# recipe for many parametric bodies
-@recipe function f(bdies::Vector{<:AbstractParametricBody})
-    aspect_ratio --> :equal
-    for bdy in bdies
-        @series begin
-            bdy
-        end
-    end
-end
+# # recipe for many parametric bodies
+# @recipe function f(bdies::Vector{<:AbstractParametricBody})
+#     aspect_ratio --> :equal
+#     for bdy in bdies
+#         @series begin
+#             bdy
+#         end
+#     end
+# end
 
 @recipe function f(mesh::NystromMesh)
     label --> ""
@@ -154,7 +171,7 @@ end
     end
 end
 
-@recipe function f(el::LagrangeRectangle)
+@recipe function f(el::LagrangeSquare)
     label --> ""
     vtx = nodes(el)
     for n in 1:4

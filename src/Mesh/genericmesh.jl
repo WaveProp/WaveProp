@@ -21,6 +21,15 @@ Base.keys(m::GenericMesh) = keys(elements(m))
 entities(m::GenericMesh) = keys(ent2tags(m)) |> collect
 domain(m::GenericMesh) = entities(m) |> Domain
 
+function Base.show(io::IO,msh::GenericMesh)
+    print(io,"Generic mesh containg with containing:")
+    for E in keys(msh)
+        iter = ElementIterator(msh,E)
+        print(io,"\n\t $(length(iter)) elements of type ",E,)
+    end
+    return io
+end
+
 # implement the interface for ElementIterator of lagrange elements on a generic mesh
 function Base.size(iter::ElementIterator{<:LagrangeElement,<:GenericMesh})
     msh               = mesh(iter)
@@ -75,4 +84,38 @@ function dom2elt(m::GenericMesh, Ω)
         end
     end
     return dict
+end
+
+# convert a mesh to 2d by ignoring third component. Note that this also requires
+# converting various element types to their 2d counterpart. These are needed
+# because some meshers like gmsh always create three-dimensional objects, so we
+# must convert after importing the mesh
+function convert_to_2d(mesh::GenericMesh{3})
+    @assert all(E -> geometric_dimension(domain(E)) < 3, keys(mesh))
+    T = primitive_type(mesh)
+    # create new dictionaries for elements and ent2tags with 2d elements as keys
+    els  = empty(elements(mesh))
+    e2t  = empty(ent2tags(mesh))
+    for (E, tags) in elements(mesh)
+        E2d = convert_to_2d(E)
+        els[E2d] = tags
+    end
+    for (ent, dict) in ent2tags(mesh)
+        new_dict = empty(dict)
+        for (E, tags) in dict
+            E2d = convert_to_2d(E)
+            new_dict[E2d] = tags
+        end
+        e2t[ent] = new_dict
+    end
+    # construct new 2d mesh
+    GenericMesh{2,T}(;
+        nodes=[x[1:2] for x in nodes(mesh)],
+        elements=els,
+        ent2tags=e2t
+    )
+end
+
+function convert_to_2d(::Type{LagrangeElement{R,N,SVector{3,T}}}) where {R,N,T}
+    LagrangeElement{R,N,SVector{2,T}}
 end

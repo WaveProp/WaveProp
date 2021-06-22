@@ -1,15 +1,15 @@
-const INTERFACE_METHODS = Vector{Symbol}()
+const INTERFACE = Vector{Symbol}()
 
 # Maybe just write the text into a file instead of using a macro here?
 macro import_interface()
     ex = Expr(:block)
-    ex.args = [:(import WaveProp: $f) for f in INTERFACE_METHODS]
+    ex.args = [:(import WaveProp: $f) for f in INTERFACE]
     return ex
 end
 
 macro export_interface()
     ex = Expr(:block)
-    ex.args = [:(export $f) for f in INTERFACE_METHODS]
+    ex.args = [:(export $f) for f in INTERFACE]
     return ex
 end
 
@@ -22,7 +22,7 @@ ambient dimension `3` but geometric dimension `2`, while a curve in `ℝ³` has
 ambient dimension 3 but geometric dimension 1.
 """
 function ambient_dimension end
-push!(INTERFACE_METHODS,:ambient_dimension)
+push!(INTERFACE,:ambient_dimension)
 
 """
     geometric_dimension(x)
@@ -36,7 +36,7 @@ When the argument is a `Domain`, return the largest geometric dimension
 encoutered.
 """
 function geometric_dimension end
-push!(INTERFACE_METHODS,:geometric_dimension)
+push!(INTERFACE,:geometric_dimension)
 
 """
     dimension(space)
@@ -45,7 +45,7 @@ The length of a basis for `space`; i.e. the number of linearly independent eleme
 required to span `space`.
 """
 function dimension end
-push!(INTERFACE_METHODS,:dimension)
+push!(INTERFACE,:dimension)
 
 """
     tag(::AbstractEntity)
@@ -53,7 +53,7 @@ push!(INTERFACE_METHODS,:dimension)
 Integer tag commonly used to idetify geometrical entities.
 """
 function tag end
-push!(INTERFACE_METHODS,:tag)
+push!(INTERFACE,:tag)
 
 """
     boundary(ω)
@@ -63,7 +63,7 @@ elements composing its boundary, while for an entity gives the corresponding
 `d-1` dimensional entities.
 """
 function boundary end
-push!(INTERFACE_METHODS,:boundary)
+push!(INTERFACE,:boundary)
 
 """
     diameter(Ω)
@@ -71,7 +71,7 @@ push!(INTERFACE_METHODS,:boundary)
 Largest distance between `x` and `y` for `x,y ∈ Ω`.
 """
 function diameter end
-push!(INTERFACE_METHODS,:diameter)
+push!(INTERFACE,:diameter)
 
 """
     radius(Ω)
@@ -79,13 +79,13 @@ push!(INTERFACE_METHODS,:diameter)
 Half the [`diameter`](@ref).
 """
 function radius end
-push!(INTERFACE_METHODS,:radius)
+push!(INTERFACE,:radius)
 
 """
     center(Ω)
 """
 function center end
-push!(INTERFACE_METHODS,:center)
+push!(INTERFACE,:center)
 
 """
     return_type(f)
@@ -93,7 +93,7 @@ push!(INTERFACE_METHODS,:center)
 The type returned by the function-like object `f`.
 """
 function return_type end
-push!(INTERFACE_METHODS,:return_type)
+push!(INTERFACE,:return_type)
 
 """
     jacobian(f,x)
@@ -102,7 +102,7 @@ Given a (possibly vector-valued) function `f : 𝐑ᵐ → 𝐅ᵐ`, return the 
 matrix `Aᵢⱼ = ∂fᵢ/∂x̂ⱼ`.
 """
 function jacobian end
-push!(INTERFACE_METHODS,:jacobian)
+push!(INTERFACE,:jacobian)
 
 """
     normal(el,x̂)
@@ -112,15 +112,15 @@ The unit normal vector at coordinate `x̂`, guaranteed to be orthogonal to all
 columns of `jacobian(el,x)`.
 """
 function normal end
-push!(INTERFACE_METHODS,:normal)
+push!(INTERFACE,:normal)
 
 """
     domain(f)
 
-The domain of the function `f`, meaning
+The domain of the function `f`.
 """
 function domain end
-push!(INTERFACE_METHODS,:domain)
+push!(INTERFACE,:domain)
 
 """
     parametrization(el)
@@ -128,7 +128,7 @@ push!(INTERFACE_METHODS,:domain)
 Return the underlying parametrization of `el`.
 """
 function parametrization end
-push!(INTERFACE_METHODS,:parametrization)
+push!(INTERFACE,:parametrization)
 
 """
     entities(Ω::Domain)
@@ -137,7 +137,7 @@ push!(INTERFACE_METHODS,:parametrization)
 Return the geometrical entities composing `Ω`.
 """
 function entities end
-push!(INTERFACE_METHODS,:entities)
+push!(INTERFACE,:entities)
 
 """
     bounding_box(data)
@@ -145,7 +145,7 @@ push!(INTERFACE_METHODS,:entities)
 Create an axis-aligned bounding box containing all of `data`.
 """
 function bounding_box end
-push!(INTERFACE_METHODS,:bounding_box)
+push!(INTERFACE,:bounding_box)
 
 
 """
@@ -161,4 +161,15 @@ ordering](https://gmsh.info/doc/texinfo/gmsh.html#Node-ordering) on `gmsh`
 documentation).
 """
 function reference_nodes end
-push!(INTERFACE_METHODS,:reference_nodes)
+push!(INTERFACE,:reference_nodes)
+
+function parent end
+push!(INTERFACE,:parent)
+
+# TODO: document
+function qnodes end
+push!(INTERFACE,:qnodes)
+
+# TODO: document
+function qweights end
+push!(INTERFACE,:qweights)

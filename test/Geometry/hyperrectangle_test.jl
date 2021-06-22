@@ -1,5 +1,7 @@
 using Test
+using WaveProp
 using WaveProp.Geometry
+using StaticArrays
 
 @testset "HyperRectangle tests" begin
     low_corner  = (0.0,0.0)

@@ -11,7 +11,7 @@ using WaveProp.Mesh
     xout = SVector(3,3)
     u    = (x)   -> SingleLayerKernel(pde)(xout,x)
     dudn = (x,n) -> DoubleLayerKernel(pde)(xout,x,n)
-    Geometry.clear!()
+    Geometry.clear_entities!()
     geo  = Geometry.Kite()
     Ω    = Domain(geo)
     M    = meshgen(Ω)
@@ -21,11 +21,11 @@ using WaveProp.Mesh
     mesh = NystromMesh(M,Γ,etype2qrule)
     γ₀u  = γ₀(u,mesh)
     γ₁u  = γ₁(dudn,mesh)
-    S    = SingleLayerOperator(pde,mesh) 
-    D    = DoubleLayerOperator(pde,mesh) 
+    S    = SingleLayerOperator(pde,mesh)
+    D    = DoubleLayerOperator(pde,mesh)
     Smk  = Nystrom.assemble_mk(S)
     Dmk  = Nystrom.assemble_mk(D)
-    e0   = WaveProp.Nystrom.error_interior_green_identity(S,D,γ₀u,γ₁u)    
+    e0   = WaveProp.Nystrom.error_interior_green_identity(S,D,γ₀u,γ₁u)
     e1   = WaveProp.Nystrom.error_interior_green_identity(Smk,Dmk,γ₀u,γ₁u)
     @test norm(e0,Inf) > 1e-5
     @test norm(e1,Inf) < 1e-5
@@ -46,11 +46,11 @@ end
     mesh  = NystromMesh(M,Γ;quad_rule=TrapezoidalP(100))
     γ₀u   = γ₀(u,mesh)
     γ₁u   = γ₁(dudn,mesh)
-    S     = SingleLayerOperator(pde,mesh) 
-    D     = DoubleLayerOperator(pde,mesh) 
+    S     = SingleLayerOperator(pde,mesh)
+    D     = DoubleLayerOperator(pde,mesh)
     Smk   = Nystrom.assemble_mk(S)
     Dmk   = Nystrom.assemble_mk(D)
-    e0    = WaveProp.Nystrom.error_interior_green_identity(S,D,γ₀u,γ₁u)    
+    e0    = WaveProp.Nystrom.error_interior_green_identity(S,D,γ₀u,γ₁u)
     e1 = WaveProp.Nystrom.error_interior_green_identity(Smk,Dmk,γ₀u,γ₁u)
     @test norm(e0,Inf) > 1e-5
     @test norm(e1,Inf) < 1e-5
@@ -64,7 +64,7 @@ end
     dudn = (x,n) -> DoubleLayerKernel(pde)(xout,x,n)
     geo  = ParametricEntity(ReferenceLine()) do u
         SVector(cos(2π*u[1]),sin(2π*u[1]))
-    end  
+    end
     bdy  = ClosedEntity([geo])
     Ω    = Domain(bdy)
     M    = meshgen(Ω)
@@ -73,11 +73,11 @@ end
     mesh  = NystromMesh(M,Γ;quad_rule=TrapezoidalP(40))
     γ₀u   = γ₀(u,mesh)
     γ₁u   = γ₁(dudn,mesh)
-    S     = SingleLayerOperator(pde,mesh) 
-    D     = DoubleLayerOperator(pde,mesh) 
+    S     = SingleLayerOperator(pde,mesh)
+    D     = DoubleLayerOperator(pde,mesh)
     Smk   = Nystrom.assemble_mk(S)
     Dmk   = Nystrom.assemble_mk(D)
-    e0    = WaveProp.Nystrom.error_interior_green_identity(S,D,γ₀u,γ₁u)    
+    e0    = WaveProp.Nystrom.error_interior_green_identity(S,D,γ₀u,γ₁u)
     e1    = WaveProp.Nystrom.error_interior_green_identity(Smk,Dmk,γ₀u,γ₁u)
     @test norm(e0,Inf) > 1e-5
     @test norm(e1,Inf) < 1e-5
@@ -102,11 +102,11 @@ end
     mesh  = NystromMesh(M,Γ;quad_rule=qrule)
     γ₀u   = γ₀(u,mesh)
     γ₁u   = γ₁(dudn,mesh)
-    S     = SingleLayerOperator(pde,mesh) 
-    D     = DoubleLayerOperator(pde,mesh) 
+    S     = SingleLayerOperator(pde,mesh)
+    D     = DoubleLayerOperator(pde,mesh)
     Smk   = Nystrom.assemble_mk(S)
     Dmk   = Nystrom.assemble_mk(D)
-    e0    = WaveProp.Nystrom.error_interior_green_identity(S,D,γ₀u,γ₁u)    
+    e0    = WaveProp.Nystrom.error_interior_green_identity(S,D,γ₀u,γ₁u)
     e1    = WaveProp.Nystrom.error_interior_green_identity(Smk,Dmk,γ₀u,γ₁u)
     @test norm(e0,Inf) > 1e-5
     @test norm(e1,Inf) < 1e-5

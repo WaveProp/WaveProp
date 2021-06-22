@@ -5,6 +5,7 @@ module Interpolation
 using DocStringExtensions
 using StaticArrays
 using LinearAlgebra
+using ForwardDiff # for computing derivatives of parametric elements
 
 using WaveProp
 using WaveProp.Utils
@@ -18,6 +19,7 @@ export
     # structs
     ParametricElement,
     LagrangeElement,
+    LagrangePoint,
     LagrangeLine,
     LagrangeTriangle,
     LagrangeSquare,

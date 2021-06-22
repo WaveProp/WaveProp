@@ -15,15 +15,24 @@ using LinearAlgebra
     end
     # non-smooth integrand, singularity at 0
     f     = (x) -> log(abs(x))
-    I     = integrate(f,d;rtol=1e-16)
+    Ie    = -1
     for shand in [IMT(), Kress(),KressP()]
         q     = SingularQuadratureRule(qstd,shand)
         Ia    = integrate(f,q)
-        @test isapprox(Ia,I,rtol=1e-3)
+        @test isapprox(Ia,Ie,rtol=1e-5)
         # check that the `naive` integration woudl have failed the test
         Istd    = integrate(f,qstd)
-        @test !isapprox(Istd,I,rtol=1e-3)
+        @test !isapprox(Istd,Ie,rtol=1e-3)
     end
+    # test that KressP() can handle singularity at both endpoints, and Kress() cannot
+    f     = (x) -> log(x) + log(1-x)
+    Ie    = -2
+    q     = SingularQuadratureRule(qstd,KressP())
+    Ia    = integrate(f,q)
+    @test isapprox(Ia,Ie,rtol=1e-5)
+    q     = SingularQuadratureRule(qstd,Kress())
+    Ia    = integrate(f,q)
+    @test !isapprox(Ia,Ie,rtol=1e-5)
 end
 
 @testset "Duffy" begin

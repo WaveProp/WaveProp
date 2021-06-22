@@ -14,8 +14,8 @@ using WaveProp.Mesh
     νi  = map(x->normal(el,x),x̂)
     nb = 3*length(yi)
     G   = SingleLayerKernel(op)
-    dG  = DoubleLayerKernel(op) 
-    ## 
+    dG  = DoubleLayerKernel(op)
+    ##
     ϕ  = y->cos(y[1])  # regular density
     x  = el(0.51)
     ν  = normal(el,0.51)
@@ -42,7 +42,7 @@ end
     u    = (x)   -> SingleLayerKernel(pde)(xout,x)
     dudn = (x,n) -> DoubleLayerKernel(pde)(xout,x,n)
     # geo  = Circle()
-    Geometry.clear!()
+    Geometry.clear_entities!()
     Ω,M   = WaveProp.IO.gmsh_disk()
     Γ     = boundary(Ω)
     # generate a Nystrom mesh with Gauss-Legendre quadrature
@@ -51,14 +51,14 @@ end
     mesh    = NystromMesh(M,Γ,e2qrule)
     γ₀u   = γ₀(u,mesh)
     γ₁u   = γ₁(dudn,mesh)
-    S     = SingleLayerOperator(pde,mesh) 
-    D     = DoubleLayerOperator(pde,mesh) 
-    e0    = WaveProp.Nystrom.error_interior_green_identity(S,D,γ₀u,γ₁u)    
+    S     = SingleLayerOperator(pde,mesh)
+    D     = DoubleLayerOperator(pde,mesh)
+    e0    = WaveProp.Nystrom.error_interior_green_identity(S,D,γ₀u,γ₁u)
     Sldim = Nystrom.assemble_ldim(S)
     Dldim = Nystrom.assemble_ldim(D)
     e1    = WaveProp.Nystrom.error_interior_green_identity(Sldim,Dldim,γ₀u,γ₁u)
     @test norm(e0,Inf) > 1e-5
-    @test norm(e1,Inf) < 1e-5    
+    @test norm(e1,Inf) < 1e-5
     K     = AdjointDoubleLayerOperator(pde,mesh)
     H     = HyperSingularOperator(pde,mesh)
     e0    = WaveProp.Nystrom.error_interior_derivative_green_identity(K,H,γ₀u,γ₁u)
@@ -74,7 +74,7 @@ end
     xout = SVector(-10,0)
     u    = (x)   -> SingleLayerKernel(pde)(xout,x)
     dudn = (x,n) -> DoubleLayerKernel(pde)(xout,x,n)
-    Geometry.clear!()
+    Geometry.clear_entities!()
     geo  = Kite()
     Ω    = Domain(geo)
     M   = meshgen(Ω,h=0.05)
@@ -85,13 +85,12 @@ end
     mesh    = NystromMesh(M,Γ,e2qrule)
     γ₀u   = γ₀(u,mesh)
     γ₁u   = γ₁(dudn,mesh)
-    S     = SingleLayerOperator(pde,mesh) 
-    D     = DoubleLayerOperator(pde,mesh) 
-    e0    = WaveProp.Nystrom.error_interior_green_identity(S,D,γ₀u,γ₁u)    
+    S     = SingleLayerOperator(pde,mesh)
+    D     = DoubleLayerOperator(pde,mesh)
+    e0    = WaveProp.Nystrom.error_interior_green_identity(S,D,γ₀u,γ₁u)
     Sldim = Nystrom.assemble_ldim(S)
     Dldim = Nystrom.assemble_ldim(D)
     e1    = WaveProp.Nystrom.error_interior_green_identity(Sldim,Dldim,γ₀u,γ₁u)
     @test norm(e0,Inf) > 1e-5
-    @test norm(e1,Inf) < 1e-5    
+    @test norm(e1,Inf) < 1e-5
 end
-

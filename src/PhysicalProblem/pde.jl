@@ -30,6 +30,8 @@ Helmholtz(;k,dim=3) = Helmholtz{dim,typeof(k)}(k)
 
 getname(::Helmholtz) = "Helmholtz"
 
+parameters(pde::Helmholtz) = pde.k
+
 default_kernel_eltype(::Helmholtz)  = ComplexF64
 default_density_eltype(::Helmholtz) = ComplexF64
 
@@ -48,6 +50,8 @@ Elastostatic{N}(μ::T,λ::T) where {N,T} = Elastostatic{N,T}(μ,λ)
 
 getname(::Elastostatic) = "Elastostatic"
 
+parameters(pde::Elastostatic) = pde.μ, pde.λ
+
 default_kernel_eltype(::Elastostatic{N}) where {N}  = SMatrix{N,N,Float64,N*N}
 default_density_eltype(::Elastostatic{N}) where {N} = SVector{N,Float64}
 
@@ -62,6 +66,8 @@ struct Maxwell{N,T} <: AbstractPDE{N}
 end
 Maxwell(;k,dim=3)                   = Maxwell{dim}(k)
 Maxwell{N}(k::T) where {N,T}        = Maxwell{N,T}(k)
+
+parameters(pde::Maxwell) = pde.k
 
 getname(::Maxwell) = "Maxwell"
 

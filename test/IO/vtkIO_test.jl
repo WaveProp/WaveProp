@@ -6,7 +6,7 @@ using WriteVTK
 
 @testset "VTK export" begin
     # This test should simply not throw an error
-    Geometry.clear!()
+    Geometry.clear_entities!()
     Ω, M = WaveProp.IO.gmsh_sphere()
     vtk_mesh_file(M, joinpath(@__DIR__,"ball")) |> vtk_save
     rm(joinpath(@__DIR__,"ball.vtu"))

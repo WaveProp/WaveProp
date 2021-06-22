@@ -10,10 +10,11 @@ using WaveProp.Mesh
     Ω,M  = WaveProp.IO.gmsh_sphere(dim=2)
     Γ    = boundary(Ω)
     mesh = NystromMesh(view(M,Γ),order=1)
-    σ     = γ₀(x->x[1],mesh)
+    σ     = γ₀(target->norm(coords(target)),mesh)
     @test eltype(σ) == Float64
-    σ     = γ₀(x->exp(im*x[3]),mesh)
+    σ     = γ₀(mesh) do target
+        x = coords(target)
+        exp(im*2*norm(x))
+    end
     @test eltype(σ) == ComplexF64
-    σ     = γ₁((x,n)->sum(x.*n),mesh)
-    @test eltype(σ) == Float64
 end

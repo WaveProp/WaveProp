@@ -1,7 +1,7 @@
 """
     lebedev_points(n)
 
-Return the lebedev points on the unit sphere.    
+Return the lebedev points on the unit sphere.
 """
 function lebedev_points(n::Int)
     pts = Vector{SVector{3,Float64}}()
@@ -145,12 +145,12 @@ function lebedev_points(n::Int)
         push!(pts,_sph_pt(-161.565051177078004,   107.548400613792296))
         return pts
     else
-        @error "Unable to return $n Lebedev points"        
+        @error "Unable to return $n Lebedev points"
     end
 end
 
 function _sph_pt(theta,phi,r=1, center=[0 0 0])
-    # convert to radians    
+    # convert to radians
     theta = theta * pi/180
     phi   = phi   * pi/180
     # perform translation and dilation

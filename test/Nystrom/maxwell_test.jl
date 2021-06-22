@@ -21,7 +21,7 @@ H    = (x)   -> SingleLayerKernel(pde)(xout,x)*c
 # neumann trace = n × ∇ × H on the boundary
 dH = (x,n) -> transpose(DoubleLayerKernel(pde)(xout,x,n))*c
 
-Geometry.clear!()
+Geometry.clear_entities!()
 geo    = WaveProp.Geometry.Sphere()
 Ω   = Domain(geo)
 Γ   = boundary(Ω)

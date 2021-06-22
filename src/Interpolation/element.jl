@@ -17,8 +17,7 @@ Instances `el` of `AbstractElement` are expected to implement:
 abstract type AbstractElement{D,T} end
 
 function normal(el::AbstractElement, u)
-    dim = geometric_dimension(el)
-    @assert length(u) == dim
+    @assert u ∈ domain(el)
     jac = jacobian(el, u)
     normal(jac)
 end
@@ -97,6 +96,16 @@ function polynomial_space(::SType{LagrangeElement{D,Np}}) where {D,Np}
 end
 
 """
+    const LagrangePoint = LagrangeElement{ReferencePoint}
+"""
+const LagrangePoint        = LagrangeElement{ReferencePoint}
+
+"""
+    const Point = LagrangePoint
+"""
+const Point = LagrangePoint
+
+"""
     const LagrangeLine = LagrangeElement{ReferenceLine}
 """
 const LagrangeLine        = LagrangeElement{ReferenceLine}
@@ -135,6 +144,11 @@ Hardcode some basic elements.
 TODO: Eventually this could/should be automated, at least for the LagrangeElements.
 =#
 
+# LagrangePoint represents the map () -> vals
+function (el::LagrangePoint{1})()
+    return vals(el)
+end
+
 # P1 for ReferenceLine
 function (el::LagrangeLine{2})(u)
     @assert u ∈ ReferenceLine()
@@ -149,25 +163,25 @@ end
 
 # P2 for ReferenceLine
 function (el::LagrangeLine{3})(u)
-    @assert u ∈ ReferenceLine()
+    @assert u ∈ domain(el)
     v = vals(el)
     v[1] + (4 * v[3] - 3 * v[1] - v[2]) * u[1]  + 2 * (v[2] + v[1] - 2 * v[3]) * u[1]^2
 end
 function jacobian(el::LagrangeLine{3}, u)
-    @assert u ∈ ReferenceLine()
+    @assert u ∈ domain(el)
     v = vals(el)
     hcat(4 * v[3] - 3 * v[1] - v[2] + 4 * (v[2] + v[1] - 2 * v[3]) * u[1])
 end
 
 # P1 for ReferenceTriangle
 function (el::LagrangeTriangle{3})(u)
-    @assert u ∈ ReferenceTriangle()
+    @assert u ∈ domain(el)
     v = vals(el)
     v[1] + (v[2] - v[1]) * u[1] + (v[3] - v[1]) * u[2]
     # v[1]*(1-u[1]-u[2]) + v[2]*(u[1]) + v[3]*u[2]
 end
 function jacobian(el::LagrangeTriangle{3}, u)
-    @assert u ∈ ReferenceTriangle()
+    @assert u ∈ domain(el)
     v   = vals(el)
     jac = hcat( v[2] - v[1],
                 v[3] - v[1])
@@ -176,14 +190,14 @@ end
 
 # P2 for ReferenceTriangle
 function (el::LagrangeElement{ReferenceTriangle,6})(u)
-    @assert u ∈ ReferenceTriangle()
+    @assert u ∈ domain(el)
     v = vals(el)
     return (1+u[2]*(-3+2u[2])+u[1]*(-3+2u[1]+4u[2]))*v[1] +
            u[1]*(-v[2]+u[1]*(2v[2]-4v[4])+4v[4]+u[2]*(-4v[4]+4v[5]-4v[6])) +
            u[2]*(-v[3]+u[2]*(2v[3]-4v[6])+4v[6])
 end
 function jacobian(el::LagrangeElement{ReferenceTriangle,6}, u)
-    @assert u ∈ ReferenceTriangle()
+    @assert u ∈ domain(el)
     v = vals(el)
     hcat(
         (-3+4u[1]+4u[2])*v[1] - v[2] + u[1]*(4v[2]-8v[4]) + 4v[4] + u[2]*(-4v[4]+4v[5]-4v[6]),
@@ -193,12 +207,12 @@ end
 
 # P1 for ReferenceSquare
 function (el::LagrangeElement{ReferenceSquare,4})(u)
-    @assert u ∈ ReferenceSquare()
+    @assert u ∈ domain(el)
     v = vals(el)
     v[1] + (v[2] - v[1]) * u[1] + (v[4] - v[1]) * u[2] + (v[3] + v[1] - v[2] - v[4]) * u[1] * u[2]
 end
 function jacobian(el::LagrangeElement{ReferenceSquare,4}, u)
-    @assert u ∈ ReferenceSquare()
+    @assert u ∈ domain(el)
     v = vals(el)
     hcat(
         ((v[2] - v[1]) + (v[3] + v[1] - v[2] - v[4]) * u[2]),
@@ -208,12 +222,12 @@ end
 
 # P1 for ReferenceTetrahedron
 function (el::LagrangeElement{ReferenceTetrahedron,4})(u)
-    @assert u ∈ ReferenceTetrahedron()
+    @assert u ∈ domain(el)
     v = vals(el)
     v[1] + (v[2] - v[1]) * u[1] + (v[3] - v[1]) * u[2] + (v[4] - v[1]) * u[3]
 end
 function jacobian(el::LagrangeElement{ReferenceTetrahedron,4}, u)
-    @assert u ∈ ReferenceTriangle()
+    @assert u ∈ domain(el)
     v = vals(el)
     hcat(
         (v[2] - v[1]),

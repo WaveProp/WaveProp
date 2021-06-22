@@ -9,9 +9,6 @@ following methods:
 - `q()` : return the nodes `x` and weights `w` of the quadrature rule on the
   reference domain `D`. For performance reasons, the result should depend only
   on the type of `q`.
-- `q(el)` : return the nodes `x` and weights `w` of the quadrature rule on the
-  elemenent `D`. Requires `domain(q)==domain(el)`, so that the element
-  quadrature can be computed by *pushing forward* a reference quadrature.
 """
 abstract type AbstractQuadratureRule{D} end
 
@@ -58,34 +55,6 @@ function integrate(f,x,w)
     sum(zip(x,w)) do (x,w)
         f(x)*prod(w)
     end
-end
-
-# overload quadgk for integration over reference shapes. Useful mostly for
-# testing.
-"""
-    integrate(f,s::AbstractReferenceShape)
-
-Use `quadgk` to (adaptively) integrate a function over the reference shape `s`.
-
-This is used mostly for testing purposes. It returns only the value of the
-integral (i.e. without the error estimate).
-"""
-integrate(f,l::AbstractReferenceShape;kwargs...)     = integrate(f,typeof(l);kwargs...)
-
-integrate(f,::Type{ReferenceLine};kwargs...) = quadgk(f,0,1;kwargs...)[1]
-
-function integrate(f,::Type{ReferenceSquare})
-    I    = x-> quadgk(y->f(SVector(x,y)),0,1)[1]
-    out  = quadgk(I,0,1)[1]
-    return out
-end
-
-# hacky way to compute integration over reference triangles. Only used for
-# testing purposes to avoid having to compute integrals analyically when testing.
-function integrate(f,::Type{ReferenceTriangle})
-    I    = x -> quadgk(y->f(SVector(x,y)),0,1-x)[1]
-    out  = quadgk(I,0,1)[1]
-    return out
 end
 
 ## Define some one-dimensional quadrature rules
@@ -289,12 +258,12 @@ end
 # some helper functions
 
 """
-    _qrule_for_reference_shape(ref,order)
+    qrule_for_reference_shape(ref,order)
 
 Given a `ref`erence shape and a desired quadrature `order`, return
 an appropiate quadrature rule.
 """
-function _qrule_for_reference_shape(ref,order)
+function qrule_for_reference_shape(ref,order)
     if ref isa ReferenceLine
         n = ceil(Int,(order + 1) /  2)
         return GaussLegendre{n}()
@@ -304,19 +273,10 @@ function _qrule_for_reference_shape(ref,order)
         qy = qx
         return TensorProductQuadrature(qx,qy)
     elseif ref isa ReferenceTriangle
-        Gauss(;domain=ref,order=order)
+        return Gauss(;domain=ref,order=order)
     elseif ref isa ReferenceTetrahedron
-        Gauss(;domain=ref,order=order)
+        return Gauss(;domain=ref,order=order)
+    else
+        error("no appropriate quadrature rule found.")
     end
-    error("no appropriate quadrature rule found.")
-end
-
-"""
-    _qrule_for_element(el,p)
-
-Given an element type `E`, return an appropriate quadrature of order `p` for
-integrating el.
-"""
-function _qrule_for_element(el,order)
-    _qrule_for_reference_shape(domain(el),order)
 end

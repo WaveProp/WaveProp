@@ -30,7 +30,9 @@ function Base.show(io::IO,d::Domain)
 end
 
 function geometric_dimension(Ω::Domain)
-    maximum(geometric_dimension(ent) for ent in entities(Ω))
+    l,u = extrema(geometric_dimension(ent) for ent in entities(Ω))
+    @assert l == u "geometric dimension of entities in a domain not equal"
+    return u
 end
 
 """

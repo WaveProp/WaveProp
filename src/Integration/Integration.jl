@@ -45,6 +45,7 @@ export
     qnodes,
     qweights,
     qnormals,
+    qrule_for_reference_shape,
     singular_weights,
     singular_quadrature,
     TensorProductSingularityHandler

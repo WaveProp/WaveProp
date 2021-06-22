@@ -1,7 +1,7 @@
 function assemble_dim(iop::IntegralOperator;compress=Matrix,location=:onsurface)
     X    = target_surface(iop)
     Y    = source_surface(iop)
-    pde  = iop.kernel.op
+    pde  = iop.kernel.pde
     T    = kernel_type(iop)
     if T === SingleLayer()
         singlelayer_dim(pde,X,Y;compress,location)
@@ -58,7 +58,7 @@ function adjointdoublelayer_hypersingular_dim(pde,X,Y=X;compress=Matrix,location
     return K,H
 end
 adjointdoublelayer_dim(args...;kwargs...)  = adjointdoublelayer_hypersingular_dim(args...;kwargs...)[1]
-hypersingular_dim(args...;kwargs...)        = adjointdoublelayer_hypersingular_dim(args...;kwargs...)[2]
+hypersingular_dim(args...;kwargs...)       = adjointdoublelayer_hypersingular_dim(args...;kwargs...)[2]
 
 
 function singular_weights_dim(iop::IntegralOperator,compress=Matrix)
@@ -74,24 +74,20 @@ end
 
 function _auxiliary_quantities_dim(iop,Op1,Op2,basis,γ₁_basis,σ)
     T           = eltype(iop)
-    kernel,X,Y  = iop.kernel, iop.X, iop.Y
-    op          = kernel.op
-    m,n         = length(X),length(Y)
-    nbasis      = length(basis)
+    X,Y    = target_surface(iop), source_surface(iop)
+    nbasis = length(basis)
     # compute matrix of basis evaluated on Y
     ynodes   = qnodes(Y)
-    ynormals = qnormals(Y)
-    γ₀B     = Matrix{T}(undef,length(ynodes),nbasis)
-    γ₁B     = Matrix{T}(undef,length(ynodes),nbasis)
+    γ₀B      = Matrix{T}(undef,length(ynodes),nbasis)
+    γ₁B      = Matrix{T}(undef,length(ynodes),nbasis)
     for k in 1:nbasis
         for i in 1:length(ynodes)
             γ₀B[i,k] = basis[k](ynodes[i])
-            γ₁B[i,k] = γ₁_basis[k](ynodes[i],ynormals[i])
+            γ₁B[i,k] = γ₁_basis[k](ynodes[i])
         end
     end
     # integrate the basis over Y
     xnodes   = qnodes(X)
-    xnormals = qnormals(X)
     R        = Op1*γ₁B - Op2*γ₀B
     # analytic correction for on-surface evaluation of Greens identity
     if kernel_type(iop) isa Union{SingleLayer,DoubleLayer}
@@ -106,7 +102,7 @@ function _auxiliary_quantities_dim(iop,Op1,Op2,basis,γ₁_basis,σ)
         if σ !== 0
             for k in 1:nbasis
                 for i in 1:length(xnodes)
-                    R[i,k] += σ*γ₁_basis[k](xnodes[i],xnormals[i])
+                    R[i,k] += σ*γ₁_basis[k](xnodes[i])
                 end
             end
         end
@@ -129,16 +125,16 @@ function _auxiliary_operators_dim(iop,compress)
 end
 
 function _basis_dim(iop)
-    op = iop.kernel.op
+    op = pde(kernel(iop))
     xs = _source_gen(iop)
-    basis     = [y->SingleLayerKernel(op)(x,y) for x in xs]
-    γ₁_basis  = [(y,ny)->transpose(DoubleLayerKernel(op)(x,y,ny)) for x in xs]
+    basis     = [(source) -> SingleLayerKernel(op)(x,source) for x in xs]
+    γ₁_basis  = [(source) -> transpose(DoubleLayerKernel(op)(x,source)) for x in xs]
     return basis,γ₁_basis
 end
 
 function _singular_weights_dim(iop::IntegralOperator,γ₀B,γ₁B,R)
-    X,Y = iop.X, iop.Y
-    T = eltype(iop)
+    X,Y = target_surface(iop), source_surface(iop)
+    T   = eltype(iop)
     num_basis = size(γ₀B,2)
     a,b = combined_field_coefficients(iop)
     # we now have the residue R. For the correction we need the coefficients.
@@ -184,7 +180,7 @@ function _singular_weights_dim(iop::IntegralOperator,γ₀B,γ₁B,R)
 end
 
 function _source_gen(iop::IntegralOperator,kfactor=5)
-    Y      =  iop.Y
+    Y      =  source_surface(iop)
     nquad  = 0
     for (E,tags) in elt2dof(Y)
         nquad = max(nquad,size(tags,1))
@@ -196,7 +192,7 @@ end
 
 function _source_gen(iop,nsources;kfactor)
     N      = ambient_dimension(iop)
-    Y      = iop.Y
+    Y      = source_surface(iop)
     pts    = qnodes(Y)
     # create a bounding box
     bbox   = bounding_box(pts)

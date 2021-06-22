@@ -252,8 +252,8 @@ which is independent of `A` but which implements the interface
 function `f`:
 ```jldoctest
 module A
-    using WavePropBase
-    WavePropBase.@interface foo
+    using WaveProp.Utils
+    Utils.@interface foo
     # a method which works on any type `x` implementing the `foo` function
     do_work(x) = 2*foo(x)
 end

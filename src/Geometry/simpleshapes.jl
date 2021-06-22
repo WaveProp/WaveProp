@@ -26,6 +26,7 @@ end
 Base.in(pt,circ::Circle) = norm(pt .- circ.center) < circ.radius
 key(ent::Circle) = (2,ent.tag)
 geometric_dimension(ent::Circle) = 2
+ambient_dimension(ent::Circle) = 2
 
 struct Kite <: AbstractEntity
     # dim = 2

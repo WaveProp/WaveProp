@@ -1,5 +1,7 @@
 using Test
+using WaveProp
 using WaveProp.Geometry
+using StaticArrays
 
 @testset "Intersection and composite surfaces" begin
     clear_entities!()

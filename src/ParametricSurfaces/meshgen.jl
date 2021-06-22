@@ -56,7 +56,7 @@ space.
     be far from uniform.
 """
 function _meshgen(f,d,sz)
-    grid =UniformCartesianMesh(d,sz)
+    grid = UniformCartesianMesh(d,sz)
     iter = ElementIterator(grid)
     els = [ParametricElement(f,d) for d in iter]
     return els

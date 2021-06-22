@@ -44,7 +44,6 @@ export
 include("polynomials.jl")
 include("tensorlaginterp.jl")
 include("element.jl")
-include("parametricelement.jl")
 # include("monomial.jl")
 # include("polynomialbasis.jl")
 

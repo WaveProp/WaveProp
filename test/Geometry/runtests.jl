@@ -6,5 +6,3 @@ using SafeTestsets
 @safetestset "HyperRectangle tests" begin include("hyperrectangle_test.jl") end
 
 @safetestset "Domain tests" begin include("domain_test.jl") end
-
-@safetestset "Element tests" begin include("parametricentity_test.jl") end

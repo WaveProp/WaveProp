@@ -173,3 +173,12 @@ push!(INTERFACE,:qnodes)
 # TODO: document
 function qweights end
 push!(INTERFACE,:qweights)
+
+function qcoords end
+push!(INTERFACE,:qcoords)
+
+function dofs end
+push!(INTERFACE,:dofs)
+
+function flip_normal end
+push!(INTERFACE,:flip_normal)

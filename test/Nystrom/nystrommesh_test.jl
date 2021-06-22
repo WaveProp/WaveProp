@@ -4,17 +4,25 @@ using WaveProp.Nystrom
 using WaveProp.Geometry
 using WaveProp.Integration
 using WaveProp.Mesh
+using WaveProp.ParametricSurfaces
 
 @testset "Basic tests" begin
     clear_entities!()
     Ω,M   = WaveProp.IO.gmsh_sphere(dim=3,h=0.05,order=2)
     Γ     = boundary(Ω)
-    mesh  = view(M,boundary(Ω))
-    nmesh = NystromMesh(mesh,order=4)
-    per   = sum(qweights(nmesh))
-    @test isapprox(per,π,atol=1e-5)
+    # mesh  = view(M,boundary(Ω))
+    nmesh = NystromMesh(M,Γ,order=4)
+    area   = sum(qweights(nmesh))
+    @test isapprox(area,π,atol=1e-5)
     clear_entities!()
-    geo   = Geometry.Circle(radius=0.5)
+    Ω   = ParametricSurfaces.Sphere() |> Domain
+    Γ   = boundary(Ω)
+    M     = meshgen(Γ,(4,4))
+    nmesh = NystromMesh(view(M,Γ),order=5)
+    area   = sum(qweights(nmesh))
+    @test isapprox(area,π,atol=1e-5)
+    clear_entities!()
+    geo   = ParametricSurfaces.Circle(radius=0.5)
     Ω     = Domain(geo)
     Γ     = boundary(Ω)
     M     = meshgen(Γ,(100,))

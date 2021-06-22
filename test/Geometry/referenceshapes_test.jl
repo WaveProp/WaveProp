@@ -10,7 +10,7 @@ using WaveProp.Geometry
     x = SVector(1.0)
     @test x ∈ l
     x = SVector(1.1)
-    @test !in(x,l) 
+    @test !in(x,l)
 end
 @testset "Triangle" begin
     t = ReferenceTriangle()
@@ -21,7 +21,7 @@ end
     x = SVector(1.0,0.0)
     @test x ∈ t
     x = SVector(1.1,0.0)
-    @test !in(x,t) 
+    @test !in(x,t)
 end
 @testset "Tetrahedron" begin
     t = ReferenceTetrahedron()
@@ -32,5 +32,5 @@ end
     x = SVector(1.0,0.0,0.0) # point on edge
     @test x ∈ t
     x = SVector(1.1,0.0,0.0)
-    @test !in(x,t) 
+    @test !in(x,t)
 end

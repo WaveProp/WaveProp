@@ -1,11 +1,10 @@
 using Test
 using WaveProp
 using WaveProp.Geometry
-using WaveProp.Integration
-using WaveProp.Mesh
+using WaveProp.ParametricSurfaces
 
 @testset "Disk" begin
-    disk = Geometry.Circle() # abstract entity
+    disk = ParametricSurfaces.Circle() # abstract entity
     Γ = boundary(disk) |> Domain
     M = meshgen(Γ,(10,))
     # plot(M,Γ)
@@ -14,7 +13,7 @@ using WaveProp.Mesh
 end
 
 @testset "Ball" begin
-    ball = Geometry.Sphere() # abstract entity
+    ball = ParametricSurfaces.Sphere() # abstract entity
     Γ = boundary(ball) |> Domain
     M = meshgen(Γ,(1,1))
     # plot(M,Γ)

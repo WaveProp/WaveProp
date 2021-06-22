@@ -31,7 +31,7 @@ export
     ElementIterator,
     NodeIterator,
     SubMesh,
-   UniformCartesianMesh,
+    UniformCartesianMesh,
     ParametricElement,
     # methods
     nodes,
@@ -42,19 +42,18 @@ export
     near_interaction_list,
     nodes,
     compute_quadrature!,
-    meshgen,
     dof,
     derivative,
     derivative2,
     measure,
     convert_to_2d,
-    decompose
+    decompose,
+    mesh
 
 include("abstractmesh.jl")
 include("genericmesh.jl")
 include("cartesianmesh.jl")
 include("submesh.jl")
-include("meshgen.jl")
 include("decompose.jl")
 
 end

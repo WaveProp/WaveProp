@@ -290,4 +290,18 @@ macro interface(f,n=1)
     return esc(ex)
 end
 
+"""
+    cart2sph(x,y,z)
+
+Map cartesian coordinates `x,y,z` to spherical ones `r, θ, φ` representing the
+radius, elevation, and azimuthal angle respectively. The convetion followed is
+that `π ≤ θ ≤ π` and ` -π < φ ≤ π`.
+"""
+function cart2sph(x,y,z)
+    azimuth = atan(y,x)
+    elevation = atan(z,sqrt(x^2 + y^2))
+    r = sqrt(x^2 + y^2 + z^2)
+    return r, elevation, azimuth
+end
+
 end # module

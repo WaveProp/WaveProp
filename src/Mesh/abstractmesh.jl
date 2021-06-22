@@ -20,6 +20,15 @@ geometric_dimension(M::AbstractMesh) = maximum(x -> geometric_dimension(x), enti
 
 primitive_type(M::AbstractMesh{N,T}) where {N,T} = T
 
+function Base.show(io::IO,msh::AbstractMesh)
+    print(io,"$(typeof(msh)) containg:")
+    for E in keys(msh)
+        iter = ElementIterator(msh,E)
+        print(io,"\n\t $(length(iter)) elements of type ",E,)
+    end
+    return io
+end
+
 """
     struct ElementIterator{E,M}
 

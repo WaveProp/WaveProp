@@ -82,7 +82,7 @@ ent2elt(m::NystromMesh) = m.ent2elt
 ent2elt(m::NystromMesh,ent::AbstractEntity) = m.ent2elt[ent]
 
 # generators for iterating over fields of dofs
-qcoords(m::NystromMesh)  = (coord(q) for q in dofs(m))
+qcoords(m::NystromMesh)  = (coords(q) for q in dofs(m))
 qweights(m::NystromMesh) = (weight(q) for q in dofs(m))
 qjacobians(m::NystromMesh) = (jacobian(q) for q in dofs(m))
 qnormals(m::NystromMesh) = (normal(q) for q in dofs(m))

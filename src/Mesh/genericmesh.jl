@@ -21,15 +21,6 @@ Base.keys(m::GenericMesh) = keys(elements(m))
 entities(m::GenericMesh) = keys(ent2tags(m)) |> collect
 domain(m::GenericMesh) = entities(m) |> Domain
 
-function Base.show(io::IO,msh::GenericMesh)
-    print(io,"Generic mesh containg with containing:")
-    for E in keys(msh)
-        iter = ElementIterator(msh,E)
-        print(io,"\n\t $(length(iter)) elements of type ",E,)
-    end
-    return io
-end
-
 # implement the interface for ElementIterator of lagrange elements on a generic mesh
 function Base.size(iter::ElementIterator{<:LagrangeElement,<:GenericMesh})
     msh               = mesh(iter)

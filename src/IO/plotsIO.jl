@@ -1,5 +1,26 @@
-# plot a vector of points
-@recipe function f(pts::AbstractVector{<:SVector{N}}) where {N}
+"""
+    struct PlotPoints
+
+Structure used for dispatching `SVector` to plot recipes without type-piracy.
+"""
+struct PlotPoints end
+
+@recipe function f(::PlotPoints, pts::SVector{N1, SVector{N2, Float64}}) where {N1, N2}
+    if N2 == 2
+        xx = SVector{N1, Float64}(pt[1] for pt in pts)
+        yy = SVector{N1, Float64}(pt[2] for pt in pts)
+        return xx,yy
+    elseif N2 == 3
+        xx = SVector{N1, Float64}(pt[1] for pt in pts)
+        yy = SVector{N1, Float64}(pt[2] for pt in pts)
+        yy = SVector{N1, Float64}(pt[3] for pt in pts)
+        return xx,yy,zz
+    else
+        notimplemented()
+    end
+end
+
+@recipe function f(::PlotPoints,pts::AbstractVector{<:SVector{N}}) where {N}
     if N == 2
         xx = [pt[1] for pt in pts]
         yy = [pt[2] for pt in pts]
@@ -14,33 +35,37 @@
     end
 end
 
-@recipe function f(pts::AbstractMatrix{<:SVector})
-    vec(pts)
+@recipe function f(::PlotPoints,pts::AbstractMatrix{<:SVector})
+    PlotPoints(),vec(pts)
 end
 
 # plot a hyperrectangle
 @recipe function f(rec::HyperRectangle{N}) where {N}
     seriestype := :path
-    label := ""
+    linecolor --> :black
+    linestyle --> :solid
+    label --> ""
     if N == 2
         pt1 = rec.low_corner
         pt2 = rec.high_corner
-        x1, x2 = pt1[1],pt2[1]
-        y1, y2 = pt1[2],pt2[2]
-        [x1,x2,x2,x1,x1],[y1,y1,y2,y2,y1]
+        x1, x2 = pt1[1], pt2[1]
+        y1, y2 = pt1[2], pt2[2]
+        @series SVector(x1,x2,x2,x1,x1), SVector(y1,y1,y2,y2,y1)
     elseif N == 3
         seriestype := :path
         pt1 = rec.low_corner
         pt2 = rec.high_corner
-        x1, x2 = pt1[1],pt2[1]
-        y1, y2 = pt1[2],pt2[2]
-        z1, z2 = pt1[3],pt2[3]
-        @series [x1,x2,x2,x1,x1],[y1,y1,y2,y2,y1],[z1,z1,z1,z1,z1]
-        @series [x1,x2,x2,x1,x1],[y1,y1,y2,y2,y1],[z2,z2,z2,z2,z2]
-        @series [x1,x1],[y1,y1],[z1,z2]
-        @series [x2,x2],[y1,y1],[z1,z2]
-        @series [x2,x2],[y2,y2],[z1,z2]
-        @series [x1,x1],[y2,y2],[z1,z2]
+        x1, x2 = pt1[1], pt2[1]
+        y1, y2 = pt1[2], pt2[2]
+        z1, z2 = pt1[3], pt2[3]
+        # upper and lower faces
+        @series SVector(x1,x2,x2,x1,x1), SVector(y1,y1,y2,y2,y1), SVector(z1,z1,z1,z1,z1)
+        @series SVector(x1,x2,x2,x1,x1), SVector(y1,y1,y2,y2,y1), SVector(z2,z2,z2,z2,z2)
+        # lines connecting faces
+        @series SVector(x1,x1), SVector(y1,y1), SVector(z1,z2)
+        @series SVector(x2,x2), SVector(y1,y1), SVector(z1,z2)
+        @series SVector(x2,x2), SVector(y2,y2), SVector(z1,z2)
+        @series SVector(x1,x1), SVector(y2,y2), SVector(z1,z2)
     end
 end
 
@@ -149,7 +174,7 @@ end
     label --> ""
     grid   --> false
     aspect_ratio --> :equal
-    for E in etypes(mesh)
+    for E in keys(mesh)
         for el in ElementIterator(mesh,E)
             @series begin
                 el
@@ -221,4 +246,38 @@ end
     y      =  [pt[2] for pt in pts]
     z      =  [pt[3] for pt in pts]
     x,y,z
+end
+
+@recipe function f(el::ParametricElement)
+    sz = 10
+    D = Interpolation.preimage(el)
+    grid   --> false
+    aspect_ratio --> :equal
+    label --> ""
+    if D isa HyperRectangle{1}
+        s       = LinRange(0,1,sz)
+        pts     = [el(v) for v in s]
+        x       = [pt[1] for pt in pts]
+        y       = [pt[2] for pt in pts]
+        x,y
+    elseif D isa HyperRectangle{2}
+        seriestype := :surface
+        xrange = LinRange(0,1,sz)
+        yrange = LinRange(0,1,sz)
+        pts    = [el((x,y)) for x in xrange, y in yrange]
+        x      =  [pt[1] for pt in pts]
+        y      =  [pt[2] for pt in pts]
+        z      =  [pt[3] for pt in pts]
+        x,y,z
+    else
+        notimplemented()
+    end
+end
+
+@recipe function f(els::Vector{<:ParametricElement})
+    for el in els
+        @series begin
+            el
+        end
+    end
 end

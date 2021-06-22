@@ -1,6 +1,7 @@
 using Test
 using WaveProp
 using WaveProp.Geometry
+using WaveProp.ParametricSurfaces
 using StaticArrays
 
 @testset "Intersection and composite surfaces" begin

@@ -23,7 +23,6 @@ include("hyperrectangle.jl")
 include("referenceshapes.jl")
 include("entities.jl")
 include("domain.jl")
-include("simpleshapes.jl")
 
 export
     # abstract types
@@ -50,12 +49,13 @@ export
     skeleton,
     internal_boundary,
     external_boundary,
-    flip_normal,
     low_corner,
     high_corner,
     measure,
     vertices,
     line,
+    new_tag,
+    global_add_entity!,
     # global variables
     TAGS,
     ENTITIES

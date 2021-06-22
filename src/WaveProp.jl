@@ -17,6 +17,8 @@ include("Integration/Integration.jl")
 
 include("Mesh/Mesh.jl")
 
+include("ParametricSurfaces/ParametricSurfaces.jl")
+
 include("PhysicalProblem/PhysicalProblem.jl")
 
 include("Nystrom/Nystrom.jl")
@@ -25,7 +27,7 @@ include("FEM/FEM.jl")
 
 include("IO/IO.jl")
 
-# export all methods in INTERFACE_METHODS
+# export all methods in INTERFACE
 @export_interface
 
 end # module

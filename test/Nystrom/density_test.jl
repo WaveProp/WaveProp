@@ -4,6 +4,7 @@ using WaveProp.Nystrom
 using WaveProp.Geometry
 using WaveProp.Integration
 using WaveProp.Mesh
+using LinearAlgebra
 
 @testset "Density test" begin
     pde  = Helmholtz(;dim=3,k=1)

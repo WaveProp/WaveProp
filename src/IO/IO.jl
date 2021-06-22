@@ -13,6 +13,7 @@ using WaveProp.Geometry
 using WaveProp.Integration
 using WaveProp.Interpolation
 using WaveProp.Mesh
+using WaveProp.ParametricSurfaces
 using WaveProp.Nystrom
 
 WaveProp.@import_interface

@@ -56,12 +56,6 @@ function monomial_basis end
     return :($b)
 end
 
-macro foo(N)
-    @show N
-    ex = :((1,))
-    :(x->x^$N)
-end
-
 @generated function monomial_basis(::Pk{ReferenceSquare,K}) where {K}
     # the K+1 monomials x^(0,0), x^(0,1),x^(1,0), ..., x^(K,K)
     I = CartesianIndices((K + 1, K + 1)) .- CartesianIndex(1, 1)

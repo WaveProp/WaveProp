@@ -22,11 +22,11 @@ Domain() = Domain(AbstractEntity[])
 function Base.show(io::IO,d::Domain)
     ents = entities(d)
     n = length(entities(d))
-    n == 1 ? print(io,"Domain with $n entity:\n") : print(io,"Domain with $n entities:\n")
-    for i in 1:n-1
-        print(io,"\t $(ents[i]) \n")
+    n == 1 ? print(io,"Domain with $n entity:\n") : print(io,"Domain with $n entities:")
+    for ent in ents
+        print(io,"\n\t $(ent)")
     end
-    print(io,"\t $(ents[end])")
+    return io
 end
 
 function geometric_dimension(Ω::Domain)

@@ -1,4 +1,5 @@
 using Test
+using WaveProp
 using WaveProp.Nystrom
 using WaveProp.Geometry
 

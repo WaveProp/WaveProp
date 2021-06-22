@@ -128,6 +128,7 @@ function Sphere(;center=(0, 0,0),radius=0.5)
 end
 Base.in(pt,sph::Sphere) = norm(pt .- sph.center) < sph.radius
 geometric_dimension(ent::Sphere) = 3
+ambient_dimension(ent::Sphere) = 3
 
 struct Ellipsoid <: AbstractEntity
     tag::Int
@@ -166,42 +167,99 @@ struct Cube <: AbstractEntity
     end
 end
 
-function Cube(;low_corner=SVector(0,0,0),widths=(1,1,1))
+function Cube(;center=SVector(0,0,0),widths=(2,2,2))
     nparts = 6
-    domain = HyperRectangle((0,0),(1,1))
+    domain = HyperRectangle((-1.,-1.),(1.,1.))
     parts  = Vector{ParametricEntity}(undef,nparts)
     for id=1:nparts
         param     = (x) -> _cube_parametrization(x[1],x[2],id,widths,low_corner)
         parts[id] = ParametricEntity(param,domain)
     end
     tag = new_tag(3)
-    return Cube(tag,low_corner,widths,parts)
+    return Cube(tag,center,widths,parts)
 end
-# Base.in(pt,cub::Cube) = norm(pt .- sph.center) < sph.radius
 geometric_dimension(ent::Cube) = 3
 
-function _cube_parametrization(u,v,id,widths,low_corner)
+function _cube_parametrization(u,v,id,widths,center)
+    @assert -1 ≤ u ≤ 1
+    @assert -1 ≤ v ≤ 1
     if id==1
         x = SVector(1.,u,v)
     elseif id==2
-        x = SVector(u,1.,v)
+        x = SVector(-u,1.,v)
     elseif id==3
         x = SVector(u,v,1.)
     elseif id==4
-        x = SVector(0.,u,v)
+        x = SVector(-1.,-u,v)
     elseif id==5
-        x = SVector(u,0.,v)
+        x = SVector(u,-1.,v)
     elseif id==6
-        x = SVector(u,v,0.)
+        x = SVector(-u,v,-1.)
     end
-    return low_corner + widths .* x
+    return center + widths/.2 .* x
 end
 
-function _sphere_parametrization(u,v,id,rad,center)
-    # coordinate on face of [-1,1] × [-1,1] × [-1,1] cube
-    x = _cube_parametrization(u,v,id,SVector(2,2,2),SVector(-1,-1,-1))
-    # map (u,v) from [0,1]×[0,1] to [-1,1] × [-1,1] and project onto sphere
-    u = 2u-1
-    v = 2v-1
+function _sphere_parametrization(u,v,id,rad=1,center=SVector(0,0,0))
+    @assert -1 ≤ u ≤ 1
+    @assert -1 ≤ v ≤ 1
+    # parametrization of 6 patches. First gets a point on the cube [-1,1] ×
+    # [-1,1] × [-1,1], the maps it onto the sphere
+    if id==1
+        x = SVector(1.,u,v)
+    elseif id==2
+        x = SVector(-u,1.,v)
+    elseif id==3
+        x = SVector(u,v,1.)
+    elseif id==4
+        x = SVector(-1.,-u,v)
+    elseif id==5
+        x = SVector(u,-1.,v)
+    elseif id==6
+        x = SVector(-u,v,-1.)
+    end
     return center .+ rad.*x./sqrt(u^2+v^2+1)
+end
+
+function _ellipsoid_parametrization(u,v,id,paxis,center)
+    x = _sphere_parametrization(u,v,id)
+    return x .* paxis .+ center
+end
+
+function _bean_parametrization(u,v,id,paxis,center)
+    x = _sphere_parametrization(u,v,id)
+    a = 0.8; b = 0.8; alpha1 = 0.3; alpha2 = 0.4; alpha3=0.1
+    x[1] = a*sqrt(1.0-alpha3*cospi(x[3])).*x[1]
+    x[2] =-alpha1*cospi(x[3])+b*sqrt(1.0-alpha2*cospi(x[3])).*x[2]
+    x[3] = x[3];
+    return x .* paxis .+ center
+end
+
+function _acorn_parametrization(u,v,id,radius,center,rot)
+    Rx = @SMatrix [1 0 0;0 cos(rot[1]) sin(rot[1]);0 -sin(rot[1]) cos(rot[1])]
+    Ry = @SMatrix [cos(rot[2]) 0 -sin(rot[2]);0 1 0;sin(rot[2]) 0 cos(rot[2])]
+    Rz = @SMatrix [cos(rot[3]) sin(rot[3]) 0;-sin(rot[3]) cos(rot[3]) 0;0 0 1]
+    R  = Rz*Ry*Rx;
+    x = _sphere_parametrization(u,v,id)
+    th,phi,_ = cart2sph(x...)
+    r=0.6+sqrt(4.25+2*cos(3*(phi+pi/2)))
+    x[1] = r.*cos(th).*cos(phi)
+    x[2] = r.*sin(th).*cos(phi)
+    x[3] = r.*sin(phi)
+    x    = R*x
+    return radius.*x .+ center
+end
+
+function _cushion_parametrization(u,v,id,radius,center,rot)
+    Rx = @SMatrix [1 0 0;0 cos(rot[1]) sin(rot[1]);0 -sin(rot[1]) cos(rot[1])]
+    Ry = @SMatrix [cos(rot[2]) 0 -sin(rot[2]);0 1 0;sin(rot[2]) 0 cos(rot[2])]
+    Rz = @SMatrix [cos(rot[3]) sin(rot[3]) 0;-sin(rot[3]) cos(rot[3]) 0;0 0 1]
+    R  = Rz*Ry*Rx;
+    x = _sphere_parametrization(u,v,id)
+    th,phi,_ = cart2sph(x...)
+    r = sqrt(0.8+0.5*(cos(2*th)-1).*(cos(4*phi)-1));
+    x[1] = r.*cos(th).*cos(phi)
+    x[2] = r.*sin(th).*cos(phi)
+    x[3] = r.*sin(phi)
+    x    = R*x
+    return radius.*x .+ center
 end

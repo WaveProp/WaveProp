@@ -1,6 +1,6 @@
 using Artifacts
 
-const gmsh_path = artifact"gmsh4.7.0"
+const gmsh_path = artifact"gmsh4.8.4"
 
 const gmsh_dirs = readdir(gmsh_path,join=true)
 
@@ -20,6 +20,7 @@ macro gmsh(ex)
     return quote
         gmsh.initialize()
         try
+            _gmsh_set_verbosity(0)
             $(esc(ex))
         finally
             # make sure we finalize gmsh if something goes wrong
@@ -36,17 +37,18 @@ Read a `.geo` file and generate a [`GenericMesh`](@ref) together with a
 """
 function read_geo(fname;dim=3,h=nothing,order=nothing)
     assert_extension(fname, ".geo")
-    gmsh.initialize()
-    gmsh.open(fname)
-    h     === nothing || _gmsh_set_meshsize(h)
-    order === nothing || _gmsh_set_meshorder(order)
-    gmsh.model.mesh.generate(dim)
-    Ω = _initialize_domain(dim)
-    M = _initialize_mesh(Ω)
-    if dim == 2
-        M = convert_to_2d(M)
+    Ω,M = @gmsh begin
+        gmsh.open(fname)
+        h     === nothing || _gmsh_set_meshsize(h)
+        order === nothing || _gmsh_set_meshorder(order)
+        gmsh.model.mesh.generate(dim)
+        Ω = _initialize_domain(dim)
+        M = _initialize_mesh(Ω)
+        if dim == 2
+            M = convert_to_2d(M)
+        end
+        Ω,M
     end
-    gmsh.finalize()
     return Ω,M
 end
 
@@ -58,13 +60,13 @@ instead of generated.
 """
 function read_msh(fname;dim=3)
     assert_extension(fname, ".msh")
-    @gmsh begin
+    Ω,M = @gmsh begin
         gmsh.open(fname)
         Ω = _initialize_domain(dim)
         M = _initialize_mesh(Ω)
-        gmsh.finalize()
-        return Ω, M
+        Ω, M
     end
+    return Ω,M
 end
 
 """
@@ -243,7 +245,7 @@ end
     gmsh_rectangle(;origin,widths)
 """
 function gmsh_rectangle(;origin=(0.,0.,0.),dx=1,dy=1,dim=2,h=0.1)
-    @gmsh begin
+    Ω,M = @gmsh begin
         _gmsh_set_meshsize(h)
         gmsh.model.occ.addRectangle(origin...,dx,dy)
         gmsh.model.occ.synchronize()
@@ -253,6 +255,7 @@ function gmsh_rectangle(;origin=(0.,0.,0.),dx=1,dy=1,dim=2,h=0.1)
         if dim == 2
             M = convert_to_2d(M)
         end
+        Ω,M
     end
     return Ω,M
 end

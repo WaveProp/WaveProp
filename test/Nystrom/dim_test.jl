@@ -4,6 +4,7 @@ using WaveProp.Nystrom
 using WaveProp.Geometry
 using WaveProp.Integration
 using WaveProp.Mesh
+using StaticArrays
 
 @testset "Greens interpolant test" begin
     # construct interior solution
@@ -13,9 +14,9 @@ using WaveProp.Mesh
         u    = (qnode) -> SingleLayerKernel(pde)(xout,qnode)
         dudn = (qnode) -> DoubleLayerKernel(pde)(xout,qnode)
         clear_entities!()
-        Ω,M  = WaveProp.IO.gmsh_sphere(dim=2,h=0.2)
+        Ω,M  = WaveProp.IO.gmsh_sphere(dim=2,h=0.4)
         Γ    = boundary(Ω)
-        mesh = NystromMesh(M,Γ;order=2)
+        mesh = NystromMesh(M,Γ;order=4)
         γ₀u   = γ₀(u,mesh)
         γ₁u   = γ₁(dudn,mesh)
         S     = SingleLayerOperator(pde,mesh)
@@ -42,37 +43,37 @@ using WaveProp.Mesh
         @test 10*norm(e1,Inf) < norm(e0,Inf)
         @test norm(e1,Inf) < 1e-2
     end
-#     @testset "Elastostatic" begin
-#         pde  = Elastostatic(dim=3,μ=1,λ=2.)
-#         xout = SVector(3,3,3)
-#         c    = ones(Nystrom.default_density_eltype(pde))
-#         u    = (x)   -> SingleLayerKernel(pde)(xout,x)*c
-#         dudn = (x,n) -> transpose(DoubleLayerKernel(pde)(xout,x,n))*c
-#         Geometry.clear!()
-#         Ω,M  = WaveProp.IO.gmsh_sphere(dim=2,h=0.2)
-#         Γ    = boundary(Ω)
-#         mesh = NystromMesh(view(M,Γ);order=2)
-#         γ₀u   = γ₀(u,mesh)
-#         γ₁u   = γ₁(dudn,mesh)
-#         S     = SingleLayerOperator(pde,mesh)
-#         D     = DoubleLayerOperator(pde,mesh)
-#         e0    = WaveProp.Nystrom.error_interior_green_identity(S,D,γ₀u,γ₁u)
-#         Sdim  = Nystrom.assemble_dim(S)
-#         Ddim  = Nystrom.assemble_dim(D)
-#         e1    = WaveProp.Nystrom.error_interior_green_identity(Sdim,Ddim,γ₀u,γ₁u)
-#         @test 10*norm(norm.(e1,Inf),Inf) < norm(norm.(e0,Inf),Inf)
-#         S,D   = Nystrom.single_doublelayer_dim(pde,mesh)
-#         e2    = WaveProp.Nystrom.error_interior_green_identity(S,D,γ₀u,γ₁u)
-#         @test e1 ≈ e2
-#         K     = AdjointDoubleLayerOperator(pde,mesh)
-#         H     = HyperSingularOperator(pde,mesh)
-#         e0    = WaveProp.Nystrom.error_interior_derivative_green_identity(K,H,γ₀u,γ₁u)
-#         Kdim  = Nystrom.assemble_dim(K)
-#         Hdim  = Nystrom.assemble_dim(H)
-#         e1    = WaveProp.Nystrom.error_interior_derivative_green_identity(Kdim,Hdim,γ₀u,γ₁u)
-#         @test 10*norm(norm(e1,Inf),Inf) < norm(norm(e0,Inf),Inf)
-#         @test norm(norm(e1,Inf),Inf) < 1e-4
-#     end
+    @testset "Elastostatic" begin
+        pde  = Elastostatic(dim=3,μ=1,λ=2.)
+        xout = SVector(3,3,3)
+        c    = ones(Nystrom.default_density_eltype(pde))
+        u    = (dof)   -> SingleLayerKernel(pde)(xout,dof)*c
+        dudn = (dof) -> transpose(DoubleLayerKernel(pde)(xout,dof))*c
+        clear_entities!()
+        Ω,M  = WaveProp.IO.gmsh_sphere(dim=2,h=0.4)
+        Γ    = boundary(Ω)
+        mesh = NystromMesh(view(M,Γ);order=4)
+        γ₀u   = γ₀(u,mesh)
+        γ₁u   = γ₁(dudn,mesh)
+        Sop     = SingleLayerOperator(pde,mesh)
+        Dop     = DoubleLayerOperator(pde,mesh)
+        e0    = WaveProp.Nystrom.error_interior_green_identity(Sop,Dop,γ₀u,γ₁u) / norm(norm.(γ₀u,Inf),Inf)
+        Sdim  = Nystrom.assemble_dim(Sop)
+        Ddim  = Nystrom.assemble_dim(Dop)
+        e1    = WaveProp.Nystrom.error_interior_green_identity(Sdim,Ddim,γ₀u,γ₁u) / norm(norm.(γ₀u,Inf),Inf)
+        @test 10*norm(norm.(e1,Inf),Inf) < norm(norm.(e0,Inf),Inf)
+        Sdim2,Ddim2   = Nystrom.single_doublelayer_dim(pde,mesh)
+        e2    = WaveProp.Nystrom.error_interior_green_identity(Sdim2,Ddim2,γ₀u,γ₁u) /norm(norm.(γ₀u,Inf),Inf)
+        @test e1 ≈ e2
+        Kop     = AdjointDoubleLayerOperator(pde,mesh)
+        Hop     = HyperSingularOperator(pde,mesh)
+        e0    = WaveProp.Nystrom.error_interior_derivative_green_identity(Kop,Hop,γ₀u,γ₁u) / norm(norm.(γ₁u,Inf),Inf)
+        Kdim  = Nystrom.assemble_dim(Kop)
+        Hdim  = Nystrom.assemble_dim(Hop)
+        e1    = WaveProp.Nystrom.error_interior_derivative_green_identity(Kdim,Hdim,γ₀u,γ₁u) / norm(norm.(γ₁u,Inf),Inf)
+        @test 10*norm(norm(e1,Inf),Inf) < norm(norm(e0,Inf),Inf)
+        @test norm(norm(e1,Inf),Inf) < 1e-2
+    end
 #     @testset "Maxwell" begin
 #         pde  = Maxwell(dim=3,k=1.0)
 #         xout = SVector(3,3,3)

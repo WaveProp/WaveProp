@@ -56,11 +56,11 @@ function (HS::HyperSingularKernel{T,Laplace{N}})(target,source)::T where {N,T}
     d = norm(r)
     d == 0 && (return zero(T))
     if N==2
-        ID = Mat{2,2,Float64,4}(1,0,0,1)
+        ID = SMatrix{2,2,Float64,4}(1,0,0,1)
         RRT = r*transpose(r) # r ⊗ rᵗ
         return 1/(2π)/(d^2) * transpose(nx)*(( ID -2*RRT/d^2  )*ny)
     elseif N==3
-        ID = Mat{3,3,Float64,9}(1,0,0,0,1,0,0,0,1)
+        ID = SMatrix{3,3,Float64,9}(1,0,0,0,1,0,0,0,1)
         RRT = r*transpose(r) # r ⊗ rᵗ
         return 1/(4π)/(d^3) * transpose(nx)*(( ID -3*RRT/d^2  )*ny)
     end

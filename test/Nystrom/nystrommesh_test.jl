@@ -15,8 +15,8 @@ using WaveProp.ParametricSurfaces
     area   = sum(qweights(nmesh))
     @test isapprox(area,π,atol=1e-5)
     clear_entities!()
-    Ω   = ParametricSurfaces.Sphere() |> Domain
-    Γ   = boundary(Ω)
+    Ω     = ParametricSurfaces.Sphere() |> Domain
+    Γ     = boundary(Ω)
     M     = meshgen(Γ,(4,4))
     nmesh = NystromMesh(view(M,Γ),order=5)
     area   = sum(qweights(nmesh))

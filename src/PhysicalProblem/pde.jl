@@ -56,20 +56,20 @@ default_kernel_eltype(::Elastostatic{N}) where {N}  = SMatrix{N,N,Float64,N*N}
 default_density_eltype(::Elastostatic{N}) where {N} = SVector{N,Float64}
 
 """
-    Maxwell{N,T} <: AbstractPDE{N}
+    Maxwell{T} <: AbstractPDE{3}
 
 Normalized Maxwell's equation ∇ × ∇ × E - k² E = 0, where
 k = ω √ϵμ.
 """
-struct Maxwell{N,T} <: AbstractPDE{N}
+struct Maxwell{T} <: AbstractPDE{3}
     k::T
 end
-Maxwell(;k,dim=3)                   = Maxwell{dim}(k)
-Maxwell{N}(k::T) where {N,T}        = Maxwell{N,T}(k)
+
+Maxwell(;k::T) where {T}        = Maxwell{T}(k)
 
 parameters(pde::Maxwell) = pde.k
 
 getname(::Maxwell) = "Maxwell"
 
-default_kernel_eltype(::Maxwell{N}) where {N}  = SMatrix{N,N,ComplexF64,N*N}
-default_density_eltype(::Maxwell{N}) where {N} = SVector{N,ComplexF64}
+default_kernel_eltype(::Maxwell)   = SMatrix{3,3,ComplexF64,9}
+default_density_eltype(::Maxwell)  = SVector{3,ComplexF64}

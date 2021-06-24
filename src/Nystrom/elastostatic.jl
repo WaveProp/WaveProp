@@ -60,7 +60,8 @@ function (ADL::AdjointDoubleLayerKernel{T,S})(target,source)::T where {T,S<:Elas
     drdn = -dot(r,nx)/d
     if N==2
         ID = SMatrix{2,2,Float64,4}(1,0,0,1)
-        return -1/(4π*(1-ν)*d)*(drdn*((1-2ν)*ID + 2*RRT/d^2) + (1-2ν)/d*(r*transpose(nx) - nx*transpose(r)))
+        out = -1/(4π*(1-ν)*d)*(drdn*((1-2ν)*ID + 2*RRT/d^2) + (1-2ν)/d*(r*transpose(nx) - nx*transpose(r)))
+        return -transpose(out)
     elseif N==3
         ID = SMatrix{3,3,Float64,9}(1,0,0,0,1,0,0,0,1)
         out =  -1/(8π*(1-ν)*d^2)*(drdn * ((1-2*ν)*ID + 3*RRT/d^2) + (1-2*ν)/d*(r*transpose(nx) - nx*transpose(r)))

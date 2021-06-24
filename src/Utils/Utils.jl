@@ -25,7 +25,9 @@ export
     notimplemented,
     abstractmethod,
     assert_extension,
-    assert_concrete_type
+    assert_concrete_type,
+    cross_product_matrix,
+    Point3D
 
 """
     svector(f,n)
@@ -303,5 +305,22 @@ function cart2sph(x,y,z)
     r = sqrt(x^2 + y^2 + z^2)
     return r, elevation, azimuth
 end
+
+"""
+    cross_product_matrix(v)
+
+Returns the matrix `Aᵥ` associated with the
+cross product `v × ϕ` so that `v × ϕ = Aᵥϕ`.
+"""
+function cross_product_matrix(v)
+    return transpose(SMatrix{3,3,Float64,9}(      0, -v[3],  v[2],
+                                             v[3],       0, -v[1],
+                                            -v[2],    v[1],     0))
+end
+
+function fill_zero_diagonal!(A::AbstractMatrix)
+    fill!(Diagonal(A),zero(eltype(A)))
+end
+
 
 end # module

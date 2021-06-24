@@ -1,6 +1,8 @@
 using Test
+using WaveProp
 using WaveProp.Nystrom
 using StaticArrays
+using LinearAlgebra
 
 @testset "Kernels" begin
     pde  = Helmholtz(;dim=3,k=1)
@@ -49,6 +51,8 @@ end
     # function
     op = Maxwell(2)
     T  = Nystrom.default_density_eltype(op)
+    G   = SingleLayerKernel(op)
+    dG  = DoubleLayerKernel(op)
     E  = rand(T)
     x  = rand(SVector{3})
     y  = rand(SVector{3})

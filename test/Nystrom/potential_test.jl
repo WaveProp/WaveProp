@@ -6,7 +6,8 @@ using WaveProp.Integration
 using WaveProp.Mesh
 using WaveProp.ParametricSurfaces
 using StaticArrays
-
+using Random
+Random.seed!(1)
 
 @testset "Interior representation" begin
     # test the interior representation formula u(r) = 𝒮[γ₁u](r) - 𝒟[γ₀u](r)
@@ -27,7 +28,7 @@ using StaticArrays
             S    = SingleLayerPotential(pde,mesh)
             D    = DoubleLayerPotential(pde,mesh)
             T    = Nystrom.default_density_eltype(pde)
-            c    = T<:Number ? one(T) : ones(T)
+            c    = rand(T)
             u    = (qnode) -> SingleLayerKernel(pde)(xout,qnode)*c
             dudn = (qnode) -> transpose(DoubleLayerKernel(pde)(xout,qnode))*c
             γ₀u   = γ₀(u,mesh)
@@ -54,7 +55,7 @@ using StaticArrays
             S    = SingleLayerPotential(pde,mesh)
             D    = DoubleLayerPotential(pde,mesh)
             T    = Nystrom.default_density_eltype(pde)
-            c    = T<:Number ? one(T) : ones(T)
+            c    = rand(T)
             u    = (qnode) -> SingleLayerKernel(pde)(xout,qnode)*c
             dudn = (qnode) -> transpose(DoubleLayerKernel(pde)(xout,qnode))*c
             γ₀u   = γ₀(u,mesh)

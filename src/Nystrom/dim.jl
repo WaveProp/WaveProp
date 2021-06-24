@@ -25,11 +25,13 @@ function single_doublelayer_dim(pde,X,Y=X;compress=Matrix,location=:onsurface)
     # convert to a possibly more efficient format
     S = compress(Sop)
     D = compress(Dop)
+    dict_near = near_interaction_list(dofs(X),Y;atol=0)
+    # precompute dim quantities
     basis,γ₁_basis = _basis_dim(Sop)
     γ₀B,γ₁B,R      = _auxiliary_quantities_dim(Sop,S,D,basis,γ₁_basis,σ)
     # compute corrections
-    δS = _singular_weights_dim(Sop,γ₀B,γ₁B,R)
-    δD = _singular_weights_dim(Dop,γ₀B,γ₁B,R)
+    δS = _singular_weights_dim(Sop,γ₀B,γ₁B,R,dict_near)
+    δD = _singular_weights_dim(Dop,γ₀B,γ₁B,R,dict_near)
     # add corrections to the dense part
     axpy!(true,δS,S)
     axpy!(true,δD,D)
@@ -47,11 +49,13 @@ function adjointdoublelayer_hypersingular_dim(pde,X,Y=X;compress=Matrix,location
     # convert to a possibly more efficient compress
     K = compress(Kop)
     H = compress(Hop)
+    dict_near = near_interaction_list(dofs(X),Y;atol=0)
+    # precompute dim quantities
     basis,γ₁_basis = _basis_dim(Kop)
     γ₀B,γ₁B,R      = _auxiliary_quantities_dim(Kop,K,H,basis,γ₁_basis,σ)
     # compute corrections
-    δK = _singular_weights_dim(Kop,γ₀B,γ₁B,R)
-    δH = _singular_weights_dim(Hop,γ₀B,γ₁B,R)
+    δK        = _singular_weights_dim(Kop,γ₀B,γ₁B,R,dict_near)
+    δH        = _singular_weights_dim(Hop,γ₀B,γ₁B,R,dict_near)
     # add corrections to the dense part
     axpy!(true,δK,K)
     axpy!(true,δH,H)
@@ -65,10 +69,11 @@ function singular_weights_dim(iop::IntegralOperator,compress=Matrix)
     X,Y,op = iop.X, iop.Y, iop.kernel.op
     σ = X == Y ? -0.5 : 0.0
     #
+    dict_near = near_interaction_list(dofs(X),Y;atol=0)
     basis,γ₁_basis = _basis_dim(iop)
     Op1, Op2       = _auxiliary_operators_dim(iop,compress)
     γ₀B,γ₁B,R      = _auxiliary_quantities_dim(iop,Op1,Op2,basis,γ₁_basis,σ)
-    Sp = _singular_weights_dim(iop,γ₀B,γ₁B,R)
+    Sp = _singular_weights_dim(iop,γ₀B,γ₁B,R,dict_near)
     return Sp # a sparse matrix
 end
 
@@ -132,13 +137,12 @@ function _basis_dim(iop)
     return basis,γ₁_basis
 end
 
-function _singular_weights_dim(iop::IntegralOperator,γ₀B,γ₁B,R)
+function _singular_weights_dim(iop::IntegralOperator,γ₀B,γ₁B,R,dict_near)
     X,Y = target_surface(iop), source_surface(iop)
     T   = eltype(iop)
     num_basis = size(γ₀B,2)
     a,b = combined_field_coefficients(iop)
     # we now have the residue R. For the correction we need the coefficients.
-    dict_near = near_interaction_list(dofs(X),Y;atol=0)
     Is = Int[]
     Js = Int[]
     Vs = T[]

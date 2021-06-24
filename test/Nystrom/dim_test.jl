@@ -1,9 +1,10 @@
-using Test, LinearAlgebra, OrderedCollections
+using Test, LinearAlgebra
 using WaveProp
 using WaveProp.Nystrom
 using WaveProp.Geometry
 using WaveProp.Integration
 using WaveProp.Mesh
+using WaveProp.ParametricSurfaces
 using StaticArrays
 using Random
 Random.seed!(1)

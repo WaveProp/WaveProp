@@ -27,6 +27,7 @@ export
     assert_extension,
     assert_concrete_type,
     cross_product_matrix,
+    fill_zero_diagonal!,
     Point3D
 
 """

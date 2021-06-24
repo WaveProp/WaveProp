@@ -17,7 +17,7 @@ function meshgen(Ω::Domain,sz)
 end
 
 """
-    meshgen!(mesh,Ω;h)
+    meshgen!(mesh,Ω,sz)
 
 Similar to [`meshgen`](@ref), but append entries to `mesh`.
 """

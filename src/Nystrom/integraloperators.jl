@@ -28,14 +28,14 @@ end
 function Base.size(iop::IntegralOperator)
     X = target_surface(iop)
     Y = source_surface(iop)
-    (length(qnodes(X)), length(qnodes(Y)))
+    (length(dofs(X)), length(dofs(Y)))
 end
 
 # kernel_type(iop::IntegralOperator) = kernel_type(iop.kernel)
 function Base.getindex(iop::IntegralOperator,i::Integer,j::Integer)
     k = kernel(iop)
-    targets = target_surface(iop) |> qnodes
-    sources = source_surface(iop) |> qnodes
+    targets = target_surface(iop) |> dofs
+    sources = source_surface(iop) |> dofs
     return k(targets[i],sources[j])*weight(sources[j])
 end
 

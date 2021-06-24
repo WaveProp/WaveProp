@@ -1,5 +1,7 @@
 # Single Layer
-function (SL::SingleLayerKernel{T,Laplace{N}})(x,y)::T  where {N,T}
+function (SL::SingleLayerKernel{T,Laplace{N}})(target,source)::T  where {N,T}
+    x = coords(target)
+    y = coords(source)
     r = x - y
     d = norm(r)
     d == 0 && (return zero(T))
@@ -8,12 +10,15 @@ function (SL::SingleLayerKernel{T,Laplace{N}})(x,y)::T  where {N,T}
     elseif N==3
         return 1/(4π)/d
     else
-        notimplemented()    
+        notimplemented()
     end
 end
 
 # Double Layer Kernel
-function (DL::DoubleLayerKernel{T,Laplace{N}})(x,y,ny)::T where {N,T}
+function (DL::DoubleLayerKernel{T,Laplace{N}})(target,source)::T where {N,T}
+    x = coords(target)
+    y = coords(source)
+    ny = normal(source)
     r = x - y
     d = norm(r)
     d == 0 && (return zero(T))
@@ -22,12 +27,15 @@ function (DL::DoubleLayerKernel{T,Laplace{N}})(x,y,ny)::T where {N,T}
     elseif N==3
         return 1/(4π)/(d^3) .* dot(r,ny)
     else
-        notimplemented()    
+        notimplemented()
     end
 end
 
 # Adjoint double Layer Kernel
-function (ADL::AdjointDoubleLayerKernel{T,Laplace{N}})(x,y,nx)::T where {N,T}
+function (ADL::AdjointDoubleLayerKernel{T,Laplace{N}})(target,source)::T where {N,T}
+    x = coords(target)
+    y = coords(source)
+    nx = normal(target)
     r = x - y
     d = norm(r)
     d == 0 && (return zero(T))
@@ -39,7 +47,11 @@ function (ADL::AdjointDoubleLayerKernel{T,Laplace{N}})(x,y,nx)::T where {N,T}
 end
 
 # Hypersingular kernel
-function (HS::HyperSingularKernel{T,Laplace{N}})(x,y,nx,ny)::T where {N,T}
+function (HS::HyperSingularKernel{T,Laplace{N}})(target,source)::T where {N,T}
+    x = coords(target)
+    y = coords(source)
+    nx = normal(target)
+    ny = normal(source)
     r = x - y
     d = norm(r)
     d == 0 && (return zero(T))
@@ -53,4 +65,3 @@ function (HS::HyperSingularKernel{T,Laplace{N}})(x,y,nx,ny)::T where {N,T}
         return 1/(4π)/(d^3) * transpose(nx)*(( ID -3*RRT/d^2  )*ny)
     end
 end
-

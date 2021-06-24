@@ -77,7 +77,7 @@ function _auxiliary_quantities_dim(iop,Op1,Op2,basis,γ₁_basis,σ)
     X,Y    = target_surface(iop), source_surface(iop)
     nbasis = length(basis)
     # compute matrix of basis evaluated on Y
-    ynodes   = qnodes(Y)
+    ynodes   = dofs(Y)
     γ₀B      = Matrix{T}(undef,length(ynodes),nbasis)
     γ₁B      = Matrix{T}(undef,length(ynodes),nbasis)
     for k in 1:nbasis
@@ -87,7 +87,7 @@ function _auxiliary_quantities_dim(iop,Op1,Op2,basis,γ₁_basis,σ)
         end
     end
     # integrate the basis over Y
-    xnodes   = qnodes(X)
+    xnodes   = dofs(X)
     R        = Op1*γ₁B - Op2*γ₀B
     # analytic correction for on-surface evaluation of Greens identity
     if kernel_type(iop) isa Union{SingleLayer,DoubleLayer}
@@ -138,7 +138,7 @@ function _singular_weights_dim(iop::IntegralOperator,γ₀B,γ₁B,R)
     num_basis = size(γ₀B,2)
     a,b = combined_field_coefficients(iop)
     # we now have the residue R. For the correction we need the coefficients.
-    dict_near = near_interaction_list(qnodes(X),Y;atol=0)
+    dict_near = near_interaction_list(dofs(X),Y;atol=0)
     Is = Int[]
     Js = Int[]
     Vs = T[]
@@ -193,7 +193,7 @@ end
 function _source_gen(iop,nsources;kfactor)
     N      = ambient_dimension(iop)
     Y      = source_surface(iop)
-    pts    = qnodes(Y)
+    pts    = dofs(Y)
     # create a bounding box
     bbox   = bounding_box(pts)
     xc     = center(bbox)

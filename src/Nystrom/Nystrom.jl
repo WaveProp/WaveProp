@@ -23,9 +23,11 @@ export
     # abstract types
     # types
     NystromMesh,
+    NystromDOF,
     Laplace,
     Helmholtz,
     Elastostatic,
+    Maxwell,
     Stokes,
     Maxwell,
     SingleLayerKernel,
@@ -61,6 +63,7 @@ include("lebedev.jl")
 include("laplace.jl")
 include("helmholtz.jl")
 include("elastostatic.jl")
+include("maxwell.jl")
 include("density.jl")
 include("potential.jl")
 include("integraloperators.jl")

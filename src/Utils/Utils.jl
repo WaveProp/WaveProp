@@ -28,7 +28,8 @@ export
     assert_concrete_type,
     cross_product_matrix,
     fill_zero_diagonal!,
-    Point3D
+    Point3D,
+    fill_zero_diagonal!
 
 """
     svector(f,n)
@@ -320,7 +321,14 @@ function cross_product_matrix(v)
 end
 
 function fill_zero_diagonal!(A::AbstractMatrix)
-    fill!(Diagonal(A),zero(eltype(A)))
+    # CHECK: is this function necessary?
+    # it seems that, by default, the operators' 
+    # diagonals are always zero
+    n, m = size(A)
+    @assert n == m
+    for i in 1:n
+        A[i, i] = zero(eltype(A))
+    end
 end
 
 

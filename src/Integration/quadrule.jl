@@ -265,11 +265,10 @@ an appropiate quadrature rule.
 """
 function qrule_for_reference_shape(ref,order)
     if ref isa ReferenceLine
-        n = ceil(Int,(order + 1) /  2)
+        n  = ceil(Int,(order + 1) /  2)
         return GaussLegendre{n}()
     elseif ref isa ReferenceSquare
-        n  = ceil(Int,(order + 1) ÷ 2)
-        qx = GaussLegendre{n}()
+        qx = qrule_for_reference_shape(ReferenceLine(),order)
         qy = qx
         return TensorProductQuadrature(qx,qy)
     elseif ref isa ReferenceTriangle

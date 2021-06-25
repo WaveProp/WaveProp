@@ -12,7 +12,9 @@ struct Laplace{N} <: AbstractPDE{N} end
 
 Laplace(;dim=3) = Laplace{dim}()
 
-getname(::Laplace) = "Laplace"
+function Base.show(io::IO,pde::Laplace)
+    print(io,"Δu = 0")
+end
 
 default_kernel_eltype(::Laplace)  = Float64
 default_density_eltype(::Laplace) = Float64
@@ -28,7 +30,10 @@ end
 
 Helmholtz(;k,dim=3) = Helmholtz{dim,typeof(k)}(k)
 
-getname(::Helmholtz) = "Helmholtz"
+function Base.show(io::IO,pde::Helmholtz)
+    # k = parameters(pde)
+    print(io,"Δu + k u = 0")
+end
 
 parameters(pde::Helmholtz) = pde.k
 
@@ -48,7 +53,10 @@ end
 Elastostatic(;μ,λ,dim=3)               = Elastostatic{dim}(promote(μ,λ)...)
 Elastostatic{N}(μ::T,λ::T) where {N,T} = Elastostatic{N,T}(μ,λ)
 
-getname(::Elastostatic) = "Elastostatic"
+function Base.show(io::IO,pde::Elastostatic)
+    # μ,λ = parameters(pde)
+    print(io,"μΔu + (μ+λ)∇(∇⋅u) = 0")
+end
 
 parameters(pde::Elastostatic) = pde.μ, pde.λ
 
@@ -65,11 +73,14 @@ struct Maxwell{T} <: AbstractPDE{3}
     k::T
 end
 
-Maxwell(;k::T) where {T}        = Maxwell{T}(k)
+Maxwell(;dim=3,k::T) where {T}        = Maxwell{T}(k)
 
 parameters(pde::Maxwell) = pde.k
 
-getname(::Maxwell) = "Maxwell"
+function Base.show(io::IO,pde::Maxwell)
+    # k = parameters(pde)
+    print(io,"∇ × ∇ × E - k² E = 0")
+end
 
 default_kernel_eltype(::Maxwell)   = SMatrix{3,3,ComplexF64,9}
 default_density_eltype(::Maxwell)  = SVector{3,ComplexF64}

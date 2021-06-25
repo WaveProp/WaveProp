@@ -59,7 +59,7 @@ end
     jac = rand(SMatrix{3,2})
     xdof = NystromDOF(x,1.,jac,0,0)
     ydof = NystromDOF(y,1.,jac,0,0)
-    # [ n(y) × (∇ʸ × G(x,y) ) ]ᵗ E = [ ∇ʸ × G ]ᵗ (E × n(y))
+    # [ n(y) × (∇ʸ × G(x,y) ) ]ᵗ E = [ ∇ʸ × G ]ᵗ (E × n(y)) = -[ ∇ˣ G ] (n(y) × E)
     lhs = dG(xdof,ydof)*E
     rhs = Nystrom._curl_y_green_tensor_maxwell(x,y,op.k) * cross(E,normal(ydof))
     @test lhs ≈ rhs

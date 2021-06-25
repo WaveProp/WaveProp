@@ -12,6 +12,7 @@ Random.seed!(1)
 
 @testset "DIM" begin
     # construct interior solution
+    rtol=5e-2
     @testset "Greens identity (interior) 2d" begin
         clear_entities!()
         Ω   = ParametricSurfaces.Circle() |> Domain
@@ -44,8 +45,10 @@ Random.seed!(1)
             Sdim  = Nystrom.assemble_dim(S)
             Ddim  = Nystrom.assemble_dim(D)
             e1    = Nystrom.error_interior_green_identity(Sdim,Ddim,γ₀u,γ₁u)/γ₀u_norm
-            @test norm(e0,Inf) > 1e-2
-            @test norm(e1,Inf) < 1e-2
+            @testset "Single/double layer $(string(pde))" begin
+                @test norm(e0,Inf) > rtol
+                @test norm(e1,Inf) < rtol
+            end
             # adjoint double-layer and hypersingular
             K     = AdjointDoubleLayerOperator(pde,mesh)
             Kmat     = K |> Matrix
@@ -57,14 +60,16 @@ Random.seed!(1)
             Kdim  = Nystrom.assemble_dim(K)
             Hdim  = Nystrom.assemble_dim(H)
             e1   = WaveProp.Nystrom.error_interior_derivative_green_identity(Kdim,Hdim,γ₀u,γ₁u)/γ₁u_norm
-            @test norm(e0,Inf) > 1e-2
-            @test norm(e1,Inf) < 1e-2
+            @testset "Adjoint double-layer/hypersingular $(string(pde))" begin
+                @test norm(e0,Inf) > rtol
+                @test norm(e1,Inf) < rtol
+            end
         end
     end
 
     @testset "Greens identity (interior) 3d" begin
         clear_entities!()
-        Ω   = ParametricSurfaces.Sphere() |> Domain
+        Ω   = ParametricSurfaces.Sphere(;radius=1) |> Domain
         Γ   = boundary(Ω)
         M   = meshgen(Γ,(2,2))
         mesh = NystromMesh(view(M,Γ),order=5)
@@ -73,7 +78,7 @@ Random.seed!(1)
             Laplace(;dim=3),
             Helmholtz(;dim=3,k=1.2),
             Elastostatic(;dim=3,μ=2,λ=3),
-            Maxwell(;k=1)
+            Maxwell(;k=2.)
         )
         for pde in ops
             T    = Nystrom.default_density_eltype(pde)
@@ -95,8 +100,10 @@ Random.seed!(1)
             Sdim  = Nystrom.assemble_dim(S)
             Ddim  = Nystrom.assemble_dim(D)
             e1    = Nystrom.error_interior_green_identity(Sdim,Ddim,γ₀u,γ₁u)/γ₀u_norm
-            @test norm(e0,Inf) > 1e-2
-            @test norm(e1,Inf) < 1e-2
+            @testset "Single/double layer $(string(pde))" begin
+                @test norm(e0,Inf) > rtol
+                @test norm(e1,Inf) < rtol
+            end
             # adjoint double-layer and hypersingular
             pde isa Maxwell && continue
             K     = AdjointDoubleLayerOperator(pde,mesh)
@@ -109,8 +116,10 @@ Random.seed!(1)
             Kdim  = Nystrom.assemble_dim(K)
             Hdim  = Nystrom.assemble_dim(H)
             e1   = WaveProp.Nystrom.error_interior_derivative_green_identity(Kdim,Hdim,γ₀u,γ₁u)/γ₁u_norm
-            @test norm(e0,Inf) > 1e-2
-            @test norm(e1,Inf) < 1e-2
+            @testset "Adjoint double-layer/hypersingular $(string(pde))" begin
+                @test norm(e0,Inf) > rtol
+                @test norm(e1,Inf) < rtol
+            end
         end
     end
 
@@ -146,8 +155,10 @@ Random.seed!(1)
             Sdim  = Nystrom.assemble_dim(S)
             Ddim  = Nystrom.assemble_dim(D)
             e1    = Nystrom.error_exterior_green_identity(Sdim,Ddim,γ₀u,γ₁u)/γ₀u_norm
-            @test norm(e0,Inf) > 3e-2
-            @test norm(e1,Inf) < 3e-2
+            @testset "Single/double layer $(string(pde))" begin
+                @test norm(e0,Inf) > rtol
+                @test norm(e1,Inf) < rtol
+            end
             # adjoint double-layer and hypersingular
             K     = AdjointDoubleLayerOperator(pde,mesh)
             Kmat     = K |> Matrix
@@ -159,29 +170,31 @@ Random.seed!(1)
             Kdim  = Nystrom.assemble_dim(K)
             Hdim  = Nystrom.assemble_dim(H)
             e1   = WaveProp.Nystrom.error_exterior_derivative_green_identity(Kdim,Hdim,γ₀u,γ₁u)/γ₁u_norm
-            @test norm(e0,Inf) > 3e-2
-            @test norm(e1,Inf) < 3e-2
+            @testset "Adjoint double-layer/hypersingular $(string(pde))" begin
+                @test norm(e0,Inf) > rtol
+                @test norm(e1,Inf) < rtol
+            end
         end
     end
 
     @testset "Greens identity (exterior) 3d" begin
         clear_entities!()
-        Ω   = ParametricSurfaces.Sphere() |> Domain
+        Ω   = ParametricSurfaces.Sphere(;radius=3) |> Domain
         Γ   = boundary(Ω)
-        M   = meshgen(Γ,(3, 3))
+        M   = meshgen(Γ,(2,2))
         mesh = NystromMesh(view(M,Γ),order=5)
-        xin = SVector(0.1,-0.2,0)
+        xs = SVector(0.1,-0.1,0.2)
         ops = (
             Laplace(;dim=3),
             Helmholtz(;dim=3,k=1.2),
-            Elastostatic(;dim=3,μ=2,λ=3)
-            #Maxwell(;k=1)
+            Elastostatic(;dim=3,μ=2,λ=3),
+            Maxwell(;k=1)
         )
         for pde in ops
             T    = Nystrom.default_density_eltype(pde)
             c    = rand(T)
-            u    = (qnode) -> SingleLayerKernel(pde)(xin,qnode)*c
-            dudn = (qnode) -> transpose(DoubleLayerKernel(pde)(xin,qnode))*c
+            u    = (qnode) -> SingleLayerKernel(pde)(xs,qnode)*c
+            dudn = (qnode) -> transpose(DoubleLayerKernel(pde)(xs,qnode))*c
             γ₀u   = γ₀(u,mesh)
             γ₁u   = γ₁(dudn,mesh)
             γ₀u_norm = norm(norm.(γ₀u,Inf),Inf)
@@ -197,8 +210,10 @@ Random.seed!(1)
             Sdim  = Nystrom.assemble_dim(S)
             Ddim  = Nystrom.assemble_dim(D)
             e1    = Nystrom.error_exterior_green_identity(Sdim,Ddim,γ₀u,γ₁u)/γ₀u_norm
-            @test norm(e0,Inf) > 2e-2
-            @test norm(e1,Inf) < 2e-2
+            @testset "Single/double layer $(string(pde))" begin
+                @test norm(e0,Inf) > rtol
+                @test norm(e1,Inf) < rtol
+            end
             # adjoint double-layer and hypersingular
             pde isa Maxwell && continue
             K     = AdjointDoubleLayerOperator(pde,mesh)
@@ -211,8 +226,10 @@ Random.seed!(1)
             Kdim  = Nystrom.assemble_dim(K)
             Hdim  = Nystrom.assemble_dim(H)
             e1   = WaveProp.Nystrom.error_exterior_derivative_green_identity(Kdim,Hdim,γ₀u,γ₁u)/γ₁u_norm
-            @test norm(e0,Inf) > 6e-2
-            @test norm(e1,Inf) < 6e-2
+            @testset "Adjoint double-layer/hypersingular $(string(pde))" begin
+                @test norm(e0,Inf) > rtol
+                @test norm(e1,Inf) < rtol
+            end
         end
     end
 end

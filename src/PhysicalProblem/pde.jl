@@ -84,3 +84,23 @@ end
 
 default_kernel_eltype(::Maxwell)   = SMatrix{3,3,ComplexF64,9}
 default_density_eltype(::Maxwell)  = SVector{3,ComplexF64}
+
+"""
+    MaxwellCFIE{T} <: AbstractPDE{3}
+
+Normalized Maxwell's equation ∇ × ∇ × E - k² E = 0, where
+k = ω √ϵμ.
+"""
+struct MaxwellCFIE{T} <: AbstractPDE{3}
+    k::T   # wavenumber
+end
+MaxwellCFIE(;k) = MaxwellCFIE{ComplexF64}(k)
+parameters(pde::MaxwellCFIE) = pde.k
+
+function Base.show(io::IO,pde::MaxwellCFIE)
+    # k = parameters(pde)
+    print(io,"∇ × ∇ × E - k² E = 0")
+end
+
+default_kernel_eltype(::MaxwellCFIE)   = SMatrix{3,3,ComplexF64,9}
+default_density_eltype(::MaxwellCFIE)  = SVector{3,ComplexF64}

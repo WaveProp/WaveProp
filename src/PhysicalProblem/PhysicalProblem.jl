@@ -17,6 +17,7 @@ export
     Helmholtz,
     Elastostatic,
     Maxwell,
+    MaxwellCFIE,
     default_density_eltype,
     default_kernel_eltype,
     parameters

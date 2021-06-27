@@ -27,7 +27,7 @@ function single_doublelayer_dim(pde,X,Y=X;compress=Matrix,location=:onsurface)
     D = compress(Dop)
     dict_near = near_interaction_list(dofs(X),Y;atol=0)
     # precompute dim quantities
-    basis,γ₁_basis = _basis_dim(Sop)
+    basis,γ₁_basis = _basis_dim(Sop)  # list of functions γ₀ and γ₁ for each source
     γ₀B,γ₁B,R      = _auxiliary_quantities_dim(Sop,S,D,basis,γ₁_basis,σ)
     # compute corrections
     δS = _singular_weights_dim(Sop,γ₀B,γ₁B,R,dict_near)
@@ -131,7 +131,7 @@ end
 
 function _basis_dim(iop)
     op = pde(kernel(iop))
-    xs = _source_gen(iop)
+    xs = _source_gen(iop) # list of Lebedev sources
     basis     = [(source) -> SingleLayerKernel(op)(x,source) for x in xs]
     γ₁_basis  = [(source) -> transpose(DoubleLayerKernel(op)(x,source)) for x in xs]
     return basis,γ₁_basis

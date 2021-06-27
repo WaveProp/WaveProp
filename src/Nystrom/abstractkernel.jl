@@ -31,7 +31,6 @@ struct SingleLayerKernel{T,Op} <: AbstractKernel{T}
 end
 SingleLayerKernel{T}(op) where {T} = SingleLayerKernel{T,typeof(op)}(op)
 SingleLayerKernel(op)              = SingleLayerKernel{default_kernel_eltype(op)}(op)
-(op::SingleLayerKernel)(target,source) = op(coords(target),coords(source))
 
 """
     struct DoubleLayerKernel{T,Op} <: AbstractKernel{T}

@@ -30,7 +30,7 @@ export
     Elastostatic,
     Maxwell,
     Stokes,
-    Maxwell,
+    MaxwellCFIE,
     SingleLayerKernel,
     DoubleLayerKernel,
     AdjointDoubleLayerKernel,
@@ -58,7 +58,8 @@ export
     isinside,
     dom2dof,
     assemble,
-    qweights
+    qweights,
+    diagonal_ncross_matrix
 
 include("nystrommesh.jl")
 include("abstractkernel.jl")
@@ -68,10 +69,12 @@ include("laplace.jl")
 include("helmholtz.jl")
 include("elastostatic.jl")
 include("maxwell.jl")
+include("maxwellCFIE.jl")
 include("density.jl")
 include("potential.jl")
 include("integraloperators.jl")
 include("dim.jl")
+include("maxwellCFIE_dim.jl")
 include("assemble_gk.jl")
 # include("ldim.jl")
 # include("assemble.jl")

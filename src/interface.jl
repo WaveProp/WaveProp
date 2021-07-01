@@ -123,6 +123,14 @@ function domain end
 push!(INTERFACE,:domain)
 
 """
+    image(f)
+
+The image of the function `f`.
+"""
+function image end
+push!(INTERFACE,:image)
+
+"""
     parametrization(el)
 
 Return the underlying parametrization of `el`.
@@ -179,6 +187,12 @@ push!(INTERFACE,:qcoords)
 
 function dofs end
 push!(INTERFACE,:dofs)
+
+function mesh end
+push!(INTERFACE,:mesh)
+
+function refine end
+push!(INTERFACE,:refine)
 
 function flip_normal end
 push!(INTERFACE,:flip_normal)

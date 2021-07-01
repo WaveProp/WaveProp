@@ -1,6 +1,8 @@
 using Test
 using WaveProp
 using WaveProp.Nystrom
+using WaveProp.ParametricSurfaces
+using WaveProp.Mesh
 using StaticArrays
 using LinearAlgebra
 

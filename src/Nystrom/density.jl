@@ -18,24 +18,119 @@ Base.setindex(σ::Density,args...) = setindex(σ.vals,args...)
 Density(etype::DataType,surf)  = Density(zeros(etype,length(surf)),surf)
 Density(pde::AbstractPDE,surf) = Density(default_density_eltype(pde),surf)
 
-Base.:-(σ::Density) = Density(-σ.vals,σ.mesh)
+Base.zero(σ::Density) = Density(zero(σ.vals),mesh(σ))
 
-function Base.:\(A::AbstractMatrix,σ::Density)
+# overload some unary/binary operations for convenience
+Base.:-(σ::Density) = Density(-σ.vals,σ.mesh)
+Base.:+(σ::Density) = σ
+Base.:*(a::Number,σ::Density) = Density(a*σ.vals,σ.mesh)
+Base.:*(σ::Density,a::Number) = a*σ
+Base.:/(σ::Density,a::Number) = Density(σ.vals/a,σ.mesh)
+Base.:*(A::Matrix,σ::Density) = Density(A*σ.vals,σ.mesh)
+
+function Base.:\(A::AbstractMatrix{T},σ::Density{V}) where {T,V}
     @assert size(A,1) == size(A,2)
-    y = A\σ.vals
-    return Density(y,σ.mesh)
+    if T <: Number && V <: Number
+        y = A\σ.vals
+        return Density(y,σ.mesh)
+    elseif T <: SMatrix && V <: SVector
+        Amat    = blockmatrix_to_matrix(A)
+        σ_vec   = reinterpret(eltype(V),σ.vals)
+        vals_vec = Amat\σ_vec
+        vals    = reinterpret(V,vals_vec) |> collect
+        return Density(vals,σ.mesh)
+    else
+        notimplemented()
+    end
 end
 
-function IterativeSolvers.gmres!(σ::Density,A,μ::Density,args...;kwargs...)
-    gmres!(σ.vals,A,μ.vals,args...;kwargs...)
+function IterativeSolvers.gmres!(σ::Density{V},A::AbstractMatrix{T},μ::Density{V},args...;kwargs...) where {T,V}
+    if T <: Number && V <: Number
+        gmres!(σ.vals,A,μ.vals,args...;kwargs...)
+        return σ
+    elseif T <: SMatrix && V <: SVector
+        Amat    = blockmatrix_to_matrix(A)
+        σ_vec   = reinterpret(eltype(V),σ.vals) |> collect
+        μ_vec   = reinterpret(eltype(V),μ.vals) |> collect
+        gmres!(σ_vec,Amat,μ_vec,args...;kwargs...)
+        return σ
+    else
+        notimplemented()
+    end
 end
 IterativeSolvers.gmres(A,μ::Density,args...;kwargs...) = gmres!(zero(μ),A,μ,args...;kwargs...)
 
+function ncross(σ::Density)
+    Γ = mesh(σ)
+    iter = zip(vals(σ),dofs(Γ))
+    v = map(iter) do (v,dof)
+        cross(normal(dof),v)
+    end
+    Density(v,Γ)
+end
 
+"""
+    struct TangentialDensity{T,S} <: AbstractVector{T}
+
+A density tangential to the surface defined by `mesh`. The `vals` field stores
+the components on the tangential basis defined by the surface `jacobian` at each
+`mesh` point.
+
+!!! note
+    Calling `TangentialDensity` on a `Density` object `σ` will compute `σ - (σ⋅n)n`,
+    and express it using the the basis induced by the jacobian at each point.
+    Unless `σ` is already a tangetial field, this is a projection and not only
+    a change of basis.
+"""
+struct TangentialDensity{V,S<:NystromMesh} <: AbstractVector{V}
+    vals::Vector{V}
+    mesh::S
+end
+
+vals(σ::TangentialDensity) = σ.vals
+mesh(σ::TangentialDensity) = σ.mesh
+
+Base.size(σ::TangentialDensity,args...)     = size(σ.vals,args...)
+Base.getindex(σ::TangentialDensity,args...) = getindex(σ.vals,args...)
+Base.setindex(σ::TangentialDensity,args...) = setindex(σ.vals,args...)
+
+function TangentialDensity(σ::Density)
+    Γ = mesh(σ)
+    iter = zip(vals(σ),dofs(Γ))
+    v = map(iter) do (σ,dof)
+        jac = jacobian(dof)
+        rhs = transpose(jac)*σ
+        A   = transpose(jac)*jac
+        A\rhs
+    end
+    TangentialDensity(v,Γ)
+end
+
+function ncross(σ::TangentialDensity)
+    #TODO. Should return a `TangentialDensity`?
+end
+
+function Density(σ::TangentialDensity)
+    Γ = mesh(σ)
+    iter = zip(vals(σ),dofs(Γ))
+    v = map(iter) do (σ,dof)
+        jac = jacobian(dof)
+        jac*σ
+    end
+    Density(v,Γ)
+end
+
+function trace(f,X)
+    vals = [f(dof) for dof in dofs(X)]
+    return Density(vals,X)
+end
+
+# TODO: γ₀ and γ₁ should be replaced by trace (better name)
 function γ₀(f,X)
     vals = [f(dof) for dof in dofs(X)]
     return Density(vals,X)
 end
+
 
 function γ₁(dfdn,X)
     vals = [dfdn(dof) for dof in dofs(X)]

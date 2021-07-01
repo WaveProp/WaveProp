@@ -165,7 +165,7 @@ end
         for i in 1:num_nodes
             x       = el(x̂[i])
             jac     = jacobian(el,x̂[i])
-            μ       = transpose(jac)*jac |> det |> sqrt
+            μ       = integration_measure(jac)
             w       = μ*ŵ[i]
             # global index of the dof that is going to be created
             globidx = length(dofs(msh)) + 1
@@ -179,6 +179,25 @@ end
     msh.elt2dof[E] = el2dofs
     return msh
 end
+
+# ElementIterator for NystromMesh
+function Base.size(iter::ElementIterator{<:AbstractElement,<:NystromMesh})
+    E = eltype(iter)
+    M = mesh(iter)
+    return size(elements(M,E))
+end
+
+function Base.getindex(iter::ElementIterator{<:AbstractElement,<:NystromMesh},i::Int)
+    E = eltype(iter)
+    M = mesh(iter)
+    return elements(M,E)[i]
+end
+
+function Base.iterate(iter::ElementIterator{<:AbstractElement,<:NystromMesh}, state=1)
+    state > length(iter) && (return nothing)
+    iter[state], state + 1
+end
+
 
 """
     near_interaction_list(pts,Y;atol)

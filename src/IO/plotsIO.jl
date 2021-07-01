@@ -250,7 +250,7 @@ end
 
 @recipe function f(el::ParametricElement)
     sz = 10
-    D = Interpolation.preimage(el)
+    D = el.preimage
     grid   --> false
     aspect_ratio --> :equal
     label --> ""

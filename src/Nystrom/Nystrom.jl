@@ -8,6 +8,7 @@ using IterativeSolvers
 using Base.Threads
 using SpecialFunctions
 using OrderedCollections
+using QuadGK
 
 using WaveProp
 using WaveProp.Utils
@@ -38,6 +39,7 @@ export
     IntegralOperator,
     NystromMesh,
     Density,
+    TangentialDensity,
     SingleLayerPotential,
     DoubleLayerPotential,
     SingleLayerOperator,
@@ -45,6 +47,8 @@ export
     AdjointDoubleLayerOperator,
     HyperSingularOperator,
     # methods
+    ncross,
+    trace,
     coords,
     weight,
     γ₀,
@@ -68,6 +72,7 @@ include("density.jl")
 include("potential.jl")
 include("integraloperators.jl")
 include("dim.jl")
+include("assemble_gk.jl")
 # include("ldim.jl")
 # include("assemble.jl")
 # include("martensen_kussmaul.jl")

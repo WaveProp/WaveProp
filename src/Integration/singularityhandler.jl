@@ -18,7 +18,7 @@ end
 IMT(;a=1,p=1) = IMT{a,p}()
 
 domain(::IMT) = ReferenceLine()
-range(::IMT)  = ReferenceLine()
+image(::IMT)  = ReferenceLine()
 
 function (f::IMT{A,P})(x) where {A,P}
     exp(A * (1 - 1 / x[1]^P))
@@ -39,7 +39,7 @@ end
 Kress(;order=5) = Kress{order}()
 
 domain(k::Kress) = ReferenceLine()
-range(k::Kress)  = ReferenceLine()
+image(k::Kress)  = ReferenceLine()
 
 # NOTE: fastmath is needed here to allow for various algebraic simplifications
 # which are not exact in floating arithmetic. Maybe reorder the operations *by
@@ -84,7 +84,7 @@ end
 KressP(;order=5) = KressP{order}()
 
 domain(k::KressP) = ReferenceLine()
-range(k::KressP)  = ReferenceLine()
+image(k::KressP)  = ReferenceLine()
 
 @fastmath function (f::KressP{P})(y) where {P}
     x = y[1]
@@ -114,7 +114,7 @@ reference triangle.
 struct Duffy <: AbstractSingularityHandler{ReferenceTriangle} end
 
 domain(::Duffy) = ReferenceSquare()
-range(::Duffy)  = ReferenceTriangle()
+image(::Duffy)  = ReferenceTriangle()
 
 function (::Duffy)(u)
     SVector(u[1], (1 - u[1]) * u[2])
@@ -136,7 +136,7 @@ struct TensorProductSingularityHandler{S} <: AbstractSingularityHandler{Referenc
 end
 
 domain(::TensorProductSingularityHandler) = ReferenceSquare()
-range(::TensorProductSingularityHandler) = ReferenceSquare()
+image(::TensorProductSingularityHandler) = ReferenceSquare()
 
 function TensorProductSingularityHandler(q...)
     TensorProductSingularityHandler(q)

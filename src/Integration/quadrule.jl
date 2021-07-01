@@ -151,11 +151,21 @@ Exactly integrates all polynomials of degree `≤ 2N-1`.
 """
 struct GaussLegendre{N} <: AbstractQuadratureRule{ReferenceLine} end
 
+"""
+    GaussLegendre(;order)
+
+Construct a `GaussLegendre` of the desired order over the `[0,1]` interval.
+"""
+function GaussLegendre(;order=p)
+    N  = ceil(Int,(order + 1) /  2)
+    GaussLegendre{N}()
+end
+
 GaussLegendre(n::Int) = GaussLegendre{n}()
 
 # N point Gauss quadrature integrates all polynomials up to degree 2N-1, yielding
 # an error of order 2N
-order(q::GaussLegendre) where {N} = 2*N-1
+order(q::GaussLegendre{N}) where {N} = 2*N-1
 
 @generated function (q::GaussLegendre{N})() where {N}
     x, w  = gauss(N) # This is a quadgk function. Gives integral in [-1,1]. Converted to [0,1] below
@@ -164,12 +174,10 @@ order(q::GaussLegendre) where {N} = 2*N-1
     return :($xs, $ws)
 end
 
-
-
 """
     refine(q::AbstractQuadratureRule,[k=2])
 
-Generate a similar quadrature rule with `k`-times as many quadrature nodes.
+Generate a similar quadrature rule, but with `k`-times as many quadrature nodes.
 """
 function refine(q::GaussLegendre{N},k=2) where {N}
     GaussLegendre(Int(N*k))
@@ -256,6 +264,14 @@ function (q::TensorProductQuadrature)()
 end
 
 # some helper functions
+function integration_measure(jac::SMatrix)
+    M,N = size(jac)
+    if M == N
+        det(jac) |> abs
+    else
+        transpose(jac)*jac |> det |> sqrt
+    end
+end
 
 """
     qrule_for_reference_shape(ref,order)
@@ -265,8 +281,7 @@ an appropiate quadrature rule.
 """
 function qrule_for_reference_shape(ref,order)
     if ref isa ReferenceLine
-        n  = ceil(Int,(order + 1) /  2)
-        return GaussLegendre{n}()
+        return GaussLegendre(;order)
     elseif ref isa ReferenceSquare
         qx = qrule_for_reference_shape(ReferenceLine(),order)
         qy = qx

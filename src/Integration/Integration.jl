@@ -45,6 +45,7 @@ export
     qnodes,
     qweights,
     qnormals,
+    integration_measure,
     qrule_for_reference_shape,
     singular_weights,
     singular_quadrature,

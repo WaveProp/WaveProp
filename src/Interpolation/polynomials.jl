@@ -84,13 +84,16 @@ end
 end
 
 """
-    lagrange_basis(nodes)
+    lagrange_basis(nodes,[sp::AbstractPolynomialSpace])
 
 Return the set of `n` polynomials in `sp` taking the value of `1` on node `i`
-and `0` on nodes `j ≂̸ i` for `1 ≤ i ≤ n`.
+and `0` on nodes `j ≂̸ i` for `1 ≤ i ≤ n`. For `N`-dimensional
+tensor-product nodes represented in the form of an `SVector{N,Vector{T}}`, the
+argument `sp` may be ommited.
 
-It is assumed that the value of a function on `nodes` uniquely determine a
-polynomial in `sp`.
+!!! danger
+    It is assumed that the value of a function on `nodes` uniquely determine a
+    polynomial in `sp`.
 """
 function lagrange_basis(nodes, sp::AbstractPolynomialSpace)
     N = dimension(sp)
@@ -106,4 +109,20 @@ function lagrange_basis(nodes, sp::AbstractPolynomialSpace)
         end
     end
     return lag_basis
+end
+
+function lagrange_basis(nodes::Vector{<:Number})
+    l = x -> prod(nodes) do xi
+        x-xi
+    end
+    w = barycentric_lagrange_weights(nodes)
+    map(nodes,w) do xj,wj
+        x -> x == xj ? 1.0 : l(x) * wj/(x-xj)
+    end
+end
+# other possible one-dimenional syntaxes
+lagrange_basis(nodes::SVector{1,<:Vector}) = lagrange_basis(nodes[1])
+function lagrange_basis(nodes::SVector{<:Any,SVector{1,T}}) where {T}
+    x = reinterpret(T,nodes) |> Vector
+    lagrange_basis(x)
 end

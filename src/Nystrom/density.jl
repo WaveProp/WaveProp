@@ -95,7 +95,10 @@ Base.getindex(σ::TangentialDensity,args...) = getindex(σ.vals,args...)
 Base.setindex(σ::TangentialDensity,args...) = setindex(σ.vals,args...)
 
 function TangentialDensity(σ::Density)
+    # original density type must be a 3D vector
+    @assert eltype(vals(σ)) <: SVector{3}
     Γ = mesh(σ)
+    @assert typeof(Γ|>dofs|>first|>jacobian) <: SMatrix{3,2}
     iter = zip(vals(σ),dofs(Γ))
     v = map(iter) do (σ,dof)
         jac = jacobian(dof)
@@ -107,7 +110,23 @@ function TangentialDensity(σ::Density)
 end
 
 function ncross(σ::TangentialDensity)
-    #TODO. Should return a `TangentialDensity`?
+    # original density type must be a 2D vector
+    @assert eltype(vals(σ)) <: SVector{2}
+    Γ = mesh(σ)
+    @assert typeof(Γ|>dofs|>first|>jacobian) <: SMatrix{3,2}
+    iter = zip(vals(σ),dofs(Γ))
+    vlist = map(iter) do (v,dof)
+        jac = jacobian(dof)
+        t1 = jac[:,1]
+        t2 = jac[:,2]
+        # metric tensor coefficients
+        E = dot(t1,t1)
+        G = dot(t2,t2)
+        F = dot(t1,t2)
+        dS = sqrt(E*G - F^2)  # differential area
+        SVector(-F*v[1] - G*v[2], E*v[1] + F*v[2]) / dS
+    end
+    return TangentialDensity(vlist,Γ)
 end
 
 function Density(σ::TangentialDensity)

@@ -1,7 +1,7 @@
 """
     struct NystromDOF
 
-Structure containing information of a degree-of-free in Nyström methods.
+Structure containing information of a degree-of-freedom in Nyström methods.
 """
 struct NystromDOF{N,T,M,NM}
     # index::Int64         # QNode global index

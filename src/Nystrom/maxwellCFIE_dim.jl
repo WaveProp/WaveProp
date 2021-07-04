@@ -87,7 +87,13 @@ function diagonal_ncross_jac_matrix(mesh)
     return nmatrix, jmatrix
 end
 
-function assemble_dim_exterior_nystrom_matrix(mesh, α, β, D, S; exterior)
+function diagonal_ncross_matrix(mesh)
+    qnodes = dofs(mesh)
+    nmatrix = Diagonal([cross_product_matrix(normal(q)) for q in qnodes])
+    return nmatrix
+end
+
+function assemble_dim_nystrom_matrix(mesh, α, β, D, S; exterior)
     σ = exterior ? 0.5 : -0.5
     N, J = diagonal_ncross_jac_matrix(mesh)
     Jm = diagonalblockmatrix_to_matrix(J.diag)

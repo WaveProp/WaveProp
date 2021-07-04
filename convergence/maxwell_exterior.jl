@@ -7,31 +7,35 @@ using WaveProp.Integration
 using StaticArrays
 using LinearAlgebra
 using IterativeSolvers
-using Random
 using Plots
+import WaveProp.Nystrom: coords
+plotlyjs()
 
 ##
-plotlyjs()
-Random.seed!(1)
 const k = 1.3
-pde    = Maxwell(;dim=3,k)
-qorder = 4
+pde = Maxwell(;dim=3,k)
+
+# geometry and parameters
+geo = ParametricSurfaces.Sphere(;radius=3)
+Ω = Domain(geo)
+Γ = boundary(Ω)
+
+# evaluation mesh
+eval_geo = ParametricSurfaces.Sphere(;radius=5)
+eval_Ω = Domain(eval_geo)
+eval_Γ = boundary(eval_Ω)
+eval_M = meshgen(eval_Γ,(2,2))
+eval_nystrom_mesh = NystromMesh(view(eval_M,eval_Γ);order=4)
+eval_mesh = qcoords(eval_nystrom_mesh) |> collect
 
 # exact solution
 G    = SingleLayerKernel(pde)
 xs   = SVector(0.1,0.2,0.3)
-x0   = SVector(5,5,5)
 c    = SVector(1+im,-2.,3.)
 E    = (dof) -> G(dof,xs)*c
-exa  = E(x0)
+exa  = E.(eval_mesh)
 
-# geometry and parameters
-order = 7
-geo = ParametricSurfaces.Sphere(;radius=3)
-Ω = Domain(geo)
-Γ = boundary(Ω)
-##
-
+## Direct formulation
 for n in [1,2,4,6]
     M     = meshgen(Γ,(n,n))
     mesh  = NystromMesh(view(M,Γ);order=5)
@@ -48,6 +52,6 @@ for n in [1,2,4,6]
     Spot  = SingleLayerPotential(pde,mesh)
     Dpot  = DoubleLayerPotential(pde,mesh)
     Eₐ    = (x) -> Dpot[γ₀Eₐ](x) - Spot[γ₁Eₐ](x)
-    er    = (Eₐ(x0) - exa)/norm(exa)
+    er    = (Eₐ.(eval_mesh) - exa)/norm(exa,Inf)
     @info norm(er,Inf)
 end

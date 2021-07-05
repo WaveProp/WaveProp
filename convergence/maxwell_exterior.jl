@@ -8,7 +8,6 @@ using StaticArrays
 using LinearAlgebra
 using IterativeSolvers
 using Plots
-import WaveProp.Nystrom: coords
 plotlyjs()
 
 ##
@@ -33,7 +32,7 @@ G    = SingleLayerKernel(pde)
 xs   = SVector(0.1,0.2,0.3)
 c    = SVector(1+im,-2.,3.)
 E    = (dof) -> G(dof,xs)*c
-exa  = E.(eval_mesh)
+exa  = E.(eval_mesh);
 
 ## Direct formulation
 for n in [1,2,4,6]

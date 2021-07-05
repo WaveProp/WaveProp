@@ -27,6 +27,7 @@ Base.:*(a::Number,σ::Density) = Density(a*σ.vals,σ.mesh)
 Base.:*(σ::Density,a::Number) = a*σ
 Base.:/(σ::Density,a::Number) = Density(σ.vals/a,σ.mesh)
 Base.:*(A::Matrix,σ::Density) = Density(A*σ.vals,σ.mesh)
+Base.:*(A::Diagonal,σ::Density) = Density(A*σ.vals,σ.mesh)
 
 function Base.:\(A::AbstractMatrix{T},σ::Density{V}) where {T,V}
     @assert size(A,1) == size(A,2)

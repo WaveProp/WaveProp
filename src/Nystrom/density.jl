@@ -51,8 +51,8 @@ function IterativeSolvers.gmres!(σ::Density{V},A::AbstractMatrix{T},μ::Density
         return σ
     elseif T <: SMatrix && V <: SVector
         Amat    = blockmatrix_to_matrix(A)
-        σ_vec   = reinterpret(eltype(V),σ.vals) |> collect
-        μ_vec   = reinterpret(eltype(V),μ.vals) |> collect
+        σ_vec   = reinterpret(eltype(V),σ.vals)
+        μ_vec   = reinterpret(eltype(V),μ.vals)
         gmres!(σ_vec,Amat,μ_vec,args...;kwargs...)
         return σ
     else
